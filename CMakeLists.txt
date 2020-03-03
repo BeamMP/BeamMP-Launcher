@@ -3,4 +3,4 @@ project(BeamNG-MP-Launcher)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(BeamNG-MP-Launcher main.cpp main.cpp)
+add_executable(BeamNG-MP-Launcher main.cpp enet.h)
