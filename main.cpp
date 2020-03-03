@@ -80,7 +80,7 @@ std::string QueryKey(HKEY hKey)
     return "";
 }
 
-
+void Start();
 int main()
 {
     HKEY hKey;
@@ -92,6 +92,10 @@ int main()
         std::cout << "Error Failed to Find Beamng\n";
     }
     RegCloseKey(hKey);
+
+    /// Update, Mods ect...
+
+    Start(); //Proxy main start
 
     system("pause");
     return 0;
