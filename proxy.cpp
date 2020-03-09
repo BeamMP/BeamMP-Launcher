@@ -8,6 +8,7 @@
 #include <Windows.h>
 #include <WS2tcpip.h>
 #include <cstdio>
+#include <iostream>
 #include <string>
 #include <thread>
 #define DEFAULT_BUFLEN 64000
@@ -20,10 +21,14 @@ typedef struct {
 std::string RUDPData;
 std::string RUDPToSend;
 
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-noreturn"
 void TCPServerThread(){
+    do{
+
     WSADATA wsaData;
     int iResult;
-
     SOCKET ListenSocket = INVALID_SOCKET;
     SOCKET ClientSocket = INVALID_SOCKET;
 
@@ -101,9 +106,10 @@ void TCPServerThread(){
 
         iResult = recv(ClientSocket, recvbuf, recvbuflen, 0);
         if (iResult > 0) {
-            printf("Bytes received: %d\n", iResult);
-            printf("Data : %s\n",recvbuf);
             RUDPToSend = recvbuf;
+            RUDPToSend.resize(iResult-1);
+            std::cout << "size : " << RUDPToSend.size() << std::endl;
+            std::cout << "Data : " << RUDPToSend.c_str() << std::endl;
         }
 
         else if (iResult == 0)
@@ -125,7 +131,10 @@ void TCPServerThread(){
 
     closesocket(ClientSocket);
     WSACleanup();
+    }while (true);
 }
+#pragma clang diagnostic pop
+#pragma clang diagnostic pop
 void HandleEvent(ENetEvent event,Client client){
     switch (event.type){
         case ENET_EVENT_TYPE_CONNECT:
@@ -181,13 +190,14 @@ void RUDPClientThread(){
         HandleEvent(event,client); //Handles the Events
         if(!RUDPToSend.empty()){
             ENetPacket* packet = enet_packet_create (RUDPToSend.c_str(),
-                                                     RUDPToSend.length()+1,
+                                                     RUDPToSend.size()+1,
                                                      ENET_PACKET_FLAG_RELIABLE); //Create A reliable packet using the data
             enet_peer_send(client.peer, 0, packet);
             RUDPToSend.clear();
         }
         Sleep(50);
     } while (true);
+
 }
 
 
