@@ -5,11 +5,9 @@
 #define ENET_IMPLEMENTATION
 #include "enet.h"
 #include <WinSock2.h>
-#include <Windows.h>
 #include <WS2tcpip.h>
 #include <cstdio>
 #include <iostream>
-#include <string>
 #include <thread>
 #define DEFAULT_BUFLEN 64000
 #define DEFAULT_PORT "4444"
@@ -42,7 +40,7 @@ void TCPServerThread(){
     // Initialize Winsock
     iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
     if (iResult != 0) {
-        printf("WSAStartup failed with error: %d\n", iResult);
+       std::cout <<"WSAStartup failed with error: " << iResult << std::endl;
     }
 
     ZeroMemory(&hints, sizeof(hints));
@@ -54,14 +52,14 @@ void TCPServerThread(){
     // Resolve the server address and port
     iResult = getaddrinfo(NULL, DEFAULT_PORT, &hints, &result);
     if ( iResult != 0 ) {
-        printf("getaddrinfo failed with error: %d\n", iResult);
+        std::cout << "getaddrinfo failed with error: " << iResult << std::endl;
         WSACleanup();
     }
 
     // Create a socket for connecting to server
     ListenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
     if (ListenSocket == INVALID_SOCKET) {
-        printf("socket failed with error: %d\n", WSAGetLastError());
+        std::cout << "socket failed with error: " << WSAGetLastError() << std::endl;
         freeaddrinfo(result);
         WSACleanup();
     }
@@ -69,7 +67,7 @@ void TCPServerThread(){
     // Setup the TCP listening socket
     iResult = bind(ListenSocket, result->ai_addr, (int)result->ai_addrlen);
     if (iResult == SOCKET_ERROR) {
-        printf("bind failed with error: %d\n", WSAGetLastError());
+        std::cout << "bind failed with error: " << WSAGetLastError() << std::endl;
         freeaddrinfo(result);
         closesocket(ListenSocket);
         WSACleanup();
@@ -79,13 +77,13 @@ void TCPServerThread(){
 
     iResult = listen(ListenSocket, SOMAXCONN);
     if (iResult == SOCKET_ERROR) {
-        printf("listen failed with error: %d\n", WSAGetLastError());
+        std::cout << "listen failed with error: " << WSAGetLastError() << std::endl;
         closesocket(ListenSocket);
         WSACleanup();
     }
     ClientSocket = accept(ListenSocket, NULL, NULL);
     if (ClientSocket == INVALID_SOCKET) {
-        printf("accept failed with error: %d\n", WSAGetLastError());
+        std::cout << "accept failed with error: " << WSAGetLastError() << std::endl;
         closesocket(ListenSocket);
         WSACleanup();
     }
@@ -95,12 +93,12 @@ void TCPServerThread(){
         if(!RUDPData.empty()){
             iSendResult = send( ClientSocket, RUDPData.c_str(), int(RUDPData.length())+1, 0);
             if (iSendResult == SOCKET_ERROR) {
-                printf("send failed with error: %d\n", WSAGetLastError());
+                std::cout << "send failed with error: " << WSAGetLastError() << std::endl;
                 closesocket(ClientSocket);
                 WSACleanup();
             }else{
                 RUDPData.clear();
-                printf("Bytes sent: %d\n", iSendResult);
+                std::cout << "Bytes sent: " << iSendResult << std::endl;
             }
         }
 
@@ -113,9 +111,9 @@ void TCPServerThread(){
         }
 
         else if (iResult == 0)
-            printf("Connection closing...\n");
+           std::cout << "Connection closing...\n";
         else  {
-            printf("recv failed with error: %d\n", WSAGetLastError());
+            std::cout << "recv failed with error: " << WSAGetLastError() << std::endl;
             closesocket(ClientSocket);
             WSACleanup();
         }
@@ -124,7 +122,7 @@ void TCPServerThread(){
 
     iResult = shutdown(ClientSocket, SD_SEND);
     if (iResult == SOCKET_ERROR) {
-        printf("shutdown failed with error: %d\n", WSAGetLastError());
+        std::cout << "shutdown failed with error: " << WSAGetLastError() << std::endl;
         closesocket(ClientSocket);
         WSACleanup();
     }
@@ -163,7 +161,7 @@ void HandleEvent(ENetEvent event,Client client){
 }
 void RUDPClientThread(){
     if (enet_initialize() != 0) {
-        printf("An error occurred while initializing ENet.\n");
+       std::cout << "An error occurred while initializing ENet.\n";
     }
 
 
@@ -174,13 +172,13 @@ void RUDPClientThread(){
     address.port = 30814;
 
 
-    printf("starting client...\n");
+    std::cout << "starting client...\n";
 
     enet_address_set_host(&address, "localhost");
     client.host = enet_host_create(NULL, 1, 2, 0, 0);
     client.peer = enet_host_connect(client.host, &address, 2, 0);
     if (client.peer == NULL) {
-        printf("could not connect\n");
+        std::cout << "could not connect\n";
     }
 
     do {

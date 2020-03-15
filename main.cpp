@@ -5,10 +5,23 @@
 #include <windows.h>
 #include <iostream>
 #include <string>
-#include <cstring>
+#include <tchar.h>
+
 #define MAX_KEY_LENGTH 255
 #define MAX_VALUE_NAME 16383
 std::string keyName;
+
+std::string HTA(std::string hex)
+{
+    std::string ascii;
+    for (size_t i = 0; i < hex.length(); i += 2)
+    {
+        std::string part = hex.substr(i, 2);
+        char ch = stoul(part, nullptr, 16);
+        ascii += ch;
+    }
+    return ascii;
+}
 
 std::string QueryKey(HKEY hKey)
 {
@@ -65,12 +78,17 @@ std::string QueryKey(HKEY hKey)
 
             if (retCode == ERROR_SUCCESS )
             {
-
                 DWORD lpData = cbMaxValueData;
                 buffer[0] = '\0';
                 LONG dwRes = RegQueryValueEx(hKey, achValue, 0, NULL, buffer, &lpData);
-                std::string Path = reinterpret_cast<const char *const>(buffer);
-                return Path.substr(0,Path.length()-2);
+                std::string data = reinterpret_cast<const char *const>(buffer);
+                std::string key = achValue;
+                if(data.find(':') != std::string::npos){
+                    return data.substr(0,data.length()-2);
+                }
+                if(key == "Name" && data == "BeamNG.drive"){
+                    return "check";
+                }
             }
         }
     }else{
@@ -81,21 +99,47 @@ std::string QueryKey(HKEY hKey)
 }
 
 void Start();
-int main()
-{
+
+void getPath(){
     HKEY hKey;
-    LONG dwRegOPenKey = RegOpenKeyEx(HKEY_CLASSES_ROOT, "beamng\\DefaultIcon", 0, KEY_READ, &hKey);
-    if(dwRegOPenKey == ERROR_SUCCESS){
-        keyName = QueryKey(hKey);
-        std::cout << keyName << std::endl; //Prints the exe path
+    LONG dwRegOPenKey = RegOpenKeyEx(HKEY_CLASSES_ROOT, HTA("6265616d6e675c44656661756c7449636f6e").c_str()/*"beamng\\DefaultIcon"*/, 0, KEY_READ, &hKey);
+    if(dwRegOPenKey != ERROR_SUCCESS){
+        std::cout << "Error #1\n";
     }else{
-        std::cout << "Error Failed to Find Beamng\n";
+        keyName = QueryKey(hKey);
+        std::cout << "full path : " << keyName << std::endl;
     }
     RegCloseKey(hKey);
+}
+
+int main()
+{
+    //Security
+    HKEY hKey;
+    LONG dwRegOPenKey = RegOpenKeyEx(HKEY_CURRENT_USER, HTA("536f6674776172655c56616c7665").c_str(), 0, KEY_READ, &hKey);
+    if(dwRegOPenKey != ERROR_SUCCESS){
+        std::cout << HTA("4572726f7220506c6561736520436f6e7461637420537570706f7274210a");
+        exit(-1);
+    }
+    dwRegOPenKey = RegOpenKeyEx(HKEY_CURRENT_USER, HTA("536f6674776172655c56616c76655c537465616d5c417070735c323834313630").c_str(), 0, KEY_READ, &hKey);
+    if(dwRegOPenKey != ERROR_SUCCESS){
+        std::cout << HTA("796f7520646f206e6f74206f776e207468652067616d65206f6e2074686973206d616368696e65210a");
+    }else{
+        keyName = QueryKey(hKey);
+        if(!keyName.empty()){
+            std::cout << HTA("796f75206f776e207468652067616d65206f6e2074686973206d616368696e65210a");
+            getPath();
+        }else{
+            std::cout << HTA("796f7520646f206e6f74206f776e207468652067616d65206f6e2074686973206d616368696e65210a");
+        }
+    }
+    //Software\Classes\beamng\DefaultIcon
+    RegCloseKey(hKey);
+
 
     /// Update, Mods ect...
 
-    Start(); //Proxy main start
+    //Start(); //Proxy main start
 
     system("pause");
     return 0;
