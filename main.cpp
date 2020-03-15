@@ -97,8 +97,7 @@ std::string QueryKey(HKEY hKey)
     delete [] buffer;
     return "";
 }
-
-void Start();
+void start();
 
 void getPath(){
     HKEY hKey;
@@ -119,23 +118,24 @@ int main()
     LONG dwRegOPenKey = RegOpenKeyEx(HKEY_CURRENT_USER, HTA("536f6674776172655c56616c7665").c_str(), 0, KEY_READ, &hKey);
     if(dwRegOPenKey != ERROR_SUCCESS){
         std::cout << HTA("4572726f7220506c6561736520436f6e7461637420537570706f7274210a");
-        exit(-1);
-    }
-    dwRegOPenKey = RegOpenKeyEx(HKEY_CURRENT_USER, HTA("536f6674776172655c56616c76655c537465616d5c417070735c323834313630").c_str(), 0, KEY_READ, &hKey);
-    if(dwRegOPenKey != ERROR_SUCCESS){
-        std::cout << HTA("796f7520646f206e6f74206f776e207468652067616d65206f6e2074686973206d616368696e65210a");
-    }else{
-        keyName = QueryKey(hKey);
-        if(!keyName.empty()){
-            std::cout << HTA("796f75206f776e207468652067616d65206f6e2074686973206d616368696e65210a");
-            getPath();
-        }else{
+    }else {
+        dwRegOPenKey = RegOpenKeyEx(HKEY_CURRENT_USER,
+                                    HTA("536f6674776172655c56616c76655c537465616d5c417070735c323834313630").c_str(), 0,
+                                    KEY_READ, &hKey);
+        if (dwRegOPenKey != ERROR_SUCCESS) {
             std::cout << HTA("796f7520646f206e6f74206f776e207468652067616d65206f6e2074686973206d616368696e65210a");
+        } else {
+            keyName = QueryKey(hKey);
+            if (!keyName.empty()) {
+                std::cout << HTA("796f75206f776e207468652067616d65206f6e2074686973206d616368696e65210a");
+                getPath();
+            } else {
+                std::cout << HTA("796f7520646f206e6f74206f776e207468652067616d65206f6e2074686973206d616368696e65210a");
+            }
         }
+        //Software\Classes\beamng\DefaultIcon
+        RegCloseKey(hKey);
     }
-    //Software\Classes\beamng\DefaultIcon
-    RegCloseKey(hKey);
-
 
     /// Update, Mods ect...
 
