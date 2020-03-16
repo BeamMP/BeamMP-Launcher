@@ -21,7 +21,8 @@ int main()
     //Security
     std::vector<std::string> Data = Check();
 
-    std::cout << Data.at(1) << std::endl;
+    std::cout << "You own BeamNG on this machine!" << std::endl;
+    std::cout << Data.at(1) << "\\BeamNG.drive.exe" << std::endl;
 
     /// Update, Mods ect...
 
