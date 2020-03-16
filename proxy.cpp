@@ -199,7 +199,7 @@ void RUDPClientThread(){
 }
 
 
-void Start(){
+void ProxyStart(){
     std::thread t1(TCPServerThread);
     std::thread t2(RUDPClientThread);
     t2.join();
