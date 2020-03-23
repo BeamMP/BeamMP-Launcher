@@ -21,10 +21,12 @@ int main()
     //Security
     std::vector<std::string> Data = Check();
     std::cout << "You own BeamNG on this machine!" << std::endl;
-    std::cout << Data.at(1) << "\\BeamNG.drive.exe";
-    std::cout << "\nHTTP TEST :\n\n";
 
-    std::cout << HTTP_REQUEST();
+
+    //std::cout << Data.at(1) << "\\BeamNG.drive.exe";
+    //std::cout << "\nHTTP TEST :\n\n";
+
+    //std::cout << HTTP_REQUEST();
 
     /// Update, Mods ect...
 

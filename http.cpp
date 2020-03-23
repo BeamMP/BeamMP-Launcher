@@ -2,10 +2,11 @@
 /// Created by Anonymous275 on 3/17/2020
 ///
 
-#include <string>
 #include <WinSock2.h>
+#include <algorithm>
 #include <iostream>
 #include <vector>
+#include <string>
 
 std::string HTTP_REQUEST(){
 
@@ -59,5 +60,5 @@ std::string HTTP_REQUEST(){
     closesocket(Socket);
     WSACleanup();
 
-    return website_HTML;
+    return website_HTML.substr(website_HTML.find("[{"),website_HTML.size());
 }
