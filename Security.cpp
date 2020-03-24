@@ -151,7 +151,7 @@ std::vector<std::string> Check(){
             std::unique_ptr<FILE, decltype(&_pclose)> pipe(_popen(cmd.c_str(), "r"), _pclose);
             cmd.clear();
             if (!pipe) {
-                Exit(MSG2+ ". Code: 0");
+                Exit(MSG2+ ". Code: 1");
             }
             while (fgets(Buffer.data(), Buffer.size(), pipe.get()) != nullptr) {
                 result += Buffer.data();
@@ -161,19 +161,19 @@ std::vector<std::string> Check(){
                 while(result.substr(pos,4) != "File"){pos--;}
                 while(!isdigit(result.at(pos))){pos--;}
                 if((result.substr(pos,1).at(0) - 48) == 0) Exit(MSG1 + " Code 2");
-            }else Exit(MSG1 + " Code 3");
+            }else Exit(MSG2 + " Code 2");
             result.clear();
-        }else Exit(MSG2 + ". Code: 2");
+        }else Exit(MSG2 + ". Code: 3");
         Result.clear();
         TraceBack++;
-    }else{Exit(MSG2 + ". Code: 3");}
+    }else{Exit(MSG2 + ". Code: 4");}
 
     K1.clear();
     RegCloseKey(hKey);
     dwRegOPenKey = OpenKey(HKEY_CURRENT_USER, K2.c_str(), &hKey);
     if(dwRegOPenKey == ERROR_SUCCESS) {
         Result = QueryKey(hKey, 2);
-        if(Result.empty()){Exit(MSG1+ " Code 4");}
+        if(Result.empty()){Exit(MSG1 + " Code 3");}
         Data.push_back(Result);
         TraceBack++;
     }else{Exit(MSG3);}
@@ -183,7 +183,7 @@ std::vector<std::string> Check(){
     if(dwRegOPenKey == ERROR_SUCCESS) {
         Result = QueryKey(hKey, 3);
         if(Result.empty()){
-            Exit(MSG2 + ". Code: 4");
+            Exit(MSG2 + ". Code: 5");
         }
         Data.push_back(Result);
         TraceBack++;
