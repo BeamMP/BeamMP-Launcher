@@ -3,7 +3,7 @@
 ////
 
 #define ENET_IMPLEMENTATION
-#include "enet.h"
+#include "include/enet.h"
 #include <WinSock2.h>
 #include <WS2tcpip.h>
 #include <cstdio>
