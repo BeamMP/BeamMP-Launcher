@@ -7,7 +7,7 @@
 #include <iostream>
 #include <vector>
 
-std::string HTTP_REQUEST(){
+std::string HTTP_REQUEST(const std::string& IP,int port){
 
     WSADATA wsaData;
     SOCKET Socket;
@@ -22,27 +22,27 @@ std::string HTTP_REQUEST(){
 
     std::string website_HTML;
 
-    std::string url = "s1.yourthought.co.uk";
+    std::string url = IP.substr(0,IP.find('/'));//"s1.yourthought.co.uk";
 
-    std::string get_http = "GET /servers-info HTTP/1.1\r\nHost: " + url + "\r\nConnection: close\r\n\r\n";
+    std::string get_http = "GET "+IP.substr(IP.find('/'))+" HTTP/1.1\r\nHost: " + url + "\r\nConnection: close\r\n\r\n";
 
     if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0){
         std::cout << "WSAStartup failed.\n";
-        system("pause");
+
         //return 1;
     }
 
     Socket=socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
+
     host = gethostbyname(url.c_str());
 
-    SockAddr.sin_port=htons(3599); //PORT
+    SockAddr.sin_port=htons(port); //PORT
     SockAddr.sin_family=AF_INET;
     SockAddr.sin_addr.s_addr = *((unsigned long*)host->h_addr);
 
     if(connect(Socket,(SOCKADDR*)(&SockAddr),sizeof(SockAddr)) != 0){
         std::cout << "Could not connect";
-        //system("pause");
-        //return 1;
+        return "";
     }
 
     send(Socket,get_http.c_str(), strlen(get_http.c_str()),0 );
@@ -50,7 +50,6 @@ std::string HTTP_REQUEST(){
     while ((nDataLength = recv(Socket,buffer,10000,0)) > 0){
         int i = 0;
         while (buffer[i] >= 32 || buffer[i] == '\n' || buffer[i] == '\r'){
-
             website_HTML+=buffer[i];
             i += 1;
         }
@@ -59,5 +58,5 @@ std::string HTTP_REQUEST(){
     closesocket(Socket);
     WSACleanup();
 
-    return website_HTML.substr(website_HTML.find("[{"),website_HTML.size());
+    return website_HTML;
 }

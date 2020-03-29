@@ -6,9 +6,9 @@
 #include <string>
 #include <vector>
 #include <array>
-
 #define MAX_KEY_LENGTH 255
 #define MAX_VALUE_NAME 16383
+
 void Exit(const std::string& Msg);
 int TraceBack = 0;
 
@@ -196,4 +196,77 @@ std::vector<std::string> Check(){
     MSG3.clear();
     RegCloseKey(hKey);
     return Data;
+}
+
+std::string HWID(){
+    SYSTEM_INFO siSysInfo;
+    GetSystemInfo(&siSysInfo);
+    int I1 = siSysInfo.dwOemId;
+    int I2 = siSysInfo.dwNumberOfProcessors;
+    int I3 = siSysInfo.dwProcessorType;
+    int I4 = siSysInfo.dwActiveProcessorMask;
+    int I5 = siSysInfo.wProcessorLevel;
+    int I6 = siSysInfo.wProcessorRevision;
+    return std::to_string((I1*I2+I3)*(I4*I5+I6));
+}
+
+char* HashMD5(char* data, DWORD *result)
+{
+    DWORD dwStatus = 0;
+    DWORD cbHash = 16;
+    int i = 0;
+    HCRYPTPROV cryptProv;
+    HCRYPTHASH cryptHash;
+    BYTE hash[16];
+    char hex[] = "0123456789abcdef";
+    char *strHash;
+    strHash = (char*)malloc(500);
+    memset(strHash, '\0', 500);
+    if (!CryptAcquireContext(&cryptProv, NULL, MS_DEF_PROV, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT))
+    {
+        dwStatus = GetLastError();
+        printf("CryptAcquireContext failed: %d\n", dwStatus);
+        *result = dwStatus;
+        return nullptr;
+    }
+    if (!CryptCreateHash(cryptProv, CALG_MD5, 0, 0, &cryptHash))
+    {
+        dwStatus = GetLastError();
+        printf("CryptCreateHash failed: %d\n", dwStatus);
+        CryptReleaseContext(cryptProv, 0);
+        *result = dwStatus;
+        return nullptr;
+    }
+    if (!CryptHashData(cryptHash, (BYTE*)data, strlen(data), 0))
+    {
+        dwStatus = GetLastError();
+        printf("CryptHashData failed: %d\n", dwStatus);
+        CryptReleaseContext(cryptProv, 0);
+        CryptDestroyHash(cryptHash);
+        *result = dwStatus;
+        return nullptr;
+    }
+    if (!CryptGetHashParam(cryptHash, HP_HASHVAL, hash, &cbHash, 0))
+    {
+        dwStatus = GetLastError();
+        printf("CryptGetHashParam failed: %d\n", dwStatus);
+        CryptReleaseContext(cryptProv, 0);
+        CryptDestroyHash(cryptHash);
+        *result = dwStatus;
+        return nullptr;
+    }
+    for (i = 0; i < cbHash; i++)
+    {
+        strHash[i * 2] = hex[hash[i] >> 4];
+        strHash[(i * 2) + 1] = hex[hash[i] & 0xF];
+    }
+    CryptReleaseContext(cryptProv, 0);
+    CryptDestroyHash(cryptHash);
+    return strHash;
+}
+std::string getHardwareID()
+{
+    DWORD err;
+    std::string hash = HashMD5((char*)HWID().c_str(), &err);
+    return hash;
 }
