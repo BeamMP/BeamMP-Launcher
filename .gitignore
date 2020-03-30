@@ -2,4 +2,5 @@
 /cmake-build-release/
 /.idea/
 !/cmake-build-release/discord-rpc.lib
+!/cmake-build-release/libcurl.lib
 !/cmake-build-debug/discord-rpc.lib

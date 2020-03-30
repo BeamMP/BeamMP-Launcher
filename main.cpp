@@ -8,13 +8,14 @@
 #include <direct.h>
 #include <fstream>
 #include <urlmon.h>
+
 #pragma comment(lib, "urlmon.lib")
 
 std::string HTTP_REQUEST(const std::string&url,int port);
 std::vector<std::string> Discord_Main();
 std::vector<std::string> Check();
 std::string getHardwareID();
-void CheckForUpdates();
+void CheckForUpdates(const std::string& CV);
 void ProxyStart();
 
 void Download(const std::string& URL,const std::string& path){
@@ -33,21 +34,26 @@ void Exit(const std::string& Msg){
     std::cin.ignore();
     exit(-1);
 }
-std::string CheckDir(char*dir){
-    system("title BeamMP Launcher");
+std::string CheckDir(char*dir, std::string ver){
+    system(("title BeamMP Launcher v" + ver).c_str());
     char*temp;size_t len;
     _dupenv_s(&temp, &len,"APPDATA");
     std::string DN = "BeamMP-Launcher.exe",CDir = dir, AD = temp,FN = CDir.substr(CDir.find_last_of('\\')+1,CDir.size());
     AD += "\\BeamMP-Launcher";
+
     if(FN != DN){
-        SystemExec("rename \"" + FN + "\" " + DN + ">nul");
+        SystemExec("rename \""+ FN +"\" " + DN + ">nul");
     }
+
     if(CDir.substr(0,CDir.find_last_of('\\')) != AD){
         _mkdir(AD.c_str());
         SystemExec(R"(move "BeamMP-Launcher.exe" ")" + AD + "\">nul");
     }
-    SystemExec(R"(powershell "$s=(New-Object -COM WScript.Shell).CreateShortcut('%userprofile%\Desktop\BeamMP-Launcher.lnk');$s.TargetPath=')"+AD+"\\"+DN+"';$s.Save()\"");
+
     SetCurrentDirectoryA(AD.c_str());
+    SystemExec("rename *.exe " + DN + ">nul");
+
+    SystemExec(R"(powershell "$s=(New-Object -COM WScript.Shell).CreateShortcut('%userprofile%\Desktop\BeamMP-Launcher.lnk');$s.TargetPath=')"+AD+"\\"+DN+"';$s.Save()\"");
     CreateDirectoryA("BeamNG",nullptr);
     CreateDirectoryA("BeamNG\\mods",nullptr);
     SetFileAttributesA("BeamNG",2|4);
@@ -67,12 +73,10 @@ std::string CheckVer(const std::string &path){
     return vec.substr(vec.find(" \"")+2,vec.find_last_of('"')-6);
 }
 
-
 int main(int argc, char* argv[])
 {
-    std::string Path = CheckDir(argv[0]),HTTP_Result;
-
-    CheckForUpdates(); //Update Check
+    std::string ver = "0.16",Path = CheckDir(argv[0],ver),HTTP_Result;
+    CheckForUpdates(ver); //Update Check
 
     //Security
     std::vector<std::string> Data = Check();
@@ -90,12 +94,15 @@ int main(int argc, char* argv[])
     std::string ExeDir = GamePath.substr(0,GamePath.find_last_of('\\')) + "\\Bin64\\BeamNG.drive.x64.exe";
     Download("https://beamng-mp.com/builds/latest",Path + R"(\mods\BeamMP.zip)");
 
+    HTTP_Result = HTTP_REQUEST("https://beamng-mp.com/entitlement?did="+Discord_Main().at(2),443);
+    std::cout << "you are : " << HTTP_Result << std::endl;
+
    /*WinExec(ExeDir + " -userpath " + Path);
     std::cout << "Game Launched!\n";*/
 
     ///HTTP REQUEST FOR SERVER LIST
-   /* std::string HTTP_Result = HTTP_REQUEST("s1.yourthought.co.uk/servers-info",3599);
-    std::cout << HTTP_Result.substr(HTTP_Result.find("[{"));*/
+    /*HTTP_Result = HTTP_REQUEST("s1.yourthought.co.uk/servers-info",3599);
+    std::cout << HTTP_Result;*/
 
 
     ///Mods
