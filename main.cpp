@@ -34,6 +34,7 @@ void Exit(const std::string& Msg){
     std::cin.ignore();
     exit(-1);
 }
+
 std::string CheckDir(char*dir, std::string ver){
     system(("title BeamMP Launcher v" + ver).c_str());
     char*temp;size_t len;
@@ -61,7 +62,7 @@ std::string CheckDir(char*dir, std::string ver){
 }
 
 std::string CheckVer(const std::string &path){
-    std::string vec,Path = path.substr(0,path.find_last_of('\\')) + "\\integrity.json";
+    std::string vec,temp,Path = path.substr(0,path.find_last_of('\\')) + "\\integrity.json";
     std::ifstream f(Path.c_str(), std::ios::binary);
     f.seekg(0, std::ios_base::end);
     std::streampos fileSize = f.tellg();
@@ -69,13 +70,16 @@ std::string CheckVer(const std::string &path){
     f.seekg(0, std::ios_base::beg);
     f.read(&vec[0], fileSize);
     f.close();
-    vec = vec.substr(vec.find_last_of("version"),vec.length());
-    return vec.substr(vec.find(" \"")+2,vec.find_last_of('"')-6);
+    vec = vec.substr(vec.find_last_of("version"),vec.find_last_of('"'));
+    for(const char &a : vec){
+        if(isdigit(a) || a == '.')temp+=a;
+    }
+    return temp;
 }
 
 int main(int argc, char* argv[])
 {
-    std::string ver = "0.16",Path = CheckDir(argv[0],ver),HTTP_Result;
+    std::string ver = "0.21", Path = CheckDir(argv[0],ver),HTTP_Result;
     CheckForUpdates(ver); //Update Check
 
     //Security
@@ -92,21 +96,21 @@ int main(int argc, char* argv[])
     std::cout << "HWID : " << getHardwareID() << std::endl;
 
     std::string ExeDir = GamePath.substr(0,GamePath.find_last_of('\\')) + "\\Bin64\\BeamNG.drive.x64.exe";
-    Download("https://beamng-mp.com/builds/latest",Path + R"(\mods\BeamMP.zip)");
-
+    Download("https://beamng-mp.com/builds/client?did="+Discord_Main().at(2),Path + R"(\mods\BeamMP.zip)");
     HTTP_Result = HTTP_REQUEST("https://beamng-mp.com/entitlement?did="+Discord_Main().at(2),443);
-    std::cout << "you are : " << HTTP_Result << std::endl;
+    std::cout << "you have : " << HTTP_Result << std::endl;
 
-   /*WinExec(ExeDir + " -userpath " + Path);
-    std::cout << "Game Launched!\n";*/
+    /*if(HTTP_Result.find("[\"MDEV\"]") != std::string::npos){
+        WinExec(ExeDir + " -cefdev -console -nocrashreport -userpath " + Path);
+    }else{
+        WinExec(ExeDir + " -nocrashreport -userpath " + Path);
+    }*/
+    //std::cout << "Game Launched!\n";
 
     ///HTTP REQUEST FOR SERVER LIST
-    /*HTTP_Result = HTTP_REQUEST("s1.yourthought.co.uk/servers-info",3599);
-    std::cout << HTTP_Result;*/
-
-
     ///Mods
-    //Start(); //Proxy main start
+
+    ProxyStart(); //Proxy main start
 
     Exit("");
     return 0;
