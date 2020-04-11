@@ -76,7 +76,7 @@ std::string CheckVer(const std::string &path){
     }
     return temp;
 }
-
+void SyncResources(const std::string&IP,int Port);
 int main(int argc, char* argv[])
 {
     std::string ver = "0.21", Path = CheckDir(argv[0],ver),HTTP_Result;
@@ -110,8 +110,8 @@ int main(int argc, char* argv[])
     ///HTTP REQUEST FOR SERVER LIST
     ///Mods
 
-    ProxyStart(); //Proxy main start
-
+    //ProxyStart(); //Proxy main start
+    SyncResources("127.0.0.1",30814);
     Exit("");
     return 0;
 }

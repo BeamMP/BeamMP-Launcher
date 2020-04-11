@@ -14,6 +14,7 @@
 
 std::string HTTP_REQUEST(const std::string&url,int port);
 void ProxyThread(const std::string& IP, int port);
+void SyncResources(const std::string& IP, int port);
 
 std::string Parse(const std::string& Data){
     char Code = Data.substr(0,1).at(0);
@@ -25,7 +26,8 @@ std::string Parse(const std::string& Data){
         case 'B':
             return Code + HTTP_REQUEST("s1.yourthought.co.uk/servers-info",3599);
         case 'C':
-            ProxyThread(Data.substr(1,Data.find(':')-1),std::stoi(Data.substr(Data.find(':')+1)));
+            //ProxyThread(Data.substr(1,Data.find(':')-1),std::stoi(Data.substr(Data.find(':')+1)));
+            SyncResources(Data.substr(1,Data.find(':')-1),std::stoi(Data.substr(Data.find(':')+1)));
             return "";
         default:
             return "";
