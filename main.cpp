@@ -111,7 +111,7 @@ int main(int argc, char* argv[])
     ///Mods
 
     //ProxyStart(); //Proxy main start
-    SyncResources("127.0.0.1",30814);
+    SyncResources("95.216.35.232",30817);
     Exit("");
     return 0;
 }

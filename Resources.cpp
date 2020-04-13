@@ -9,6 +9,9 @@
 #include <string>
 #include <vector>
 #include <fstream>
+#include <filesystem>
+
+namespace fs = std::experimental::filesystem;
 
 std::vector<std::string> Split(const std::string& String,const std::string& delimiter){
     std::vector<std::string> Val;
@@ -49,52 +52,24 @@ void SyncResources(const std::string&IP,int Port){
         return;
     }
 
-    // Set up a SOCKADDR_IN structure that will be used to connect
-
-    // to a listening server on port 5150. For demonstration
-
-    // purposes, let's assume our server's IP address is 127.0.0.1 or localhost
-
-    // IPv4
-
     ServerAddr.sin_family = AF_INET;
-
-    // Port no.
 
     ServerAddr.sin_port = htons(Port);
 
-    // The IP address
-
     ServerAddr.sin_addr.s_addr = inet_addr(IP.c_str());
-
-    // Make a connection to the server with socket SendingSocket.
 
     RetCode = connect(SendingSocket, (SOCKADDR *) &ServerAddr, sizeof(ServerAddr));
 
     if(RetCode != 0)
     {
         printf("Client: connect() failed! Error code: %ld\n", WSAGetLastError());
-        // Close the socket
         closesocket(SendingSocket);
-        // Do the clean up
         WSACleanup();
-        // Exit with error
         return;
     }
 
-    // At this point you can start sending or receiving data on
-    // the socket SendingSocket.
-
-    // Some info on the receiver side...
-
     getsockname(SendingSocket, (SOCKADDR *)&ServerAddr, (int *)sizeof(ServerAddr));
-
-    /*printf("Client: Receiver IP(s) used: %s\n", inet_ntoa(ServerAddr.sin_addr));
-
-    printf("Client: Receiver port used: %d\n", htons(ServerAddr.sin_port));*/
-
     BytesSent = send(SendingSocket, "a", 1, 0);
-
 
     int iResult;
     char recvbuf[65535];
@@ -103,48 +78,43 @@ void SyncResources(const std::string&IP,int Port){
     do {
         iResult = recv(SendingSocket, recvbuf, recvbuflen, 0);
         if (iResult > 0) {
-            //printf("Bytes received: %d\n", iResult);
-            std::string Data = recvbuf,Response,toSend;
+            std::string File, Data = recvbuf,Response,toSend;
             Data.resize(iResult);
             std::vector<std::string> list = Split(Data,";");
+            std::vector<std::string> FileNames(list.begin(),list.begin() + (list.size()/2));
+            std::vector<std::string> FileSizes(list.begin() + (list.size()/2), list.end());
+            list.clear();
             Data.clear();
             Data.resize(recvbuflen);
-            for(const std::string& a : list){
-                if(!a.empty() && stat(a.c_str(), &info) != 0){
-                    std::ofstream LFS;
-                    LFS.open(a.c_str());
-                    LFS.close();
-                    toSend = "b"+a;
-                    std::cout << a << std::endl;
-                    send(SendingSocket, toSend.c_str(), toSend.length(), 0);
-                    do{
-                        iResult = recv(SendingSocket, &Data[0], recvbuflen, 0);
-                        if(iResult < 0)break;
-                        Data.resize(iResult);
-                        if(Data.find("End of file") != std::string::npos){
-                            if(Data.length() > 11){
-                                LFS.open (a.c_str(), std::ios_base::app | std::ios::binary);
-                                LFS << Data.substr(0,Data.length()-11);
-                                LFS.close();
-                            }
-                            std::cout << "File Done\n";
-                            break;
-                        }
-                        LFS.open (a.c_str(), std::ios_base::app | std::ios::binary);
-                        LFS << Data;
-                        LFS.close();
-                    }while(Data != "End of file");
+            int index = 0;
+            for(const std::string& a : FileNames){
+                if(a.empty() || a.length() < 2)continue;
+                if(stat(a.c_str(),&info)==0){
+                    if(fs::file_size(a)==std::stoi(FileSizes.at(index))){
+                        continue;
+                    }else remove(a.c_str());
                 }
+                std::ofstream LFS;
+                LFS.open(a.c_str());
+                LFS.close();
+                toSend = "b"+a;
+                std::cout << a << std::endl;
+                send(SendingSocket, toSend.c_str(), toSend.length(), 0);
+                LFS.open (a.c_str(), std::ios_base::app | std::ios::binary);
+                do{
+                    iResult = recv(SendingSocket, recvbuf, recvbuflen, 0);
+                    if(iResult < 0){File.clear(); break;}
+                    Data.resize(iResult);
+                    memcpy(&Data[0],recvbuf,iResult);
+                    if(Data.find("Cannot Open") != std::string::npos){File.clear();break;}
+                    LFS << Data;
+                    std::cout << LFS.tellp()/std::stof(FileSizes.at(index))*100 << std::endl;
+                }while(LFS.tellp() != std::stoi(FileSizes.at(index)));
+                LFS.close();
+                File.clear();
+                index++;
             }
             break;
-            // Echo the buffer back to the sender
-            /*iSendResult = send(Client, Response.c_str(), Response.length(), 0);
-            if (iSendResult == SOCKET_ERROR) {
-                printf("send failed with error: %d\n", WSAGetLastError());
-                closesocket(Client);
-                return;
-            }
-            printf("Bytes sent: %d\n", iSendResult);*/
         }
         else if (iResult == 0)
             printf("Connection closing...\n");
@@ -153,7 +123,7 @@ void SyncResources(const std::string&IP,int Port){
             closesocket(SendingSocket);
             break;
         }
-    } while (iResult > 0);
+    }while (iResult > 0);
 
 
     if(BytesSent == SOCKET_ERROR)
@@ -164,19 +134,10 @@ void SyncResources(const std::string&IP,int Port){
     if( shutdown(SendingSocket, SD_SEND) != 0)
         printf("Client: Well, there is something wrong with the shutdown() The error code: %ld\n", WSAGetLastError());
 
-    // When you are finished sending and receiving data on socket SendingSocket,
-
-    // you should close the socket using the closesocket API. We will
-
-    // describe socket closure later in the chapter.
 
     if(closesocket(SendingSocket) != 0)
         printf("Client: Cannot close \"SendingSocket\" socket. Error code: %ld\n", WSAGetLastError());
 
-
-
-
-    // When your application is finished handling the connection, call WSACleanup.
 
     if(WSACleanup() != 0)
         printf("Client: WSACleanup() failed!...\n");
