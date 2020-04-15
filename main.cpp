@@ -79,7 +79,7 @@ std::string CheckVer(const std::string &path){
 void SyncResources(const std::string&IP,int Port);
 int main(int argc, char* argv[])
 {
-    std::string ver = "0.21", Path = CheckDir(argv[0],ver),HTTP_Result;
+    std::string ver = "0.31", Path = CheckDir(argv[0],ver),HTTP_Result;
     CheckForUpdates(ver); //Update Check
 
     //Security
@@ -110,8 +110,8 @@ int main(int argc, char* argv[])
     ///HTTP REQUEST FOR SERVER LIST
     ///Mods
 
-    //ProxyStart(); //Proxy main start
-    SyncResources("95.216.35.232",30817);
+    ProxyStart(); //Proxy main start
+
     Exit("");
     return 0;
 }

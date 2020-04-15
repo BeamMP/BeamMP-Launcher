@@ -13,6 +13,9 @@
 
 namespace fs = std::experimental::filesystem;
 
+std::string UlStatus = "Ulstart";
+std::string MStatus = " ";
+
 std::vector<std::string> Split(const std::string& String,const std::string& delimiter){
     std::vector<std::string> Val;
     size_t pos = 0;
@@ -25,7 +28,7 @@ std::vector<std::string> Split(const std::string& String,const std::string& deli
     Val.push_back(s);
     return Val;
 }
-
+void ProxyThread(const std::string& IP, int port);
 void SyncResources(const std::string&IP,int Port){
     std::cout << "Called" << std::endl;
     std::string FileList;
@@ -91,14 +94,16 @@ void SyncResources(const std::string&IP,int Port){
                 if(a.empty() || a.length() < 2)continue;
                 if(stat(a.c_str(),&info)==0){
                     if(fs::file_size(a)==std::stoi(FileSizes.at(index))){
+                        index++;
                         continue;
                     }else remove(a.c_str());
                 }
+
                 std::ofstream LFS;
                 LFS.open(a.c_str());
                 LFS.close();
                 toSend = "b"+a;
-                std::cout << a << std::endl;
+                //std::cout << a << std::endl;
                 send(SendingSocket, toSend.c_str(), toSend.length(), 0);
                 LFS.open (a.c_str(), std::ios_base::app | std::ios::binary);
                 do{
@@ -108,12 +113,22 @@ void SyncResources(const std::string&IP,int Port){
                     memcpy(&Data[0],recvbuf,iResult);
                     if(Data.find("Cannot Open") != std::string::npos){File.clear();break;}
                     LFS << Data;
-                    std::cout << LFS.tellp()/std::stof(FileSizes.at(index))*100 << std::endl;
+                    float per = LFS.tellp()/std::stof(FileSizes.at(index))*100;
+                    std::string Percent = std::to_string(truncf(per*10)/10);
+                    UlStatus="UlDownloading Resource: "+a.substr(a.find_last_of('/'))+" ("+Percent.substr(0,Percent.find('.')+2)+"%)";
+                    //std::cout << UlStatus << std::endl;
                 }while(LFS.tellp() != std::stoi(FileSizes.at(index)));
                 LFS.close();
                 File.clear();
-                index++;
             }
+
+            toSend = "M";
+            send(SendingSocket, toSend.c_str(), toSend.length(), 0);
+            iResult = recv(SendingSocket, recvbuf, recvbuflen, 0);
+            if(iResult < 0)break;
+            Data.resize(iResult);
+            memcpy(&Data[0],recvbuf,iResult);
+            MStatus = "M" + Data;
             break;
         }
         else if (iResult == 0)
@@ -141,4 +156,8 @@ void SyncResources(const std::string&IP,int Port){
 
     if(WSACleanup() != 0)
         printf("Client: WSACleanup() failed!...\n");
+
+    UlStatus = "Uldone";
+    std::cout << "Done!" << std::endl;
+    //ProxyThread(IP,Port);
 }
