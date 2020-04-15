@@ -5,9 +5,10 @@
 #define ENET_IMPLEMENTATION
 #include "include/enet.h"
 #include <WinSock2.h>
+#include <iostream>
+#include <chrono>
 #include <WS2tcpip.h>
 #include <cstdio>
-#include <iostream>
 #include <string>
 #include <thread>
 #include <queue>
@@ -23,9 +24,8 @@ std::queue<std::string> RUDPData;
 std::queue<std::string> RUDPToSend;
 bool Terminate = false;
 
+int ping = 0;
 void CoreNetworkThread();
-
-
 
 #pragma clang diagnostic pop
 #pragma clang diagnostic pop
@@ -85,10 +85,19 @@ void RUDPClientThread(const std::string& IP, int Port){
                                                      RUDPToSend.front().size()+1,
                                                      ENET_PACKET_FLAG_RELIABLE); //Create A reliable packet using the data
             enet_peer_send(client.peer, 0, packet);
+            ping = client.peer->ping;
+
             std::cout << "sending : " << RUDPToSend.front() << std::endl;
             RUDPToSend.pop();
         }
-        Sleep(10);
+
+        auto start = std::chrono::high_resolution_clock::now();
+        int Interval = 0;
+        while(Interval < 200 && RUDPToSend.empty()){
+            auto done = std::chrono::high_resolution_clock::now();
+            Interval = std::chrono::duration_cast<std::chrono::milliseconds>(done-start).count();
+            ping = client.peer->ping;
+        }
     } while (!Terminate);
 }
 
@@ -96,6 +105,7 @@ void RUDPClientThread(const std::string& IP, int Port){
 #pragma clang diagnostic ignored "-Wmissing-noreturn"
 void TCPServerThread(const std::string& IP, int Port){
         Terminate = false;
+        std::cout << "Proxy Started!" << std::endl;
         WSADATA wsaData;
         int iResult;
         SOCKET ListenSocket = INVALID_SOCKET;
@@ -190,7 +200,7 @@ void TCPServerThread(const std::string& IP, int Port){
 
             }
             else  {
-                std::cout << "recv failed with error: " << WSAGetLastError() << std::endl;
+                std::cout << "(Proxy) recv failed with error: " << WSAGetLastError() << std::endl;
                 closesocket(ClientSocket);
                 WSACleanup();
             }

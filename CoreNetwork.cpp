@@ -16,6 +16,7 @@ std::string HTTP_REQUEST(const std::string&url,int port);
 void SyncResources(const std::string& IP, int port);
 extern std::string UlStatus;
 extern std::string MStatus;
+extern int ping;
 void StartSync(const std::string &Data){
     std::thread t1(SyncResources,Data.substr(1,Data.find(':')-1),std::stoi(Data.substr(Data.find(':')+1)));
     t1.detach();
@@ -24,8 +25,8 @@ void StartSync(const std::string &Data){
 std::string Parse(const std::string& Data){
     char Code = Data.substr(0,1).at(0), SubCode = 0;
     if(Data.length() > 1)SubCode = Data.substr(1,1).at(0);
-    std::cout << "Code : " << Code << std::endl;
-    std::cout << "Data : " << Data.substr(1) << std::endl;
+    ////std::cout << "Code : " << Code << std::endl;
+    ////std::cout << "Data : " << Data.substr(1) << std::endl;
     switch (Code){
         case 'A':
             return Data.substr(0,1);
@@ -35,9 +36,9 @@ std::string Parse(const std::string& Data){
             StartSync(Data);
             return "";
         case 'U':
-            if(SubCode == 'l'){
-                return UlStatus;
-            }
+            if(SubCode == 'l')return UlStatus;
+            if(SubCode == 'p')return "Up" + std::to_string(ping);
+            if(!SubCode)return UlStatus+ "\n" + "Up" + std::to_string(ping);
         case 'M':
             return MStatus;
         default:
@@ -125,7 +126,7 @@ void CoreNetworkThread(){
             else if (iResult == 0)
                 std::cout << "Connection closing...\n";
             else  {
-                std::cout << "recv failed with error: " << WSAGetLastError() << std::endl;
+                std::cout << "(Core Network) recv failed with error: " << WSAGetLastError() << std::endl;
                 closesocket(ClientSocket);
                 WSACleanup();
             }
@@ -136,7 +137,7 @@ void CoreNetworkThread(){
                     closesocket(ClientSocket);
                     WSACleanup();
                 }else{
-                    std::cout << "Bytes sent: " << iSendResult << std::endl;
+                    ///std::cout << "Bytes sent: " << iSendResult << std::endl;
                 }
             }
         } while (iResult > 0);

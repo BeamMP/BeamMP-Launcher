@@ -134,7 +134,7 @@ void SyncResources(const std::string&IP,int Port){
         else if (iResult == 0)
             printf("Connection closing...\n");
         else  {
-            printf("recv failed with error: %d\n", WSAGetLastError());
+            printf("(Resources) recv failed with error: %d\n", WSAGetLastError());
             closesocket(SendingSocket);
             break;
         }
@@ -159,5 +159,5 @@ void SyncResources(const std::string&IP,int Port){
 
     UlStatus = "Uldone";
     std::cout << "Done!" << std::endl;
-    //ProxyThread(IP,Port);
+    ProxyThread(IP,Port);
 }
