@@ -29,7 +29,7 @@ void CoreNetworkThread();
 
 void AutoPing(ENetPeer*peer){
     while(!Terminate){
-        enet_peer_send(peer, 0, enet_packet_create("p", 1, ENET_PACKET_FLAG_RELIABLE));
+        enet_peer_send(peer, 0, enet_packet_create("p", 2, ENET_PACKET_FLAG_RELIABLE));
         PingStart = std::chrono::high_resolution_clock::now();
         Sleep(1000);
     }
@@ -104,7 +104,7 @@ void RUDPClientThread(const std::string& IP, int Port){
         HandleEvent(event,client); //Handles the Events
         while (!RUDPToSend.empty()){
             ENetPacket* packet = enet_packet_create (RUDPToSend.front().c_str(),
-                                                     RUDPToSend.front().size()+1,
+                                                     RUDPToSend.front().length()+1,
                                                      ENET_PACKET_FLAG_RELIABLE);
             enet_peer_send(client.peer, 0, packet);
             std::cout << "sending : " << RUDPToSend.front() << std::endl;
