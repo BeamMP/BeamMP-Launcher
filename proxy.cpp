@@ -23,9 +23,28 @@ typedef struct {
 std::queue<std::string> RUDPData;
 std::queue<std::string> RUDPToSend;
 bool Terminate = false;
-
 int ping = 0;
+std::chrono::time_point<std::chrono::steady_clock> PingStart;
 void CoreNetworkThread();
+
+void AutoPing(ENetPeer*peer){
+    while(!Terminate){
+        enet_peer_send(peer, 0, enet_packet_create("p", 1, ENET_PACKET_FLAG_RELIABLE));
+        PingStart = std::chrono::high_resolution_clock::now();
+        Sleep(1000);
+    }
+}
+
+void RUDPParser(const std::string& Data){
+    if(Data == "p"){
+        auto PingEnd = std::chrono::high_resolution_clock::now();
+        ping = std::chrono::duration_cast<std::chrono::milliseconds>(PingEnd-PingStart).count();
+        return;
+    }
+    std::cout << "Received: " << Data << std::endl;
+    RUDPData.push(Data);
+}
+
 
 #pragma clang diagnostic pop
 #pragma clang diagnostic pop
@@ -37,19 +56,18 @@ void HandleEvent(ENetEvent event,Client client){
             event.peer->data = (void *)"Connected Server";
             break;
         case ENET_EVENT_TYPE_RECEIVE:
-            printf("Received: %s\n",event.packet->data);
-            RUDPData.push(reinterpret_cast<const char *const>(event.packet->data));
+            RUDPParser((char*)event.packet->data);
             enet_packet_destroy (event.packet);
             break;
         case ENET_EVENT_TYPE_DISCONNECT:
             printf ("%s disconnected.\n", (char *)event.peer->data);
             // Reset the peer's client information.
-            event.peer->data = NULL;
+            event.peer->data = nullptr;
             break;
 
         case ENET_EVENT_TYPE_DISCONNECT_TIMEOUT:
             printf ("%s timeout.\n", (char *)event.peer->data);
-            event.peer->data = NULL;
+            event.peer->data = nullptr;
             break;
 
         case ENET_EVENT_TYPE_NONE: break;
@@ -57,8 +75,11 @@ void HandleEvent(ENetEvent event,Client client){
 }
 void RUDPClientThread(const std::string& IP, int Port){
     if (enet_initialize() != 0) {
-       std::cout << "An error occurred while initializing ENet.\n";
+       std::cout << "An error occurred while initializing RUDP.\n";
     }
+
+    auto start = std::chrono::high_resolution_clock::now();
+    int Interval = 0;
 
     Client client;
     ENetAddress address = {0};
@@ -75,7 +96,8 @@ void RUDPClientThread(const std::string& IP, int Port){
     if (client.peer == nullptr) {
         std::cout << "could not connect\n";
     }
-
+    std::thread Ping(AutoPing,client.peer);
+    Ping.detach();
     do {
         ENetEvent event;
         enet_host_service(client.host, &event, 0);
@@ -83,20 +105,14 @@ void RUDPClientThread(const std::string& IP, int Port){
         while (!RUDPToSend.empty()){
             ENetPacket* packet = enet_packet_create (RUDPToSend.front().c_str(),
                                                      RUDPToSend.front().size()+1,
-                                                     ENET_PACKET_FLAG_RELIABLE); //Create A reliable packet using the data
+                                                     ENET_PACKET_FLAG_RELIABLE);
             enet_peer_send(client.peer, 0, packet);
-            ping = client.peer->ping;
-
             std::cout << "sending : " << RUDPToSend.front() << std::endl;
             RUDPToSend.pop();
         }
-
-        auto start = std::chrono::high_resolution_clock::now();
-        int Interval = 0;
-        while(Interval < 200 && RUDPToSend.empty()){
+        while(RUDPToSend.empty() && Interval < 1000){
             auto done = std::chrono::high_resolution_clock::now();
             Interval = std::chrono::duration_cast<std::chrono::milliseconds>(done-start).count();
-            ping = client.peer->ping;
         }
     } while (!Terminate);
 }
@@ -111,8 +127,8 @@ void TCPServerThread(const std::string& IP, int Port){
         SOCKET ListenSocket = INVALID_SOCKET;
         SOCKET ClientSocket = INVALID_SOCKET;
 
-        struct addrinfo *result = NULL;
-        struct addrinfo hints;
+        struct addrinfo *result = nullptr;
+        struct addrinfo hints{};
 
         int iSendResult;
         char recvbuf[DEFAULT_BUFLEN];
@@ -131,7 +147,7 @@ void TCPServerThread(const std::string& IP, int Port){
         hints.ai_flags = AI_PASSIVE;
 
         // Resolve the server address and port
-        iResult = getaddrinfo(NULL, DEFAULT_PORT, &hints, &result);
+        iResult = getaddrinfo(nullptr, DEFAULT_PORT, &hints, &result);
         if ( iResult != 0 ) {
             std::cout << "getaddrinfo failed with error: " << iResult << std::endl;
             WSACleanup();
@@ -227,8 +243,8 @@ void ProxyStart(){
     t1.join();
 }
 
-void ProxyThread(const std::string& IP, int port){
+void ProxyThread(const std::string& IP, int Port){
     Terminate = false;
-    std::thread t1(TCPServerThread,IP,port);
+    std::thread t1(TCPServerThread,IP,Port);
     t1.detach();
 }

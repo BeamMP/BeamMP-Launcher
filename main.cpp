@@ -35,7 +35,7 @@ void Exit(const std::string& Msg){
     exit(-1);
 }
 
-std::string CheckDir(char*dir, std::string ver){
+std::string CheckDir(char*dir, const std::string& ver){
     system(("title BeamMP Launcher v" + ver).c_str());
     char*temp;size_t len;
     _dupenv_s(&temp, &len,"APPDATA");
@@ -79,7 +79,7 @@ std::string CheckVer(const std::string &path){
 void SyncResources(const std::string&IP,int Port);
 int main(int argc, char* argv[])
 {
-    std::string ver = "0.36", Path = CheckDir(argv[0],ver),HTTP_Result;
+    std::string ver = "0.38", Path = CheckDir(argv[0],ver),HTTP_Result;
     CheckForUpdates(ver); //Update Check
 
     //Security

@@ -9,6 +9,6 @@ project(BeamMP-Launcher)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(BeamMP-Launcher main.cpp proxy.cpp Security.cpp http.cpp Discord.cpp UpdateCheck.cpp CoreNetwork.cpp Resources.cpp)
+add_executable(BeamMP-Launcher main.cpp proxy.cpp Security.cpp http.cpp Discord.cpp UpdateCheck.cpp CoreNetwork.cpp Resources.cpp ProxyParser.cpp)
 
 target_link_libraries(BeamMP-Launcher discord-rpc libcurl_a)
