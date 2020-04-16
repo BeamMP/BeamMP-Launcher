@@ -16,7 +16,7 @@ static const char* APPLICATION_ID = "345229890980937739";
 static int FrustrationLevel = 0;
 static int64_t StartTime;
 static int SendPresence = 1;
-static std::vector<std::string> DiscordInfo;
+static std::vector<std::string> LocalInfo;
 
 static void updateDiscordPresence()
 {
@@ -51,9 +51,9 @@ static void handleDiscordReady(const DiscordUser* connectedUser)
            connectedUser->username,
            connectedUser->discriminator,
            connectedUser->userId);*/
-    DiscordInfo.emplace_back(connectedUser->username);
-    DiscordInfo.emplace_back(connectedUser->discriminator);
-    DiscordInfo.emplace_back(connectedUser->userId);
+    LocalInfo.emplace_back(connectedUser->username);
+    LocalInfo.emplace_back(connectedUser->discriminator);
+    LocalInfo.emplace_back(connectedUser->userId);
 }
 
 static void handleDiscordDisconnected(int errcode, const char* message)
@@ -129,7 +129,7 @@ static std::vector<std::string> Loop()
 
     StartTime = time(0);
 
-    while (DiscordInfo.size() < 3) {
+    while (LocalInfo.size() < 3) {
         //updateDiscordPresence();
 
 #ifdef DISCORD_DISABLE_IO_THREAD
@@ -138,7 +138,7 @@ static std::vector<std::string> Loop()
         Discord_RunCallbacks();
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
-    return DiscordInfo;
+    return LocalInfo;
 }
 
 std::vector<std::string> Discord_Main()

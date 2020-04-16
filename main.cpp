@@ -13,6 +13,7 @@
 
 std::string HTTP_REQUEST(const std::string&url,int port);
 std::vector<std::string> Discord_Main();
+std::vector<std::string> GlobalInfo;
 std::vector<std::string> Check();
 std::string getHardwareID();
 void CheckForUpdates(const std::string& CV);
@@ -79,7 +80,7 @@ std::string CheckVer(const std::string &path){
 void SyncResources(const std::string&IP,int Port);
 int main(int argc, char* argv[])
 {
-    std::string ver = "0.38", Path = CheckDir(argv[0],ver),HTTP_Result;
+    std::string ver = "0.40", Path = CheckDir(argv[0],ver),HTTP_Result;
     CheckForUpdates(ver); //Update Check
 
     //Security
@@ -88,10 +89,10 @@ int main(int argc, char* argv[])
     std::cout << "You own BeamNG on this machine!" << std::endl;
     std::cout << "Game Ver : " << CheckVer(GamePath) << std::endl;
 
-
-    std::cout << "Name : " << Discord_Main().at(0) << std::endl;
-    std::cout << "Discriminator : " << Discord_Main().at(1) << std::endl;
-    std::cout << "Unique ID : " << Discord_Main().at(2) << std::endl;
+    GlobalInfo = Discord_Main();
+    std::cout << "Name : " << GlobalInfo.at(0) << std::endl;
+    std::cout << "Discriminator : " << GlobalInfo.at(1) << std::endl;
+    std::cout << "Unique ID : " << GlobalInfo.at(2) << std::endl;
 
     std::cout << "HWID : " << getHardwareID() << std::endl;
 

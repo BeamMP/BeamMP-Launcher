@@ -19,12 +19,12 @@ typedef struct {
     ENetHost *host;
     ENetPeer *peer;
 } Client;
-
+std::chrono::time_point<std::chrono::steady_clock> PingStart,PingEnd;
+extern std::vector<std::string> GlobalInfo;
 std::queue<std::string> RUDPData;
 std::queue<std::string> RUDPToSend;
 bool Terminate = false;
 int ping = 0;
-std::chrono::time_point<std::chrono::steady_clock> PingStart;
 void CoreNetworkThread();
 
 void AutoPing(ENetPeer*peer){
@@ -34,12 +34,22 @@ void AutoPing(ENetPeer*peer){
         Sleep(1000);
     }
 }
+void NameRespond(ENetPeer*peer){
+    std::string Packet = "NR" + GlobalInfo.at(0);
+    enet_peer_send(peer, 0, enet_packet_create(Packet.c_str(), Packet.length()+1, ENET_PACKET_FLAG_RELIABLE));
+}
 
-void RUDPParser(const std::string& Data){
-    if(Data == "p"){
-        auto PingEnd = std::chrono::high_resolution_clock::now();
-        ping = std::chrono::duration_cast<std::chrono::milliseconds>(PingEnd-PingStart).count();
-        return;
+void RUDPParser(const std::string& Data,ENetPeer*peer){
+    char Code = Data.at(0),SubCode = 0;
+    if(Data.length() > 1)SubCode = Data.at(1);
+    switch (Code) {
+        case 'p':
+            PingEnd = std::chrono::high_resolution_clock::now();
+            ping = std::chrono::duration_cast<std::chrono::milliseconds>(PingEnd-PingStart).count();
+            return;
+        case 'N':
+            if(SubCode == 'R')NameRespond(peer);
+            return;
     }
     std::cout << "Received: " << Data << std::endl;
     RUDPData.push(Data);
@@ -56,8 +66,8 @@ void HandleEvent(ENetEvent event,Client client){
             event.peer->data = (void *)"Connected Server";
             break;
         case ENET_EVENT_TYPE_RECEIVE:
-            RUDPParser((char*)event.packet->data);
-            enet_packet_destroy (event.packet);
+            RUDPParser((char*)event.packet->data,event.peer);
+            enet_packet_destroy(event.packet);
             break;
         case ENET_EVENT_TYPE_DISCONNECT:
             printf ("%s disconnected.\n", (char *)event.peer->data);
@@ -103,7 +113,7 @@ void RUDPClientThread(const std::string& IP, int Port){
         enet_host_service(client.host, &event, 0);
         HandleEvent(event,client); //Handles the Events
         while (!RUDPToSend.empty()){
-            ENetPacket* packet = enet_packet_create (RUDPToSend.front().c_str(),
+            ENetPacket* packet = enet_packet_create(RUDPToSend.front().c_str(),
                                                      RUDPToSend.front().length()+1,
                                                      ENET_PACKET_FLAG_RELIABLE);
             enet_peer_send(client.peer, 0, packet);
