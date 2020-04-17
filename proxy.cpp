@@ -118,7 +118,7 @@ void RUDPClientThread(const std::string& IP, int Port){
                                                      RUDPToSend.front().length()+1,
                                                      ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT);
             enet_peer_send(client.peer, 0, packet);
-            std::cout << "(Launcher->Server) sending : " << RUDPToSend.front() << std::endl;
+            std::cout << "(Launcher->Server) sending " << RUDPToSend.front().length() << " Bytes" << std::endl;
             RUDPToSend.pop();
         }
         while(RUDPToSend.empty() && Interval < 1000){
@@ -241,7 +241,7 @@ void TCPServerThread(const std::string& IP, int Port){
                 std::string buff = recvbuf;
                 buff.resize(iResult);
                 RUDPToSend.push(buff);
-                std::cout << "(Game->Launcher) Data : " << buff.c_str() << std::endl;
+                ///std::cout << "(Game->Launcher) Data : " << buff.c_str() << std::endl;
             } else if (iResult == 0) {
                 std::cout << "(Proxy) Connection closing...\n";
                 closesocket(ClientSocket);
