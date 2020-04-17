@@ -39,22 +39,18 @@ void Exit(const std::string& Msg){
 std::string CheckDir(char*dir, const std::string& ver){
     system(("title BeamMP Launcher v" + ver).c_str());
     char*temp;size_t len;
+    struct stat info{};
     _dupenv_s(&temp, &len,"APPDATA");
     std::string DN = "BeamMP-Launcher.exe",CDir = dir, AD = temp,FN = CDir.substr(CDir.find_last_of('\\')+1,CDir.size());
     AD += "\\BeamMP-Launcher";
-
-    if(FN != DN){
-        SystemExec("rename \""+ FN +"\" " + DN + ">nul");
-    }
-
+    if(stat(DN.c_str(),&info)==0)remove(DN.c_str());
+    if(FN != DN)SystemExec("rename \""+ FN +"\" " + DN + ">nul");
     if(CDir.substr(0,CDir.find_last_of('\\')) != AD){
         _mkdir(AD.c_str());
         SystemExec(R"(move "BeamMP-Launcher.exe" ")" + AD + "\">nul");
     }
-
     SetCurrentDirectoryA(AD.c_str());
     SystemExec("rename *.exe " + DN + ">nul");
-
     SystemExec(R"(powershell "$s=(New-Object -COM WScript.Shell).CreateShortcut('%userprofile%\Desktop\BeamMP-Launcher.lnk');$s.TargetPath=')"+AD+"\\"+DN+"';$s.Save()\"");
     CreateDirectoryA("BeamNG",nullptr);
     CreateDirectoryA("BeamNG\\mods",nullptr);
@@ -80,7 +76,7 @@ std::string CheckVer(const std::string &path){
 void SyncResources(const std::string&IP,int Port);
 int main(int argc, char* argv[])
 {
-    std::string ver = "0.40", Path = CheckDir(argv[0],ver),HTTP_Result;
+    std::string ver = "0.51", Path = CheckDir(argv[0],ver),HTTP_Result;
     CheckForUpdates(ver); //Update Check
 
     //Security

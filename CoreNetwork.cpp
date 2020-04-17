@@ -17,6 +17,8 @@ void SyncResources(const std::string& IP, int port);
 extern std::string UlStatus;
 extern std::string MStatus;
 extern int ping;
+extern bool Terminate;
+extern bool TCPTerminate;
 void StartSync(const std::string &Data){
     std::thread t1(SyncResources,Data.substr(1,Data.find(':')-1),std::stoi(Data.substr(Data.find(':')+1)));
     t1.detach();
@@ -41,14 +43,22 @@ std::string Parse(const std::string& Data){
             if(!SubCode)return UlStatus+ "\n" + "Up" + std::to_string(ping);
         case 'M':
             return MStatus;
+        case 'Q':
+            if(SubCode == 'S'){
+                Terminate = true;
+                TCPTerminate = true; ////Revisit later when TCP is stable
+            }
+            if(SubCode == 'G')exit(2);
+            return "";
         default:
             return "";
     }
 }
 
 
-void CoreNetworkThread(){
+[[noreturn]] void CoreNetworkThread(){
     do{
+        std::cout << "Core Network on start!" << std::endl;
         WSADATA wsaData;
         int iResult;
         SOCKET ListenSocket = INVALID_SOCKET;
@@ -76,14 +86,14 @@ void CoreNetworkThread(){
         // Resolve the server address and port
         iResult = getaddrinfo(NULL, DEFAULT_PORT, &hints, &result);
         if ( iResult != 0 ) {
-            std::cout << "getaddrinfo failed with error: " << iResult << std::endl;
+            std::cout << "(Core) getaddrinfo failed with error: " << iResult << std::endl;
             WSACleanup();
         }
 
         // Create a socket for connecting to server
         ListenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
         if (ListenSocket == INVALID_SOCKET) {
-            std::cout << "socket failed with error: " << WSAGetLastError() << std::endl;
+            std::cout << "(Core) socket failed with error: " << WSAGetLastError() << std::endl;
             freeaddrinfo(result);
             WSACleanup();
         }
@@ -91,7 +101,7 @@ void CoreNetworkThread(){
         // Setup the TCP listening socket
         iResult = bind(ListenSocket, result->ai_addr, (int)result->ai_addrlen);
         if (iResult == SOCKET_ERROR) {
-            std::cout << "bind failed with error: " << WSAGetLastError() << std::endl;
+            std::cout << "(Core) bind failed with error: " << WSAGetLastError() << std::endl;
             freeaddrinfo(result);
             closesocket(ListenSocket);
             WSACleanup();
@@ -101,13 +111,13 @@ void CoreNetworkThread(){
 
         iResult = listen(ListenSocket, SOMAXCONN);
         if (iResult == SOCKET_ERROR) {
-            std::cout << "listen failed with error: " << WSAGetLastError() << std::endl;
+            std::cout << "(Core) listen failed with error: " << WSAGetLastError() << std::endl;
             closesocket(ListenSocket);
             WSACleanup();
         }
         ClientSocket = accept(ListenSocket, nullptr, nullptr);
         if (ClientSocket == INVALID_SOCKET) {
-            std::cout << "accept failed with error: " << WSAGetLastError() << std::endl;
+            std::cout << "(Core) accept failed with error: " << WSAGetLastError() << std::endl;
             closesocket(ListenSocket);
             WSACleanup();
         }
@@ -124,14 +134,14 @@ void CoreNetworkThread(){
             }
 
             else if (iResult == 0)
-                std::cout << "Connection closing...\n";
+                std::cout << "(Core) Connection closing...\n";
             else  {
-                std::cout << "(Core Network) recv failed with error: " << WSAGetLastError() << std::endl;
+                std::cout << "(Core) recv failed with error: " << WSAGetLastError() << std::endl;
                 closesocket(ClientSocket);
                 WSACleanup();
             }
             if(!Response.empty()){
-                iSendResult = send( ClientSocket, Response.c_str(), int(Response.length()), 0);
+                iSendResult = send( ClientSocket, Response.c_str(), Response.length(), 0);
                 if (iSendResult == SOCKET_ERROR) {
                     std::cout << "send failed with error: " << WSAGetLastError() << std::endl;
                     closesocket(ClientSocket);
@@ -144,9 +154,10 @@ void CoreNetworkThread(){
 
         iResult = shutdown(ClientSocket, SD_SEND);
         if (iResult == SOCKET_ERROR) {
-            std::cout << "shutdown failed with error: " << WSAGetLastError() << std::endl;
+            std::cout << "(Core) shutdown failed with error: " << WSAGetLastError() << std::endl;
             closesocket(ClientSocket);
             WSACleanup();
+            Sleep(500);
         }
         closesocket(ClientSocket);
         WSACleanup();
