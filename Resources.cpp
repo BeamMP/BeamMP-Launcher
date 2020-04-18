@@ -139,8 +139,6 @@ void SyncResources(const std::string&IP,int Port){
             break;
         }
     }while (iResult > 0);
-
-
     if(BytesSent == SOCKET_ERROR)
         printf("Client: send() error %ld.\n", WSAGetLastError());
 

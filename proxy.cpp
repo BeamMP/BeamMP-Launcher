@@ -3,15 +3,15 @@
 ////
 
 #define ENET_IMPLEMENTATION
+#include <condition_variable>
 #include "include/enet.h"
 #include <WinSock2.h>
-#include <iostream>
-#include <chrono>
 #include <WS2tcpip.h>
-#include <cstdio>
+#include <iostream>
 #include <string>
 #include <thread>
 #include <queue>
+#include <mutex>
 
 #define DEFAULT_BUFLEN 64000
 #define DEFAULT_PORT "4445"
@@ -34,7 +34,7 @@ void AutoPing(ENetPeer*peer){
     while(!Terminate && peer != nullptr){
         enet_peer_send(peer, 0, enet_packet_create("p", 2, ENET_PACKET_FLAG_RELIABLE));
         PingStart = std::chrono::high_resolution_clock::now();
-        Sleep(1000);
+        std::this_thread::sleep_for(std::chrono::seconds (1));
     }
 }
 void NameRespond(ENetPeer*peer){
@@ -88,17 +88,12 @@ void RUDPClientThread(const std::string& IP, int Port){
     if (enet_initialize() != 0) {
        std::cout << "An error occurred while initializing RUDP.\n";
     }
-
-    auto start = std::chrono::high_resolution_clock::now();
-    int Interval = 0;
-
     Client client;
     ENetAddress address = {0};
 
     address.host = ENET_HOST_ANY;
     address.port = Port;
-
-
+    std::mutex m;
     std::cout << "(Launcher->Server) Connecting...\n";
 
     enet_address_set_host(&address, IP.c_str());
@@ -114,17 +109,17 @@ void RUDPClientThread(const std::string& IP, int Port){
         enet_host_service(client.host, &event, 0);
         HandleEvent(event,client);
         while (!RUDPToSend.empty()){
+            int Rel = 8;
+            char C = RUDPToSend.front().at(0);
+            if(C=='s'||C=='d'||C=='m'||C=='r')Rel = 1;
             ENetPacket* packet = enet_packet_create(RUDPToSend.front().c_str(),
                                                      RUDPToSend.front().length()+1,
-                                                     ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT);
+                                                    Rel);
             enet_peer_send(client.peer, 0, packet);
             std::cout << "(Launcher->Server) sending " << RUDPToSend.front().length() << " Bytes" << std::endl;
             RUDPToSend.pop();
         }
-        while(RUDPToSend.empty() && Interval < 1000){
-            auto done = std::chrono::high_resolution_clock::now();
-            Interval = std::chrono::duration_cast<std::chrono::milliseconds>(done-start).count();
-        }
+        std::this_thread::sleep_for(std::chrono::microseconds(10));
     } while (!Terminate);
     enet_peer_disconnect(client.peer,0);
     enet_host_service(client.host, &event, 0);
@@ -133,10 +128,11 @@ void RUDPClientThread(const std::string& IP, int Port){
     std::cout << "(Launcher->Server) Terminated!" << std::endl;
 }
 
-void TCPRespond(SOCKET *CS){
-    int iSendResult;
+void TCPRespond(const SOCKET *CS){
     SOCKET ClientSocket = *CS;
-    while(ClientSocket != INVALID_SOCKET){
+    int iSendResult;
+    std::mutex m;
+    while(!TCPTerminate){
         while (!RUDPData.empty()) {
             RUDPData.front() += "\n";
             iSendResult = send(ClientSocket, RUDPData.front().c_str(), RUDPData.front().length(), 0);
@@ -148,13 +144,13 @@ void TCPRespond(SOCKET *CS){
                 std::cout << "(Proxy->Game) Bytes sent: " << iSendResult << std::endl;
             }
         }
+        std::this_thread::sleep_for(std::chrono::microseconds(10));
     }
 }
 
 void TCPServerThread(const std::string& IP, int Port){
     std::cout << "Proxy Started! " << IP << ":" << Port << std::endl;
     do {
-        Terminate = false;
         std::cout << "Proxy on Start" << std::endl;
         WSADATA wsaData;
         int iResult;
@@ -241,7 +237,7 @@ void TCPServerThread(const std::string& IP, int Port){
                 std::string buff = recvbuf;
                 buff.resize(iResult);
                 RUDPToSend.push(buff);
-                ///std::cout << "(Game->Launcher) Data : " << buff.c_str() << std::endl;
+                std::cout << "(Game->Launcher) Data : " << buff.length() << std::endl;
             } else if (iResult == 0) {
                 std::cout << "(Proxy) Connection closing...\n";
                 closesocket(ClientSocket);
@@ -277,6 +273,8 @@ void ProxyStart(){
 }
 
 void ProxyThread(const std::string& IP, int Port){
+    Terminate = false;
+    TCPTerminate = false;
     std::thread t1(TCPServerThread,IP,Port);
     t1.detach();
 }

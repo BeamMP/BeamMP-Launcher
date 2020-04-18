@@ -43,8 +43,10 @@ std::string CheckDir(char*dir, const std::string& ver){
     _dupenv_s(&temp, &len,"APPDATA");
     std::string DN = "BeamMP-Launcher.exe",CDir = dir, AD = temp,FN = CDir.substr(CDir.find_last_of('\\')+1,CDir.size());
     AD += "\\BeamMP-Launcher";
-    if(stat(DN.c_str(),&info)==0)remove(DN.c_str());
-    if(FN != DN)SystemExec("rename \""+ FN +"\" " + DN + ">nul");
+    if(FN != DN){
+        if(stat(DN.c_str(),&info)==0)remove(DN.c_str());
+        SystemExec("rename \""+ FN +"\" " + DN + ">nul");
+    }
     if(CDir.substr(0,CDir.find_last_of('\\')) != AD){
         _mkdir(AD.c_str());
         SystemExec(R"(move "BeamMP-Launcher.exe" ")" + AD + "\">nul");
@@ -76,7 +78,7 @@ std::string CheckVer(const std::string &path){
 void SyncResources(const std::string&IP,int Port);
 int main(int argc, char* argv[])
 {
-    std::string ver = "0.51", Path = CheckDir(argv[0],ver),HTTP_Result;
+    std::string ver = "0.56", Path = CheckDir(argv[0],ver),HTTP_Result;
     CheckForUpdates(ver); //Update Check
 
     //Security
@@ -92,10 +94,14 @@ int main(int argc, char* argv[])
 
     std::cout << "HWID : " << getHardwareID() << std::endl;
 
-    std::string ExeDir = GamePath.substr(0,GamePath.find_last_of('\\')) + "\\Bin64\\BeamNG.drive.x64.exe";
-    Download("https://beamng-mp.com/builds/client?did="+Discord_Main().at(2),Path + R"(\mods\BeamMP.zip)");
     HTTP_Result = HTTP_REQUEST("https://beamng-mp.com/entitlement?did="+Discord_Main().at(2),443);
     std::cout << "you have : " << HTTP_Result << std::endl;
+    if(HTTP_Result.find("[\"MDEV\"]") == std::string::npos)exit(-1); ///Remove later
+
+
+    std::string ExeDir = GamePath.substr(0,GamePath.find_last_of('\\')) + "\\Bin64\\BeamNG.drive.x64.exe";
+    Download("https://beamng-mp.com/builds/client?did="+Discord_Main().at(2),Path + R"(\mods\BeamMP.zip)");
+
 
     /*if(HTTP_Result.find("[\"MDEV\"]") != std::string::npos){
         WinExec(ExeDir + " -cefdev -console -nocrashreport -userpath " + Path);
@@ -104,8 +110,6 @@ int main(int argc, char* argv[])
     }*/
     //std::cout << "Game Launched!\n";
 
-    ///HTTP REQUEST FOR SERVER LIST
-    ///Mods
 
     ProxyStart(); //Proxy main start
 
