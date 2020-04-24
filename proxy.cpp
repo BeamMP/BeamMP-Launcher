@@ -164,8 +164,6 @@ void TCPServerThread(const std::string& IP, int Port){
 
         struct addrinfo *result = nullptr;
         struct addrinfo hints{};
-
-        int iSendResult;
         char recvbuf[10000];
         int recvbuflen = 10000;
 
