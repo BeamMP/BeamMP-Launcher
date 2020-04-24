@@ -11,14 +11,13 @@
 #include <string>
 #include <thread>
 #include <queue>
-#include <mutex>
 
-#define DEFAULT_BUFLEN 64000
 #define DEFAULT_PORT "4445"
 typedef struct {
     ENetHost *host;
     ENetPeer *peer;
 } Client;
+std::vector<std::string> Split(const std::string& String,const std::string& delimiter);
 std::chrono::time_point<std::chrono::steady_clock> PingStart,PingEnd;
 extern std::vector<std::string> GlobalInfo;
 std::queue<std::string> RUDPToSend;
@@ -38,7 +37,7 @@ void AutoPing(ENetPeer*peer){
     }
 }
 void NameRespond(ENetPeer*peer){
-    std::string Packet = "NR" + GlobalInfo.at(0);
+    std::string Packet = "NR" + GlobalInfo.at(0)+":"+GlobalInfo.at(2);
     enet_peer_send(peer, 0, enet_packet_create(Packet.c_str(), Packet.length()+1, ENET_PACKET_FLAG_RELIABLE));
 }
 
@@ -63,7 +62,7 @@ void HandleEvent(ENetEvent event,Client client){
         case ENET_EVENT_TYPE_CONNECT:
             std::cout << "(Launcher->Server) Client Connected!" << std::endl;
             //printf("Client Connected port : %u.\n",event.peer->address.port);
-            event.peer->data = (void *)"Connected Server";
+            event.peer->data = (void*)"Connected Server";
             break;
         case ENET_EVENT_TYPE_RECEIVE:
             RUDPParser((char*)event.packet->data,event.peer);
@@ -93,7 +92,6 @@ void RUDPClientThread(const std::string& IP, int Port){
 
     address.host = ENET_HOST_ANY;
     address.port = Port;
-    std::mutex m;
     std::cout << "(Launcher->Server) Connecting...\n";
 
     enet_address_set_host(&address, IP.c_str());
@@ -109,17 +107,21 @@ void RUDPClientThread(const std::string& IP, int Port){
         enet_host_service(client.host, &event, 0);
         HandleEvent(event,client);
         while (!RUDPToSend.empty()){
-            int Rel = 8;
-            char C = RUDPToSend.front().at(0);
-            if(C=='s'||C=='d'||C=='m'||C=='r')Rel = 1;
-            ENetPacket* packet = enet_packet_create(RUDPToSend.front().c_str(),
-                                                     RUDPToSend.front().length()+1,
-                                                    Rel);
-            enet_peer_send(client.peer, 0, packet);
-            std::cout << "(Launcher->Server) sending " << RUDPToSend.front().length() << " Bytes" << std::endl;
+                int Rel = 8;
+                char C = RUDPToSend.front().at(0);
+                if (C == 's' || C == 'd' || C == 'm' || C == 'r')Rel = 1;
+                ENetPacket *packet = enet_packet_create(RUDPToSend.front().c_str(),
+                                                        RUDPToSend.front().length() + 1,
+                                                        Rel);
+                enet_peer_send(client.peer, 0, packet);
+                if (RUDPToSend.front().length() > 1000) {
+                    std::cout << "(Launcher->Server) Bytes sent: " << RUDPToSend.front().length() << " : "
+                              << RUDPToSend.front().substr(0, 10)
+                              << RUDPToSend.front().substr(RUDPToSend.front().length() - 10) << std::endl;
+                }
             RUDPToSend.pop();
         }
-        std::this_thread::sleep_for(std::chrono::microseconds(10));
+        std::this_thread::sleep_for(std::chrono::nanoseconds(1));
     } while (!Terminate);
     enet_peer_disconnect(client.peer,0);
     enet_host_service(client.host, &event, 0);
@@ -134,17 +136,20 @@ void TCPRespond(const SOCKET *CS){
     std::mutex m;
     while(!TCPTerminate){
         while (!RUDPData.empty()) {
-            RUDPData.front() += "\n";
-            iSendResult = send(ClientSocket, RUDPData.front().c_str(), RUDPData.front().length(), 0);
+            std::string Data =  RUDPData.front() + "\n";
+            iSendResult = send(ClientSocket, Data.c_str(), Data.length(), 0);
             if (iSendResult == SOCKET_ERROR) {
                 std::cout << "(Proxy) send failed with error: " << WSAGetLastError() << std::endl;
                 break;
             } else {
+                if(iSendResult > 1000){
+                    std::cout << "(Launcher->Game) Bytes sent: " << iSendResult <<  " : " <<  RUDPData.front().substr(0,10)
+                    << RUDPData.front().substr(RUDPData.front().length()-10) << std::endl;
+                }
                 RUDPData.pop();
-                std::cout << "(Proxy->Game) Bytes sent: " << iSendResult << std::endl;
             }
         }
-        std::this_thread::sleep_for(std::chrono::microseconds(10));
+        std::this_thread::sleep_for(std::chrono::nanoseconds(1));
     }
 }
 
@@ -161,8 +166,8 @@ void TCPServerThread(const std::string& IP, int Port){
         struct addrinfo hints{};
 
         int iSendResult;
-        char recvbuf[DEFAULT_BUFLEN];
-        int recvbuflen = DEFAULT_BUFLEN;
+        char recvbuf[10000];
+        int recvbuflen = 10000;
 
         // Initialize Winsock
         iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
@@ -231,13 +236,17 @@ void TCPServerThread(const std::string& IP, int Port){
         std::thread TCPSend(TCPRespond,&ClientSocket);
         TCPSend.detach();
         do {
-            std::cout << "(Proxy) Waiting for Game Data..." << std::endl;
+            //std::cout << "(Proxy) Waiting for Game Data..." << std::endl;
             iResult = recv(ClientSocket, recvbuf, recvbuflen, 0);
             if (iResult > 0) {
-                std::string buff = recvbuf;
+                std::string buff;
+                buff.resize(iResult*2);
+                memcpy(&buff[0],recvbuf,iResult);
                 buff.resize(iResult);
-                RUDPToSend.push(buff);
-                std::cout << "(Game->Launcher) Data : " << buff.length() << std::endl;
+
+                if(buff.length() > 3)RUDPToSend.push(buff);
+
+                //std::cout << "(Game->Launcher) Data : " << buff.length() << std::endl;
             } else if (iResult == 0) {
                 std::cout << "(Proxy) Connection closing...\n";
                 closesocket(ClientSocket);
@@ -271,10 +280,12 @@ void ProxyStart(){
     std::cout << "Core Network Started!\n";
     t1.join();
 }
-
+void VehicleNetworkStart();
 void ProxyThread(const std::string& IP, int Port){
     Terminate = false;
     TCPTerminate = false;
     std::thread t1(TCPServerThread,IP,Port);
     t1.detach();
+    std::thread t2(VehicleNetworkStart);
+    t2.detach();
 }

@@ -78,7 +78,7 @@ std::string CheckVer(const std::string &path){
 void SyncResources(const std::string&IP,int Port);
 int main(int argc, char* argv[])
 {
-    std::string ver = "0.56", Path = CheckDir(argv[0],ver),HTTP_Result;
+    std::string ver = "0.735", Path = CheckDir(argv[0],ver),HTTP_Result;
     CheckForUpdates(ver); //Update Check
 
     //Security
@@ -96,7 +96,7 @@ int main(int argc, char* argv[])
 
     HTTP_Result = HTTP_REQUEST("https://beamng-mp.com/entitlement?did="+Discord_Main().at(2),443);
     std::cout << "you have : " << HTTP_Result << std::endl;
-    if(HTTP_Result.find("[\"MDEV\"]") == std::string::npos)exit(-1); ///Remove later
+    if(HTTP_Result.find("[\"MDEV\"]") == std::string::npos && HTTP_Result.find("[\"MOD\"]") == std::string::npos)exit(-1); ///Remove later
 
 
     std::string ExeDir = GamePath.substr(0,GamePath.find_last_of('\\')) + "\\Bin64\\BeamNG.drive.x64.exe";

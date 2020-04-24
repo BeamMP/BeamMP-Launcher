@@ -39,7 +39,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <time.h>
-
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
 #define ENET_VERSION_MAJOR 2
 #define ENET_VERSION_MINOR 2
 #define ENET_VERSION_PATCH 0
@@ -48,7 +48,6 @@
 #define ENET_VERSION_GET_MINOR(version) (((version)>>8)&0xFF)
 #define ENET_VERSION_GET_PATCH(version) ((version)&0xFF)
 #define ENET_VERSION ENET_VERSION_CREATE(ENET_VERSION_MAJOR, ENET_VERSION_MINOR, ENET_VERSION_PATCH)
-
 #define ENET_TIME_OVERFLOW 86400000
 #define ENET_TIME_LESS(a, b) ((a) - (b) >= ENET_TIME_OVERFLOW)
 #define ENET_TIME_GREATER(a, b) ((b) - (a) >= ENET_TIME_OVERFLOW)
@@ -1071,7 +1070,7 @@ __inline int64_t enet_at_atomic_cas(char *ptr, int64_t new_val, int64_t old_val,
             return InterlockedCompareExchange64((volatile LONGLONG *)ptr, (LONGLONG)new_val,
                                                 (LONGLONG)old_val);
 #else
-        return _InterlockedCompareExchange64((volatile LONGLONG *)ptr, (LONGLONG)new_val,
+            return _InterlockedCompareExchange64((volatile LONGLONG *)ptr, (LONGLONG)new_val,
                                                      (LONGLONG)old_val);
 #endif
         default:
@@ -5588,7 +5587,6 @@ int enet_address_set_host_ip(ENetAddress *address, const char *name) {
 int enet_address_set_host(ENetAddress *address, const char *name) {
     struct hostent *hostEntry = NULL;
     hostEntry = gethostbyname(name);
-
     if (hostEntry == NULL || hostEntry->h_addrtype != AF_INET) {
         if (!inet_pton(AF_INET6, name, &address->host)) {
             return -1;

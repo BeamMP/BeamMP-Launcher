@@ -140,16 +140,16 @@ void SyncResources(const std::string&IP,int Port){
         }
     }while (iResult > 0);
     if(BytesSent == SOCKET_ERROR)
-        printf("Client: send() error %ld.\n", WSAGetLastError());
+        printf("Client: send() error %d.\n", WSAGetLastError());
 
 
 
     if( shutdown(SendingSocket, SD_SEND) != 0)
-        printf("Client: Well, there is something wrong with the shutdown() The error code: %ld\n", WSAGetLastError());
+        printf("Client: Well, there is something wrong with the shutdown() The error code: %d\n", WSAGetLastError());
 
 
     if(closesocket(SendingSocket) != 0)
-        printf("Client: Cannot close \"SendingSocket\" socket. Error code: %ld\n", WSAGetLastError());
+        printf("Client: Cannot close \"SendingSocket\" socket. Error code: %d\n", WSAGetLastError());
 
 
     if(WSACleanup() != 0)
