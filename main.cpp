@@ -125,7 +125,7 @@ int main(int argc, char* argv[])
             std::cout << "Running on custom port : " << DEFAULT_PORT << std::endl;
         }
     }
-    std::string ver = "0.89", Path = CheckDir(argv[0],ver),HTTP_Result;
+    std::string ver = "0.90", Path = CheckDir(argv[0],ver),HTTP_Result;
     CheckForUpdates(ver);
 
     std::thread t1(Discord_Main);
@@ -160,7 +160,6 @@ int main(int argc, char* argv[])
     }
 
     Download("https://beamng-mp.com/builds/client?did="+GlobalInfo.at(2),Path + R"(\mods\BeamMP.zip)");
-
     if(!MPDEV){
         std::thread Game(StartGame,ExeDir,Write(Path + "\\"));
         Game.detach();

@@ -158,5 +158,5 @@ void SyncResources(const std::string&IP,int Port){
 
     UlStatus = "Uldone";
     std::cout << "Done!" << std::endl;
-    ProxyThread(IP,Port+1);
+    ProxyThread(IP,Port);
 }
