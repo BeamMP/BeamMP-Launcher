@@ -12,7 +12,8 @@
 #include <filesystem>
 
 namespace fs = std::experimental::filesystem;
-
+void Exit(const std::string& Msg);
+extern bool MPDEV;
 std::string UlStatus = "Ulstart";
 std::string MStatus = " ";
 
@@ -30,7 +31,7 @@ std::vector<std::string> Split(const std::string& String,const std::string& deli
 }
 void ProxyThread(const std::string& IP, int port);
 void SyncResources(const std::string&IP,int Port){
-    std::cout << "Called" << std::endl;
+    if(MPDEV)std::cout << "Called" << std::endl;
     std::string FileList;
     struct stat info{};
     if(stat( "Resources", &info) != 0){
@@ -50,7 +51,7 @@ void SyncResources(const std::string&IP,int Port){
 
     if(SendingSocket == INVALID_SOCKET)
     {
-        printf("Client: socket() failed! Error code: %d\n", WSAGetLastError());
+        if(MPDEV)printf("Client: socket() failed! Error code: %d\n", WSAGetLastError());
         WSACleanup();
         return;
     }
@@ -65,7 +66,7 @@ void SyncResources(const std::string&IP,int Port){
 
     if(RetCode != 0)
     {
-        printf("Client: connect() failed! Error code: %ld\n", WSAGetLastError());
+        if(MPDEV)printf("Client: connect() failed! Error code: %ld\n", WSAGetLastError());
         closesocket(SendingSocket);
         WSACleanup();
         return;
@@ -132,30 +133,30 @@ void SyncResources(const std::string&IP,int Port){
             break;
         }
         else if (iResult == 0)
-            printf("Connection closing...\n");
+            if(MPDEV)printf("Connection closing...\n");
         else  {
-            printf("(Resources) recv failed with error: %d\n", WSAGetLastError());
+                if(MPDEV)printf("(Resources) recv failed with error: %d\n", WSAGetLastError());
             closesocket(SendingSocket);
             break;
         }
     }while (iResult > 0);
     if(BytesSent == SOCKET_ERROR)
-        printf("Client: send() error %d.\n", WSAGetLastError());
+        if(MPDEV)printf("Client: send() error %d.\n", WSAGetLastError());
 
 
 
     if( shutdown(SendingSocket, SD_SEND) != 0)
-        printf("Client: Well, there is something wrong with the shutdown() The error code: %d\n", WSAGetLastError());
+        if(MPDEV)printf("Client: Well, there is something wrong with the shutdown() The error code: %d\n", WSAGetLastError());
 
 
     if(closesocket(SendingSocket) != 0)
-        printf("Client: Cannot close \"SendingSocket\" socket. Error code: %d\n", WSAGetLastError());
+        if(MPDEV)printf("Client: Cannot close \"SendingSocket\" socket. Error code: %d\n", WSAGetLastError());
 
 
     if(WSACleanup() != 0)
-        printf("Client: WSACleanup() failed!...\n");
+        if(MPDEV)printf("Client: WSACleanup() failed!...\n");
 
     UlStatus = "Uldone";
     std::cout << "Done!" << std::endl;
-    ProxyThread(IP,Port);
+    ProxyThread(IP,Port+1);
 }

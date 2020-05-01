@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 #include <array>
+#include <iostream>
+
 #define MAX_KEY_LENGTH 255
 #define MAX_VALUE_NAME 16383
 
@@ -110,9 +112,10 @@ std::string QueryKey(HKEY hKey,int ID)
                 std::string data = reinterpret_cast<const char *const>(buffer);
                 std::string key = achValue;
                 switch (ID){
-                    case 1: if(data.find(HTA("737465616d")) != std::string::npos) {return data;} break;
-                    case 2: if(key == HTA("4e616d65") && data == HTA("4265616d4e472e6472697665")) {return data;} break;
-                    case 3: return data.substr(0,data.length()-2);
+                    case 1: if(data.find(HTA("737465616d")) != std::string::npos)return data; break;
+                    case 2: if(key == HTA("4e616d65") && data == HTA("4265616d4e472e6472697665"))return data; break;
+                    case 3: return data.substr(0,data.length()-2); break;
+                    case 4: if(key == HTA("75736572706174685f6f76657272696465"))return data;
                     default: break;
                 }
             }
@@ -156,10 +159,11 @@ std::vector<std::string> Check(){
             while (fgets(Buffer.data(), Buffer.size(), pipe.get()) != nullptr) {
                 result += Buffer.data();
             }
-            if(result.size() > 100 && result.find_last_of("Byte") != std::string::npos){
-                int pos = result.find_last_of("Byte");
-                while(result.substr(pos,4) != "File"){pos--;}
-                while(!isdigit(result.at(pos))){pos--;}
+            std::string File = HTA("3238343136302e6a736f6e");
+            if(result.size() > 100 && result.find(File) != std::string::npos){
+                int pos = int(result.find(File)) + 9;
+                while(pos != result.length() && !isdigit(result.at(pos))){pos++;}
+                if(pos - result.length() < 5)Exit(MSG2 + " Code 2");
                 if((result.substr(pos,1).at(0) - 48) == 0) Exit(MSG1 + " Code 2");
             }else Exit(MSG2 + " Code 2");
             result.clear();
@@ -167,7 +171,6 @@ std::vector<std::string> Check(){
         Result.clear();
         TraceBack++;
     }else{Exit(MSG2 + ". Code: 4");}
-
     K1.clear();
     RegCloseKey(hKey);
     dwRegOPenKey = OpenKey(HKEY_CURRENT_USER, K2.c_str(), &hKey);

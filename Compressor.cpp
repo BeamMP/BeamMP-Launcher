@@ -11,10 +11,9 @@ void Print(const std::string&MSG){
     //std::cout << MSG << std::endl;
 }
 
-
 std::string Compress(const std::string&Data){
     std::string b;
-    b.resize(Data.size());
+    b.resize(Data.length());
     z_stream defstream;
     defstream.zalloc = Z_NULL;
     defstream.zfree = Z_NULL;
@@ -52,7 +51,7 @@ std::string Decompress(const std::string&Data)
     inflateEnd(&infstream);
     for(int i = int(c.length())-1;i >= 0;i--){
         if(c.at(i) != '\0'){
-            c.resize(i+2);
+            c.resize(i+1);
             break;
         }
     }

@@ -11,12 +11,16 @@
 #include <chrono>
 #include <thread>
 #include <vector>
-
-static const char* APPLICATION_ID = "345229890980937739";
+extern bool MPDEV;
+static const char* APPLICATION_ID = "629743237988352010";
 static int FrustrationLevel = 0;
 static int64_t StartTime;
 static int SendPresence = 1;
 static std::vector<std::string> LocalInfo;
+
+std::vector<std::string> GetDiscordInfo(){
+    return LocalInfo;
+}
 
 static void updateDiscordPresence()
 {
@@ -24,20 +28,20 @@ static void updateDiscordPresence()
         char buffer[256];
         DiscordRichPresence discordPresence;
         memset(&discordPresence, 0, sizeof(discordPresence));
-        discordPresence.state = "West of House";
-        sprintf(buffer, "Frustration level: %d", FrustrationLevel);
-        discordPresence.details = buffer;
+        discordPresence.state = "Playing with friends!";
+        //sprintf(buffer, "Frustration level: %d", FrustrationLevel);
+        //discordPresence.details = buffer;
         discordPresence.startTimestamp = StartTime;
-        discordPresence.endTimestamp = time(0) + 5 * 60;
-        discordPresence.largeImageKey = "canary-large";
-        discordPresence.smallImageKey = "ptb-small";
-        discordPresence.partyId = "party1234";
-        discordPresence.partySize = 1;
-        discordPresence.partyMax = 6;
-        discordPresence.matchSecret = "xyzzy";
-        discordPresence.joinSecret = "join";
-        discordPresence.spectateSecret = "look";
-        discordPresence.instance = 0;
+        //discordPresence.endTimestamp = time(0) + 5 * 60;
+        discordPresence.largeImageKey = "mainlogo";
+        //discordPresence.smallImageKey = "logo";
+        //discordPresence.partyId = "party1234";
+        //discordPresence.partySize = 1;
+        //discordPresence.partyMax = 6;
+        //discordPresence.matchSecret = "xyzzy";
+        //discordPresence.joinSecret = "join";
+        //discordPresence.spectateSecret = "look";
+        //discordPresence.instance = 0;
         Discord_UpdatePresence(&discordPresence);
     }
     else {
@@ -58,22 +62,22 @@ static void handleDiscordReady(const DiscordUser* connectedUser)
 
 static void handleDiscordDisconnected(int errcode, const char* message)
 {
-    printf("\nDiscord: disconnected (%d: %s)\n", errcode, message);
+    if(MPDEV)printf("\nDiscord: disconnected (%d: %s)\n", errcode, message);
 }
 
 static void handleDiscordError(int errcode, const char* message)
 {
-    printf("\nDiscord: error (%d: %s)\n", errcode, message);
+    if(MPDEV)printf("\nDiscord: error (%d: %s)\n", errcode, message);
 }
 
 static void handleDiscordJoin(const char* secret)
 {
-    printf("\nDiscord: join (%s)\n", secret);
+    if(MPDEV)printf("\nDiscord: join (%s)\n", secret);
 }
 
 static void handleDiscordSpectate(const char* secret)
 {
-    printf("\nDiscord: spectate (%s)\n", secret);
+    if(MPDEV)printf("\nDiscord: spectate (%s)\n", secret);
 }
 
 static void handleDiscordJoinRequest(const DiscordUser* request)
@@ -122,29 +126,30 @@ static void discordInit()
     Discord_Initialize(APPLICATION_ID, &handlers, 1, NULL);
 }
 
-static std::vector<std::string> Loop()
+static void Loop()
 {
     char line[512];
     char* space;
 
     StartTime = time(0);
 
-    while (LocalInfo.size() < 3) {
-        //updateDiscordPresence();
+    while (true) {
+        updateDiscordPresence();
 
 #ifdef DISCORD_DISABLE_IO_THREAD
         Discord_UpdateConnection();
 #endif
         Discord_RunCallbacks();
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        if(LocalInfo.empty()){
+            std::this_thread::sleep_for(std::chrono::milliseconds(250));
+        }else std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     }
-    return LocalInfo;
 }
 
-std::vector<std::string> Discord_Main()
+void Discord_Main()
 {
     discordInit();
-    return Loop();
-    //Discord_Shutdown();
+    Loop();
+    Discord_Shutdown();
 }
 
