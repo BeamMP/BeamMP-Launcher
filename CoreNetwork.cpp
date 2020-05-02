@@ -14,6 +14,7 @@
 
 std::string HTTP_REQUEST(const std::string&url,int port);
 void SyncResources(const std::string& IP, int port);
+void Exit(const std::string& Msg);
 extern std::string UlStatus;
 extern std::string MStatus;
 extern int ping;
@@ -104,7 +105,7 @@ std::string Parse(const std::string& Data){
         // Setup the TCP listening socket
         iResult = bind(ListenSocket, result->ai_addr, (int)result->ai_addrlen);
         if (iResult == SOCKET_ERROR) {
-            if(MPDEV)std::cout << "(Core) bind failed with error: " << WSAGetLastError() << std::endl;
+            if(MPDEV)Exit("(Core) bind failed with error: " + std::to_string(WSAGetLastError()));
             freeaddrinfo(result);
             closesocket(ListenSocket);
             WSACleanup();

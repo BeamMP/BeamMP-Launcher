@@ -104,7 +104,8 @@ std::string Write(const std::string&Path){
 }
 void RollBack(const std::string&Val){
     std::this_thread::sleep_for(std::chrono::seconds(5));
-    Write(Val);
+    if(!Val.empty())Write(Val);
+    else Write(" ");
 }
 void StartGame(const std::string&ExeDir,const std::string&Current){
     std::cout << "Game Launched!\n";
@@ -118,6 +119,9 @@ int main(int argc, char* argv[])
 {
     const unsigned long long NPos = std::string::npos;
     struct stat info{};
+
+    std::string ver = "0.90", Path = CheckDir(argv[0],ver),HTTP_Result;
+    CheckForUpdates(ver);
     if(argc > 1){
         std::string Port = argv[1];
         if(Port.find_first_not_of("0123456789") == NPos){
@@ -125,12 +129,8 @@ int main(int argc, char* argv[])
             std::cout << "Running on custom port : " << DEFAULT_PORT << std::endl;
         }
     }
-    std::string ver = "0.90", Path = CheckDir(argv[0],ver),HTTP_Result;
-    CheckForUpdates(ver);
-
     std::thread t1(Discord_Main);
     t1.detach();
-
 
     std::cout << "Connecting to discord client..." << std::endl;
     while(GlobalInfo.empty()){
