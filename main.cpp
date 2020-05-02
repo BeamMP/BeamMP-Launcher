@@ -85,7 +85,7 @@ int main(int argc, char* argv[]){
     const unsigned long long NPos = std::string::npos;
     struct stat info{};
 
-    std::string ver = "0.90", Path = CheckDir(argv[0],ver),HTTP_Result;
+    std::string ver = "0.901", Path = CheckDir(argv[0],ver),HTTP_Result;
     CheckForUpdates(ver);
     if(argc > 1){
         std::string Port = argv[1];
@@ -124,6 +124,7 @@ int main(int argc, char* argv[]){
        std::cout << "Downloaded default config!" << std::endl;
     }
     Download("https://beamng-mp.com/builds/client?did="+GlobalInfo.at(2),Path + R"(\mods\BeamMP.zip)");
+
     if(!MPDEV){
         std::thread Game(StartGame,ExeDir,(Path + "\\"));
         Game.detach();

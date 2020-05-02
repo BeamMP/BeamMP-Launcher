@@ -25,8 +25,7 @@ void DeleteKey(){
     HKEY hKey;
     LPCTSTR sk = TEXT("Software\\BeamNG\\BeamNG.drive");
     RegOpenKeyEx(HKEY_CURRENT_USER, sk, 0, KEY_ALL_ACCESS, &hKey);
-    LPCTSTR value = TEXT("userpath_override");
-    RegDeleteValueA(hKey, value);
+    RegDeleteValueA(hKey, TEXT("userpath_override"));
 }
 void RollBack(const std::string&Val){
     std::this_thread::sleep_for(std::chrono::seconds(7));
