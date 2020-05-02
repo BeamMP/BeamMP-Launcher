@@ -11,11 +11,10 @@
 #include <thread>
 
 #pragma comment(lib, "urlmon.lib")
-
+void StartGame(const std::string&ExeDir,const std::string&Current);
 std::string HTTP_REQUEST(const std::string&url,int port);
 void CheckForUpdates(const std::string& CV);
 std::vector<std::string> GetDiscordInfo();
-std::string QueryKey(HKEY hKey,int ID);
 std::vector<std::string> GlobalInfo;
 std::vector<std::string> Check();
 std::string getHardwareID();
@@ -81,42 +80,8 @@ std::string CheckVer(const std::string &path){
     }
     return temp;
 }
-void SyncResources(const std::string&IP,int Port);
+int main(int argc, char* argv[]){
 
-std::string Write(const std::string&Path){
-    HKEY hKey;
-    LPCTSTR sk = TEXT("Software\\BeamNG\\BeamNG.drive");
-
-    LONG openRes = RegOpenKeyEx(HKEY_CURRENT_USER, sk, 0, KEY_ALL_ACCESS, &hKey);
-
-    if (openRes != ERROR_SUCCESS) {
-        Exit("Error! Please launch the game at least once");
-    }
-    std::string Query = QueryKey(hKey,4);
-    LPCTSTR value = TEXT("userpath_override");
-    LONG setRes = RegSetValueEx(hKey, value, 0, REG_SZ, (LPBYTE)Path.c_str(), Path.size());
-
-    if (setRes != ERROR_SUCCESS) {
-        Exit("Error! Failed to launch the game code 1");
-    }
-    RegCloseKey(hKey);
-    return Query;
-}
-void RollBack(const std::string&Val){
-    std::this_thread::sleep_for(std::chrono::seconds(5));
-    if(!Val.empty())Write(Val);
-    else Write(" ");
-}
-void StartGame(const std::string&ExeDir,const std::string&Current){
-    std::cout << "Game Launched!\n";
-    std::thread RB(RollBack,Current);
-    RB.detach();
-    SystemExec(ExeDir + " -nocrashreport");
-    Exit("Game Closed!");
-}
-
-int main(int argc, char* argv[])
-{
     const unsigned long long NPos = std::string::npos;
     struct stat info{};
 
@@ -158,10 +123,9 @@ int main(int argc, char* argv[])
        Download("https://beamng-mp.com/client-data",Settings);
        std::cout << "Downloaded default config!" << std::endl;
     }
-
     Download("https://beamng-mp.com/builds/client?did="+GlobalInfo.at(2),Path + R"(\mods\BeamMP.zip)");
     if(!MPDEV){
-        std::thread Game(StartGame,ExeDir,Write(Path + "\\"));
+        std::thread Game(StartGame,ExeDir,(Path + "\\"));
         Game.detach();
     }else{
         std::cout << "Name : " << GlobalInfo.at(0) << std::endl;
