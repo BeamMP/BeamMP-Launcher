@@ -1522,7 +1522,7 @@ static int enet_protocol_dispatch_incoming_commands(ENetHost *host, ENetEvent *e
                 }
 
                 event->packet = enet_peer_receive(peer, &event->channelID);
-                if (event->packet == NULL) {
+                if (event->packet == nullptr) {
                     continue;
                 }
 
@@ -3583,20 +3583,16 @@ ENetPacket * enet_peer_receive(ENetPeer *peer, enet_uint8 *channelID) {
     ENetIncomingCommand *incomingCommand;
     ENetPacket *packet;
 
-    if (enet_list_empty(&peer->dispatchedCommands)) {
-        return NULL;
-    }
+    incomingCommand = (ENetIncomingCommand *)enet_list_remove(enet_list_begin(&peer->dispatchedCommands));
 
-    incomingCommand = (ENetIncomingCommand *) enet_list_remove(enet_list_begin(&peer->dispatchedCommands));
-
-    if (channelID != NULL) {
+    if (channelID != nullptr) {
         *channelID = incomingCommand->command.header.channelID;
     }
 
     packet = incomingCommand->packet;
     --packet->referenceCount;
 
-    if (incomingCommand->fragments != NULL) {
+    if (incomingCommand->fragments != nullptr) {
         enet_free(incomingCommand->fragments);
     }
 
@@ -3612,7 +3608,7 @@ static void enet_peer_reset_outgoing_commands(ENetList *queue) {
     while (!enet_list_empty(queue)) {
         outgoingCommand = (ENetOutgoingCommand *) enet_list_remove(enet_list_begin(queue));
 
-        if (outgoingCommand->packet != NULL) {
+        if (outgoingCommand->packet != nullptr) {
             --outgoingCommand->packet->referenceCount;
 
             if (outgoingCommand->packet->referenceCount == 0) {

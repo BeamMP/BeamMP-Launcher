@@ -103,7 +103,7 @@ int main(int argc, char* argv[]){
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 
-
+    std::cout << "Client Connected!" << std::endl;
     HTTP_Result = HTTP_REQUEST("https://beamng-mp.com/entitlement?did="+GlobalInfo.at(2),443);
     if(HTTP_Result.find("\"MDEV\"") == NPos){
         if (HTTP_Result.find("\"MOD\"") == NPos && HTTP_Result.find("\"EA\"") == NPos){

@@ -4,7 +4,7 @@
 
 #define ENET_IMPLEMENTATION
 #include <condition_variable>
-#include "include/enet.h"
+#include "include/enet.hpp"
 #include <WinSock2.h>
 #include <WS2tcpip.h>
 #include <iostream>
@@ -23,7 +23,7 @@ std::chrono::time_point<std::chrono::steady_clock> PingStart,PingEnd;
 extern std::vector<std::string> GlobalInfo;
 std::condition_variable RUDPLOCK,TCPLOCK;
 std::queue<std::string> RUDPToSend;
-std::queue<std::string> RUDPData;
+std::queue<std::string> RUDPData; /////QUEUE WAS 196 SLOW?! NEED TO FIX
 bool TCPTerminate = false;
 bool Terminate = false;
 bool CServer = true;
@@ -100,7 +100,6 @@ void RUDPClientThread(const std::string& IP, int Port){
     if (enet_initialize() != 0) {
        std::cout << "An error occurred while initializing!\n";
     }
-    std::mutex Lock;
     Client client;
     ENetAddress address = {0};
 
@@ -137,6 +136,7 @@ void RUDPClientThread(const std::string& IP, int Port){
             }
             RUDPToSend.pop();
         }
+        std::mutex Lock;
         std::unique_lock<std::mutex> lk(Lock);
         std::chrono::high_resolution_clock::time_point tp = std::chrono::high_resolution_clock::now() + std::chrono::nanoseconds (1);
         RUDPLOCK.wait_until(lk, tp, [](){return !RUDPToSend.empty();});
@@ -152,7 +152,6 @@ void RUDPClientThread(const std::string& IP, int Port){
 void TCPRespond(const SOCKET *CS){
     SOCKET ClientSocket = *CS;
     int iSendResult;
-    std::mutex Lock;
     while(!TCPTerminate){
         while (!RUDPData.empty()) {
             std::string Data =  RUDPData.front() + "\n";
@@ -170,6 +169,7 @@ void TCPRespond(const SOCKET *CS){
                 RUDPData.pop();
             }
         }
+        std::mutex Lock;
         std::unique_lock<std::mutex> lk(Lock);
         std::chrono::high_resolution_clock::time_point tp = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(1);
         TCPLOCK.wait_until(lk, tp, [](){return !RUDPData.empty();});

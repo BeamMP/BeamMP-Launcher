@@ -38,11 +38,11 @@ std::string Decompress(const std::string&Data)
 {
     std::string c;
     c.resize(Data.size()*5);
-    z_stream infstream,defstream;
+    z_stream infstream;
     infstream.zalloc = Z_NULL;
     infstream.zfree = Z_NULL;
     infstream.opaque = Z_NULL;
-    infstream.avail_in = (uInt)((char*)defstream.next_out - Data.c_str());
+    infstream.avail_in = (uInt)(Data.c_str());
     infstream.next_in = (Bytef *)&Data[0];
     infstream.avail_out = (uInt)c.size();
     infstream.next_out = (Bytef *)&c[0];
