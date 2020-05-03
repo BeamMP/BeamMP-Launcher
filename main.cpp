@@ -85,7 +85,7 @@ int main(int argc, char* argv[]){
     const unsigned long long NPos = std::string::npos;
     struct stat info{};
 
-    std::string ver = "0.901", Path = CheckDir(argv[0],ver),HTTP_Result;
+    std::string ver = "0.91", Path = CheckDir(argv[0],ver),HTTP_Result;
     CheckForUpdates(ver);
     if(argc > 1){
         std::string Port = argv[1];

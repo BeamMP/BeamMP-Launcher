@@ -3172,13 +3172,14 @@ int enet_host_check_events(ENetHost *host, ENetEvent *event) {
      *  @remarks enet_host_service should be called fairly regularly for adequate performance
      *  @ingroup host
      */
+
 int enet_host_service(ENetHost *host, ENetEvent *event, enet_uint32 timeout) {
     enet_uint32 waitCondition;
 
-    if (event != NULL) {
+    if (event != nullptr) {
         event->type   = ENET_EVENT_TYPE_NONE;
-        event->peer   = NULL;
-        event->packet = NULL;
+        event->peer   = nullptr;
+        event->packet = nullptr;
 
         switch (enet_protocol_dispatch_incoming_commands(host, event)) {
             case 1:
@@ -3197,6 +3198,7 @@ int enet_host_service(ENetHost *host, ENetEvent *event, enet_uint32 timeout) {
     }
 
     host->serviceTime = enet_time_get();
+    auto Start = std::chrono::high_resolution_clock::now();
     timeout += host->serviceTime;
 
     do {
@@ -3249,7 +3251,7 @@ int enet_host_service(ENetHost *host, ENetEvent *event, enet_uint32 timeout) {
                 break;
         }
 
-        if (event != NULL) {
+        if (event != nullptr) {
             switch (enet_protocol_dispatch_incoming_commands(host, event)) {
                 case 1:
                     return 1;
@@ -3266,19 +3268,13 @@ int enet_host_service(ENetHost *host, ENetEvent *event, enet_uint32 timeout) {
             }
         }
 
-        if (ENET_TIME_GREATER_EQUAL(host->serviceTime, timeout)) {
-            return 0;
-        }
-
         do {
+            auto end = std::chrono::high_resolution_clock::now();
+            int D = std::chrono::duration_cast<std::chrono::microseconds>(Start - end).count();
+            if (D > timeout)return 0;
             host->serviceTime = enet_time_get();
-
-            if (ENET_TIME_GREATER_EQUAL(host->serviceTime, timeout)) {
-                return 0;
-            }
-
             waitCondition = ENET_SOCKET_WAIT_RECEIVE | ENET_SOCKET_WAIT_INTERRUPT;
-            if (enet_socket_wait(host->socket, &waitCondition, ENET_TIME_DIFFERENCE(timeout, host->serviceTime)) != 0) {
+            if (enet_socket_wait(host->socket, &waitCondition, timeout-D > 0)) {
                 return -1;
             }
         } while (waitCondition & ENET_SOCKET_WAIT_INTERRUPT);
