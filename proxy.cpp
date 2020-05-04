@@ -38,8 +38,8 @@ void TCPSEND(const std::string&Data){
             if (MPDEV)std::cout << "(Proxy) send failed with error: " << WSAGetLastError() << std::endl;
             TCPTerminate = true;
         } else {
-            if (MPDEV && Data.length() > 1000) {
-                std::cout << "(Launcher->Game) Bytes sent: " << iSendResult << " : " << Data << std::endl;
+            if (MPDEV && Data.length() < 100) {
+                std::cout << "(Launcher->Game) Bytes sent: " << iSendResult << std::endl;
             }
             //std::cout << "(Launcher->Game) Bytes sent: " << iSendResult <<  " : " << Data << std::endl;
         }

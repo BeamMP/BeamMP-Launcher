@@ -11,6 +11,7 @@
 #include <thread>
 
 #pragma comment(lib, "urlmon.lib")
+void Download(const std::string& URL,const std::string& OutFileName);
 void StartGame(const std::string&ExeDir,const std::string&Current);
 std::string HTTP_REQUEST(const std::string&url,int port);
 void CheckForUpdates(const std::string& CV);
@@ -23,9 +24,6 @@ void Discord_Main();
 bool MPDEV = false;
 void ProxyStart();
 
-void Download(const std::string& URL,const std::string& path){
-    URLDownloadToFileA(nullptr, URL.c_str(), path.c_str(), 0, nullptr);
-}
 void SystemExec(const std::string& cmd){
     system(cmd.c_str());
 }
@@ -85,7 +83,7 @@ int main(int argc, char* argv[]){
     const unsigned long long NPos = std::string::npos;
     struct stat info{};
 
-    std::string ver = "0.91", Path = CheckDir(argv[0],ver),HTTP_Result;
+    std::string ver = "0.92", Path = CheckDir(argv[0],ver),HTTP_Result;
     CheckForUpdates(ver);
     if(argc > 1){
         std::string Port = argv[1];
@@ -120,10 +118,13 @@ int main(int argc, char* argv[]){
     std::string ExeDir = "\""+GamePath.substr(0,GamePath.find_last_of('\\')) + R"(\Bin64\BeamNG.drive.x64.exe")";
     std::string Settings = Path + "\\settings\\uiapps-layouts.json";
     if(stat(Settings.c_str(),&info)!=0){
+       std::cout << "Downloading default config..." << std::endl;
        Download("https://beamng-mp.com/client-data",Settings);
-       std::cout << "Downloaded default config!" << std::endl;
+       std::cout << "Download Complete!" << std::endl;
     }
+    std::cout << "Downloading mod..." << std::endl;
     Download("https://beamng-mp.com/builds/client?did="+GlobalInfo.at(2),Path + R"(\mods\BeamMP.zip)");
+    std::cout << "Download Complete!" << std::endl;
 
     if(!MPDEV){
         std::thread Game(StartGame,ExeDir,(Path + "\\"));
