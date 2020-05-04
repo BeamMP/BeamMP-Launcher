@@ -12,7 +12,7 @@
 #include <thread>
 #include <queue>
 
-int DEFAULT_PORT = 4445;
+extern int DEFAULT_PORT;
 typedef struct {
     ENetHost *host;
     ENetPeer *peer;
@@ -26,8 +26,8 @@ bool Terminate = false;
 bool CServer = true;
 ENetPeer*ServerPeer;
 SOCKET*ClientSocket;
-int ping = 0;
 extern bool MPDEV;
+int ping = 0;
 
 [[noreturn]] void CoreNetworkThread();
 
@@ -38,11 +38,10 @@ void TCPSEND(const std::string&Data){
             if (MPDEV)std::cout << "(Proxy) send failed with error: " << WSAGetLastError() << std::endl;
             TCPTerminate = true;
         } else {
-            if (MPDEV && iSendResult > 1000) {
-                std::cout << "(Launcher->Game) Bytes sent: " << iSendResult << " : " << Data.substr(0, 10)
-                          << Data.substr(Data.length() - 10) << std::endl;
+            if (MPDEV && Data.length() > 1000) {
+                std::cout << "(Launcher->Game) Bytes sent: " << iSendResult << " : " << Data << std::endl;
             }
-            //std::cout << "(Launcher->Game) Bytes sent: " << iSendResult <<  " : " <<  RUDPData.front()<< std::endl;
+            //std::cout << "(Launcher->Game) Bytes sent: " << iSendResult <<  " : " << Data << std::endl;
         }
     }
 }
@@ -147,7 +146,7 @@ void RUDPClientThread(const std::string& IP, int Port){
         HandleEvent(event,client);
     }
     enet_peer_disconnect(client.peer,0);
-    enet_host_service(client.host, &event, 0);
+    enet_host_service(client.host, &event, 1);
     HandleEvent(event,client);
     CServer = true;
     std::cout << "Connection Terminated!" << std::endl;
@@ -182,7 +181,7 @@ void TCPServerThread(const std::string& IP, int Port){
         hints.ai_protocol = IPPROTO_TCP;
         hints.ai_flags = AI_PASSIVE;
         // Resolve the server address and port
-        iResult = getaddrinfo(nullptr, std::to_string(DEFAULT_PORT).c_str(), &hints, &result);
+        iResult = getaddrinfo(nullptr, std::to_string(DEFAULT_PORT+1).c_str(), &hints, &result);
         if (iResult != 0) {
             if(MPDEV)std::cout << "(Proxy) getaddrinfo failed with error: " << iResult << std::endl;
             WSACleanup();

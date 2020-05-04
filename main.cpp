@@ -18,7 +18,7 @@ std::vector<std::string> GetDiscordInfo();
 std::vector<std::string> GlobalInfo;
 std::vector<std::string> Check();
 std::string getHardwareID();
-extern int DEFAULT_PORT;
+int DEFAULT_PORT = 4444;
 void Discord_Main();
 bool MPDEV = false;
 void ProxyStart();

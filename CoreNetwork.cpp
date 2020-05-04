@@ -7,7 +7,8 @@
 #include <string>
 #include <thread>
 #define DEFAULT_BUFLEN 64000
-#define DEFAULT_PORT "4444"
+
+extern int DEFAULT_PORT;
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmissing-noreturn"
@@ -88,7 +89,7 @@ std::string Parse(const std::string& Data){
         hints.ai_flags = AI_PASSIVE;
 
         // Resolve the server address and port
-        iResult = getaddrinfo(NULL, DEFAULT_PORT, &hints, &result);
+        iResult = getaddrinfo(nullptr, std::to_string(DEFAULT_PORT).c_str(), &hints, &result);
         if ( iResult != 0 ) {
             if(MPDEV)std::cout << "(Core) getaddrinfo failed with error: " << iResult << std::endl;
             WSACleanup();
