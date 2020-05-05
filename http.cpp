@@ -24,6 +24,7 @@ std::string HTTP_REQUEST(const std::string& IP,int port){
         res = curl_easy_perform(curl);
         curl_easy_cleanup(curl);
     }
+    curl_global_cleanup();
     return readBuffer;
 }
 

@@ -66,8 +66,8 @@ std::string Parse(const std::string& Data){
         if(MPDEV)std::cout << "Core Network on start!" << std::endl;
         WSADATA wsaData;
         int iResult;
-        SOCKET ListenSocket = INVALID_SOCKET;
-        SOCKET ClientSocket = INVALID_SOCKET;
+        auto ListenSocket = INVALID_SOCKET;
+        auto ClientSocket = INVALID_SOCKET;
 
         struct addrinfo *result = nullptr;
         struct addrinfo hints{};
@@ -136,12 +136,10 @@ std::string Parse(const std::string& Data){
                 std::string data = recvbuf;
                 data.resize(iResult);
                 Response = Parse(data) + "\n";
-            }
-
-            else if (iResult == 0)
-                if(MPDEV)std::cout << "(Core) Connection closing...\n";
-            else  {
-                    if(MPDEV)std::cout << "(Core) recv failed with error: " << WSAGetLastError() << std::endl;
+            } else if (iResult == 0){
+                if (MPDEV)std::cout << "(Core) Connection closing...\n";
+            }else{
+                if(MPDEV)std::cout << "(Core) recv failed with error: " << WSAGetLastError() << std::endl;
                 closesocket(ClientSocket);
                 WSACleanup();
             }

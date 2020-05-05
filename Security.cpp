@@ -1,12 +1,13 @@
 ///
 /// Created by Anonymous275 on 3/16/2020
 ///
-
+#include <filesystem>
 #include <Windows.h>
+#include <iostream>
 #include <string>
 #include <vector>
 #include <array>
-#include <iostream>
+#include <thread>
 
 #define MAX_KEY_LENGTH 255
 #define MAX_VALUE_NAME 16383
@@ -14,7 +15,7 @@
 void Exit(const std::string& Msg);
 int TraceBack = 0;
 
-std::vector<std::string> Data;
+std::vector<std::string> SData;
 std::string Result;
 
 std::string HTA(const std::string& hex)
@@ -124,8 +125,30 @@ std::string QueryKey(HKEY hKey,int ID)
     delete [] buffer;
     return "";
 }
+namespace fs = std::experimental::filesystem;
+void FileList(std::vector<std::string>&a,const std::string& Path){
+    for (const auto &entry : fs::directory_iterator(Path)) {
+        int pos = entry.path().filename().string().find('.');
+        if (pos != std::string::npos) {
+            a.emplace_back(entry.path().string());
+        }else FileList(a,entry.path().string());
+    }
+}
+bool Continue = false;
+void Find(const std::string& FName,const std::string& Path){
+    auto *FS = new std::vector<std::string>;
+    FileList(*FS,Path);
+    for(const std::string&a : *FS){
+        if(a.find(FName)!=std::string::npos)Continue = true;
+    }
+    delete FS;
+}
+void ExitError(){
+    std::string MSG2 = HTA("4572726f722120506c6561736520436f6e7461637420537570706f7274");
+    Exit(MSG2 + " Code 2");
+}
 
-std::vector<std::string> Check(){
+void Check(){
     /*HKEY_CLASSES_ROOT\\beamng\\DefaultIcon
     HKEY_USERS\.DEFAULT\Software\Classes\steam\Shell\Open\Command
     HKEY_CURRENT_USER\\Software\Valve\Steam\Apps\284160*/
@@ -144,29 +167,14 @@ std::vector<std::string> Check(){
     if(dwRegOPenKey == ERROR_SUCCESS) {
         Result = QueryKey(hKey, 1);
         if(Result.empty()){Exit(MSG1 + " Code 1");}
-        Data.push_back(Result);
+        SData.push_back(Result);
         Result = Result.substr(1,Result.find_last_of('\\')) + HTA("7573657264617461");
         struct stat buffer{};
         if(stat (Result.c_str(), &buffer) == 0){
-            std::string cmd = HTA("6469722022") + Result + HTA("5c3238343136302e6a736f6e22202f73202f70");
-            std::array<char, 128> Buffer{};
-            std::string result;
-            std::unique_ptr<FILE, decltype(&_pclose)> pipe(_popen(cmd.c_str(), "r"), _pclose);
-            cmd.clear();
-            if (!pipe) {
-                Exit(MSG2+ ". Code: 1");
-            }
-            while (fgets(Buffer.data(), Buffer.size(), pipe.get()) != nullptr) {
-                result += Buffer.data();
-            }
-            std::string File = HTA("3238343136302e6a736f6e");
-            if(result.size() > 100 && result.find(File) != std::string::npos){
-                int pos = int(result.find(File)) + 9;
-                while(pos != result.length() && !isdigit(result.at(pos))){pos++;}
-                if(pos - result.length() < 5)Exit(MSG2 + " Code 2");
-                if((result.substr(pos,1).at(0) - 48) == 0) Exit(MSG1 + " Code 2");
-            }else Exit(MSG2 + " Code 2");
-            result.clear();
+            auto *F = new std::thread(Find,HTA("3238343136302e6a736f6e"),Result);
+            F->join();
+            delete F;
+            if(!Continue)Exit(MSG2 + " Code 2");
         }else Exit(MSG2 + ". Code: 3");
         Result.clear();
         TraceBack++;
@@ -177,7 +185,7 @@ std::vector<std::string> Check(){
     if(dwRegOPenKey == ERROR_SUCCESS) {
         Result = QueryKey(hKey, 2);
         if(Result.empty()){Exit(MSG1 + " Code 3");}
-        Data.push_back(Result);
+        SData.push_back(Result);
         TraceBack++;
     }else{Exit(MSG3);}
     K2.clear();
@@ -188,7 +196,7 @@ std::vector<std::string> Check(){
         if(Result.empty()){
             Exit(MSG2 + ". Code: 5");
         }
-        Data.push_back(Result);
+        SData.push_back(Result);
         TraceBack++;
     }
     //Memory Cleaning
@@ -198,7 +206,6 @@ std::vector<std::string> Check(){
     MSG2.clear();
     MSG3.clear();
     RegCloseKey(hKey);
-    return Data;
 }
 
 std::string HWID(){

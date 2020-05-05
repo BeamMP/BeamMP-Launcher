@@ -56,7 +56,7 @@ void RUDPSEND(const std::string&Data,bool Rel){
             << " : "
             << Data.substr(0, 10)
             << Data.substr(Data.length() - 10) << std::endl;
-        }else if(Data.length() < 100){
+        }else if(MPDEV && Data.length() < 100){
             std::cout << "(Game->Launcher) : " << Data << std::endl;
         }
     }
@@ -270,6 +270,8 @@ void TCPServerThread(const std::string& IP, int Port){
         iResult = shutdown(Socket, SD_SEND);
         if (iResult == SOCKET_ERROR) {
             if(MPDEV)std::cout << "(Proxy) shutdown failed with error: " << WSAGetLastError() << std::endl;
+            TCPTerminate = true;
+            Terminate = true;
             closesocket(Socket);
             WSACleanup();
             continue;
@@ -295,8 +297,8 @@ void Reset() {
 
 void ProxyThread(const std::string& IP, int Port){
     Reset();
-    std::thread t1(TCPServerThread,IP,Port);
-    t1.detach();
+    auto*t1 = new std::thread(TCPServerThread,IP,Port);
+    t1->detach();
     /*std::thread t2(VehicleNetworkStart);
     t2.detach();*/
 }

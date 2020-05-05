@@ -16,17 +16,21 @@ void StartGame(const std::string&ExeDir,const std::string&Current);
 std::string HTTP_REQUEST(const std::string&url,int port);
 void CheckForUpdates(const std::string& CV);
 std::vector<std::string> GetDiscordInfo();
+extern std::vector<std::string> SData;
 std::vector<std::string> GlobalInfo;
-std::vector<std::string> Check();
 std::string getHardwareID();
 int DEFAULT_PORT = 4444;
 void Discord_Main();
 bool MPDEV = false;
 void ProxyStart();
+void ExitError();
+void Check();
+
 
 void SystemExec(const std::string& cmd){
     system(cmd.c_str());
 }
+
 void WinExec(const std::string& cmd){
     WinExec(cmd.c_str(), SW_HIDE);
 }
@@ -83,8 +87,9 @@ int main(int argc, char* argv[]){
     const unsigned long long NPos = std::string::npos;
     struct stat info{};
 
-    std::string ver = "0.92", Path = CheckDir(argv[0],ver),HTTP_Result;
-    CheckForUpdates(ver);
+    std::string ver = "0.921", link, Path = CheckDir(argv[0],ver),HTTP_Result;
+    std::thread CFU(CheckForUpdates,ver);
+    CFU.join();
     if(argc > 1){
         std::string Port = argv[1];
         if(Port.find_first_not_of("0123456789") == NPos){
@@ -102,7 +107,8 @@ int main(int argc, char* argv[]){
     }
 
     std::cout << "Client Connected!" << std::endl;
-    HTTP_Result = HTTP_REQUEST("https://beamng-mp.com/entitlement?did="+GlobalInfo.at(2),443);
+    link = "https://beamng-mp.com/entitlement?did="+GlobalInfo.at(2);
+    HTTP_Result = HTTP_REQUEST(link,443);
     if(HTTP_Result.find("\"MDEV\"") == NPos){
         if (HTTP_Result.find("\"MOD\"") == NPos && HTTP_Result.find("\"EA\"") == NPos){
             if (HTTP_Result.find("\"SUPPORT\"") == NPos && HTTP_Result.find("\"YT\"") == NPos){
@@ -111,21 +117,27 @@ int main(int argc, char* argv[]){
         }
     }else MPDEV = true;
     //Security
-    std::vector<std::string> Data = Check();
-    std::string GamePath = Data.at(2);
+    auto*Sec = new std::thread(Check);
+    Sec->join();
+    delete Sec;
+    if(SData.size() != 3)ExitError();
+
+    std::string GamePath = SData.at(2);
     if(MPDEV)std::cout << "You own BeamNG on this machine!" << std::endl;
     std::cout << "Game Version : " << CheckVer(GamePath) << std::endl;
     std::string ExeDir = "\""+GamePath.substr(0,GamePath.find_last_of('\\')) + R"(\Bin64\BeamNG.drive.x64.exe")";
     std::string Settings = Path + "\\settings\\uiapps-layouts.json";
     if(stat(Settings.c_str(),&info)!=0){
+       link = "https://beamng-mp.com/client-data";
        std::cout << "Downloading default config..." << std::endl;
-       Download("https://beamng-mp.com/client-data",Settings);
+       Download(link,Settings);
        std::cout << "Download Complete!" << std::endl;
     }
     std::cout << "Downloading mod..." << std::endl;
-    Download("https://beamng-mp.com/builds/client?did="+GlobalInfo.at(2),Path + R"(\mods\BeamMP.zip)");
+    link = "https://beamng-mp.com/builds/client?did="+GlobalInfo.at(2);
+    Download(link,Path + R"(\mods\BeamMP.zip)");
     std::cout << "Download Complete!" << std::endl;
-
+    link.clear();
     if(!MPDEV){
         std::thread Game(StartGame,ExeDir,(Path + "\\"));
         Game.detach();

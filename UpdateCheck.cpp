@@ -6,21 +6,23 @@
 
 void Download(const std::string& URL,const std::string& path);
 std::string HTTP_REQUEST(const std::string&url,int port);
+std::string HTA(const std::string& hex);
 void SystemExec(const std::string& cmd);
 void WinExec(const std::string& cmd);
 
 void CheckForUpdates(const std::string& CV){
     system ("cls");
-    std::string HTTP = HTTP_REQUEST("https://beamng-mp.com/builds/launcher?version=true",443);
+    std::string link = "https://beamng-mp.com/builds/launcher?version=true";
+    std::string HTTP = HTTP_REQUEST(link,443);
     HTTP = HTTP.substr(HTTP.find_last_of("ver=")+1);
-
+    link = "https://beamng-mp.com/builds/launcher?download=true";
     struct stat buffer{};
     if(stat ("BeamMP-Launcher.back", &buffer) == 0)remove("BeamMP-Launcher.back");
     if(HTTP > CV){
         std::cout << "Update found!" << std::endl;
         std::cout << "Updating..." << std::endl;
         SystemExec("rename BeamMP-Launcher.exe BeamMP-Launcher.back>nul");
-        Download("https://beamng-mp.com/builds/launcher?download=true", "BeamMP-Launcher.exe");
+        Download(link, "BeamMP-Launcher.exe");
         WinExec("BeamMP-Launcher.exe");
         exit(1);
     }else{
