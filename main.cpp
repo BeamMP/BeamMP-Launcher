@@ -138,6 +138,8 @@ int main(int argc, char* argv[]){
     Download(link,Path + R"(\mods\BeamMP.zip)");
     std::cout << "Download Complete!" << std::endl;
     link.clear();
+    std::thread Game(StartGame,ExeDir,(Path + "\\"));
+    Game.detach();
     if(!MPDEV){
         std::thread Game(StartGame,ExeDir,(Path + "\\"));
         Game.detach();

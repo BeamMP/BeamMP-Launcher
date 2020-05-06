@@ -56,7 +56,7 @@ void RUDPSEND(const std::string&Data,bool Rel){
             << " : "
             << Data.substr(0, 10)
             << Data.substr(Data.length() - 10) << std::endl;
-        }else if(MPDEV && Data.length() < 100){
+        }else if(MPDEV){
             std::cout << "(Game->Launcher) : " << Data << std::endl;
         }
     }
@@ -139,11 +139,11 @@ void RUDPClientThread(const std::string& IP, int Port){
         TCPTerminate = true;
         Terminate = true;
     }
-    ServerPeer = client.peer;
     std::thread Ping(AutoPing,client.peer);
     Ping.detach();
     ENetEvent event;
     while (!Terminate) {
+        ServerPeer = client.peer;
         enet_host_service(client.host, &event, 1);
         HandleEvent(event,client);
     }
