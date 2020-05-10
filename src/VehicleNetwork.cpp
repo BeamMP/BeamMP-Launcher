@@ -13,7 +13,7 @@ extern bool TCPTerminate;
 extern bool MPDEV;
 void Print(const std::string&MSG);
 std::queue<std::string> VNTCPQueue;
-void RUDPSEND(const std::string&Data,bool Rel);
+//void RUDPSEND(const std::string&Data,bool Rel);
 #define DEFAULT_PORT "4446"
 
 void Responder(const SOCKET *CS){
@@ -135,7 +135,7 @@ void VehicleNetworkStart(){
                         std::cout << "Fail!" << std::endl;
                     }
                 }
-                RUDPSEND(buff,false);
+                //RUDPSEND(buff,false);
                 //std::cout << "(Game->Launcher VN) Data : " << buff.length() << std::endl;
             } else if (iResult == 0) {
                 if(MPDEV)std::cout << "(VN) Connection closing...\n";

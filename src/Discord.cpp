@@ -13,7 +13,6 @@
 #include <vector>
 extern bool MPDEV;
 static const char* APPLICATION_ID = "629743237988352010";
-static int FrustrationLevel = 0;
 static int64_t StartTime;
 static int SendPresence = 1;
 static std::vector<std::string> LocalInfo;
@@ -126,7 +125,7 @@ static void discordInit()
     Discord_Initialize(APPLICATION_ID, &handlers, 1, NULL);
 }
 
-static void Loop()
+[[noreturn]] static void Loop()
 {
     char line[512];
     char* space;

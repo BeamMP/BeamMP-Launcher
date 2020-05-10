@@ -10,9 +10,6 @@
 
 extern int DEFAULT_PORT;
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wmissing-noreturn"
-
 std::string HTTP_REQUEST(const std::string&url,int port);
 void SyncResources(const std::string& IP, int port);
 void Exit(const std::string& Msg);
@@ -22,9 +19,10 @@ extern int ping;
 extern bool Terminate;
 extern bool TCPTerminate;
 extern bool MPDEV;
+
 void StartSync(const std::string &Data){
-    std::thread t1(SyncResources,Data.substr(1,Data.find(':')-1),std::stoi(Data.substr(Data.find(':')+1)));
-    //std::thread t1(SyncResources,"127.0.0.1",30814);
+    //std::thread t1(SyncResources,Data.substr(1,Data.find(':')-1),std::stoi(Data.substr(Data.find(':')+1)));
+    std::thread t1(SyncResources,"127.0.0.1",30814);
     t1.detach();
 }
 

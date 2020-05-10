@@ -1,14 +1,14 @@
 cmake_minimum_required(VERSION 3.15)
 
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2")
-
-include_directories(${PROJECT_SOURCE_DIR}/include)
-include_directories(${PROJECT_SOURCE_DIR}/curl)
-
 project(BeamMP-Launcher)
-
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(BeamMP-Launcher main.cpp VehicleNetwork.cpp proxy.cpp Security.cpp http.cpp Discord.cpp UpdateCheck.cpp CoreNetwork.cpp Resources.cpp Compressor.cpp VehicleNetwork.cpp GameStart.cpp)
+file(GLOB source_files
+        "src/*.cpp" "src/include/*.h"
+        "src/include/*.hpp" "src/curl/*.h"
+        "src/Network 2.0/*.cpp" "src/Network 2.0/*.h")
+
+add_executable(BeamMP-Launcher ${source_files})
 
 target_link_libraries(BeamMP-Launcher discord-rpc libcurl_a zlibstatic)

@@ -1,10 +1,9 @@
 ///
 /// Created by Anonymous275 on 5/2/2020
 ///
-#include <windows.h>
+#include <Windows.h>
 #include <iostream>
 #include <thread>
-#include <string>
 
 std::string QueryKey(HKEY hKey,int ID);
 void SystemExec(const std::string&cmd);
@@ -37,5 +36,7 @@ void StartGame(const std::string&ExeDir,const std::string&Current){
     std::thread RB(RollBack,Write(Current));
     RB.detach();
     SystemExec(ExeDir + " -nocrashreport");
-    Exit("Game Closed!");
+    std::cout << "\nGame Closed! launcher closing in 5 secs\n";
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+    exit(2);
 }

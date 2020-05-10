@@ -87,7 +87,7 @@ int main(int argc, char* argv[]){
     const unsigned long long NPos = std::string::npos;
     struct stat info{};
 
-    std::string ver = "0.921", link, Path = CheckDir(argv[0],ver),HTTP_Result;
+    std::string ver = "1.0", link, Path = CheckDir(argv[0],ver),HTTP_Result;
     std::thread CFU(CheckForUpdates,ver);
     CFU.join();
     if(argc > 1){
@@ -115,7 +115,7 @@ int main(int argc, char* argv[]){
                 exit(-1);
             }
         }
-    }else MPDEV = true;
+    }else MPDEV = false;
     //Security
     auto*Sec = new std::thread(Check);
     Sec->join();
@@ -133,14 +133,12 @@ int main(int argc, char* argv[]){
        Download(link,Settings);
        std::cout << "Download Complete!" << std::endl;
     }
-    std::cout << "Downloading mod..." << std::endl;
-    link = "https://beamng-mp.com/builds/client?did="+GlobalInfo.at(2);
-    Download(link,Path + R"(\mods\BeamMP.zip)");
-    std::cout << "Download Complete!" << std::endl;
-    link.clear();
-    std::thread Game(StartGame,ExeDir,(Path + "\\"));
-    Game.detach();
     if(!MPDEV){
+        std::cout << "Downloading mod..." << std::endl;
+        link = "https://beamng-mp.com/builds/client?did="+GlobalInfo.at(2);
+        Download(link,Path + R"(\mods\BeamMP.zip)");
+        std::cout << "Download Complete!" << std::endl;
+        link.clear();
         std::thread Game(StartGame,ExeDir,(Path + "\\"));
         Game.detach();
     }else{

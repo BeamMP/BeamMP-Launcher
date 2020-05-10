@@ -1,37 +1,29 @@
 ////
 //// Created by Anonymous275 on 3/3/2020.
 ////
-
 #define ENET_IMPLEMENTATION
+
 #include <condition_variable>
-#include "include/enet.hpp"
 #include <WinSock2.h>
 #include <WS2tcpip.h>
 #include <iostream>
 #include <string>
 #include <thread>
-#include <queue>
+#include <vector>
+
+int ClientID = -1;
 
 extern int DEFAULT_PORT;
-typedef struct {
-    ENetHost *host;
-    ENetPeer *peer;
-} Client;
-
-std::vector<std::string> Split(const std::string& String,const std::string& delimiter);
 std::chrono::time_point<std::chrono::steady_clock> PingStart,PingEnd;
 extern std::vector<std::string> GlobalInfo;
 bool TCPTerminate = false;
 bool Terminate = false;
 bool CServer = true;
-ENetPeer*ServerPeer;
 SOCKET*ClientSocket;
 extern bool MPDEV;
 int ping = 0;
 
-[[noreturn]] void CoreNetworkThread();
-
-void TCPSEND(const std::string&Data){
+void GameSend(const std::string&Data){
     if(!TCPTerminate) {
         int iSendResult = send(*ClientSocket, (Data + "\n").c_str(), int(Data.length()) + 1, 0);
         if (iSendResult == SOCKET_ERROR) {
@@ -45,121 +37,97 @@ void TCPSEND(const std::string&Data){
         }
     }
 }
-void RUDPSEND(const std::string&Data,bool Rel){
-    if(!Terminate && ServerPeer != nullptr){
+void TCPSend(const std::string&Data);
+void UDPSend(const std::string&Data);
+void ServerSend(const std::string&Data, bool Rel){
+    if(!Terminate){
         char C = 0;
         if(Data.length() > 3)C = Data.at(0);
         if (C == 'O' || C == 'T')Rel = true;
-        enet_peer_send(ServerPeer, 0, enet_packet_create(Data.c_str(), Data.length()+1, Rel?1:8));
+
+        if(Rel)TCPSend(Data);
+        else UDPSend(Data);
+
         if (MPDEV && Data.length() > 1000) {
             std::cout << "(Launcher->Server) Bytes sent: " << Data.length()
             << " : "
             << Data.substr(0, 10)
             << Data.substr(Data.length() - 10) << std::endl;
-        }else if(MPDEV){
-            std::cout << "(Game->Launcher) : " << Data << std::endl;
+        }else if(MPDEV && C == 'Z'){
+            //std::cout << "(Game->Launcher) : " << Data << std::endl;
         }
     }
 }
 void NameRespond(){
     std::string Packet = "NR" + GlobalInfo.at(0)+":"+GlobalInfo.at(2);
-    RUDPSEND(Packet,true);
+    ServerSend(Packet,true);
 }
 
-void AutoPing(ENetPeer*peer){
-    while(!Terminate && peer != nullptr){
-        RUDPSEND("p",true);
+void AutoPing(){
+    while(!Terminate){
+        ServerSend("p",false);
         PingStart = std::chrono::high_resolution_clock::now();
         std::this_thread::sleep_for(std::chrono::seconds (1));
     }
 }
 
-void RUDPParser(const std::string& Data){
+std::string UlStatus = "Ulstart";
+std::string MStatus = " ";
+void ServerParser(const std::string& Data){
     char Code = Data.at(0),SubCode = 0;
     if(Data.length() > 1)SubCode = Data.at(1);
     switch (Code) {
+        case 'P':
+            ClientID = std::stoi(Data.substr(1));
+            break;
         case 'p':
             PingEnd = std::chrono::high_resolution_clock::now();
-            ping = int(std::chrono::duration_cast<std::chrono::microseconds>(PingEnd-PingStart).count())/1000;
+            ping = std::chrono::duration_cast<std::chrono::milliseconds>(PingEnd-PingStart).count();
             return;
         case 'N':
             if(SubCode == 'R')NameRespond();
             return;
+        case 'M':
+            MStatus = Data;
+            UlStatus = "Uldone";
+            return;
     }
-    ///std::cout << "Received: " << Data << std::endl;
-    TCPSEND(Data);
+    GameSend(Data);
 }
 
-void HandleEvent(ENetEvent event,Client client){
-    switch (event.type){
-        case ENET_EVENT_TYPE_CONNECT:
-            std::cout << "Connected to server!" << std::endl;
-            //printf("Client Connected port : %u.\n",event.peer->address.port);
-            event.peer->data = (void*)"Connected Server";
-            break;
-        case ENET_EVENT_TYPE_RECEIVE:
-            RUDPParser((char*)event.packet->data);
-            enet_packet_destroy(event.packet);
-            break;
-        case ENET_EVENT_TYPE_DISCONNECT:
-            printf ("%s disconnected.\n", (char *)event.peer->data);
-            CServer = true;
-            Terminate = true;
-            event.peer->data = nullptr;
-            break;
-
-        case ENET_EVENT_TYPE_DISCONNECT_TIMEOUT:
-            printf ("%s timeout.\n", (char *)event.peer->data);
-            CServer = true;
-            Terminate = true;
-            TCPSEND("TTimeout");
-            event.peer->data = nullptr;
-            break;
-        case ENET_EVENT_TYPE_NONE: break;
-    }
-}
-void RUDPClientThread(const std::string& IP, int Port){
-    std::condition_variable lock;
-    if (enet_initialize() != 0) {
-       std::cout << "An error occurred while initializing!\n";
-    }
-    Client client;
-    ENetAddress address = {0};
-
-    address.host = ENET_HOST_ANY;
-    address.port = Port;
-    if(MPDEV)std::cout << "(Launcher->Server) Connecting...\n";
-
-    enet_address_set_host(&address, IP.c_str());
-    client.host = enet_host_create(nullptr, 1, 2, 0, 0);
-    client.peer = enet_host_connect(client.host, &address, 2, 0);
-    if (client.peer == nullptr) {
-        if(MPDEV)std::cout << "could not connect\n";
-        TCPSEND("TTimeout");
-        TCPTerminate = true;
-        Terminate = true;
-    }
-    std::thread Ping(AutoPing,client.peer);
+void TCPClientMain(const std::string& IP,int Port);
+void UDPClientMain(const std::string& IP,int Port);
+void NetMain(const std::string& IP, int Port){
+    std::thread Ping(AutoPing);
     Ping.detach();
-    ENetEvent event;
-    while (!Terminate) {
-        ServerPeer = client.peer;
-        enet_host_service(client.host, &event, 1);
-        HandleEvent(event,client);
-    }
-    enet_peer_disconnect(client.peer,0);
-    enet_host_service(client.host, &event, 1);
-    HandleEvent(event,client);
+    UDPClientMain(IP,Port);
     CServer = true;
+    Terminate = true;
     std::cout << "Connection Terminated!" << std::endl;
+}
+extern SOCKET UDPSock;
+extern SOCKET TCPSock;
+void Reset() {
+    ClientSocket = nullptr;
+    TCPTerminate = false;
+    Terminate = false;
+    UlStatus = "Ulstart";
+    MStatus = " ";
+    UDPSock = -1;
+    TCPSock = -1;
 }
 
 std::string Compress(const std::string&Data);
 std::string Decompress(const std::string&Data);
-void TCPServerThread(const std::string& IP, int Port){
-    if(MPDEV)std::cout << "Proxy Started! " << IP << ":" << Port << std::endl;
+void TCPGameServer(const std::string& IP, int Port){
+    if(MPDEV)std::cout << "Game server Started! " << IP << ":" << Port << std::endl;
     do {
-        if(MPDEV)std::cout << "Proxy on Start" << std::endl;
+        Reset();
+        if(CServer) {
+            std::thread Client(TCPClientMain, IP, Port);
+            Client.detach();
+        }
+        if(MPDEV)std::cout << "Game server on Start" << std::endl;
         WSADATA wsaData;
         int iResult;
         SOCKET ListenSocket = INVALID_SOCKET;
@@ -228,10 +196,11 @@ void TCPServerThread(const std::string& IP, int Port){
         closesocket(ListenSocket);
         if(MPDEV)std::cout << "(Proxy) Game Connected!" << std::endl;
         if(CServer){
-            std::thread t1(RUDPClientThread, IP, Port);
+            std::thread t1(NetMain, IP, Port);
             t1.detach();
             CServer = false;
         }
+
        ClientSocket = &Socket;
         do {
             //std::cout << "(Proxy) Waiting for Game Data..." << std::endl;
@@ -241,23 +210,14 @@ void TCPServerThread(const std::string& IP, int Port){
                 buff.resize(iResult*2);
                 memcpy(&buff[0],recvbuf,iResult);
                 buff.resize(iResult);
-                /*if(MPDEV && buff.length() > 1000) {
-                    std::string cmp = Compress(buff), dcm = Decompress(cmp);
-                    std::cout << "Compressed Size : " << cmp.length() << std::endl;
-                    std::cout << "Decompressed Size : " << dcm.length() << std::endl;
-                    if (cmp == dcm) {
-                        std::cout << "Success!" << std::endl;
-                    } else {
-                        std::cout << "Fail!" << std::endl;
-                    }
-                }*/
-                RUDPSEND(buff,false);
-                //std::cout << "(Game->Launcher) Data : " << buff.length() << std::endl;
+
+                ServerSend(buff,false);
+
             } else if (iResult == 0) {
                 if(MPDEV)std::cout << "(Proxy) Connection closing...\n";
                 closesocket(Socket);
                 WSACleanup();
-
+                Terminate = true;
                 continue;
             } else {
                 if(MPDEV)std::cout << "(Proxy) recv failed with error: " << WSAGetLastError() << std::endl;
@@ -282,22 +242,15 @@ void TCPServerThread(const std::string& IP, int Port){
 }
 
 void VehicleNetworkStart();
-
+void CoreNetworkThread();
 void ProxyStart(){
     std::thread t1(CoreNetworkThread);
     if(MPDEV)std::cout << "Core Network Started!\n";
     t1.join();
 }
-void Reset() {
-    ClientSocket = nullptr;
-    ServerPeer = nullptr;
-    TCPTerminate = false;
-    Terminate = false;
-}
 
 void ProxyThread(const std::string& IP, int Port){
-    Reset();
-    auto*t1 = new std::thread(TCPServerThread,IP,Port);
+    auto*t1 = new std::thread(TCPGameServer,IP,Port);
     t1->detach();
     /*std::thread t2(VehicleNetworkStart);
     t2.detach();*/
