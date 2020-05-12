@@ -21,8 +21,8 @@ extern bool TCPTerminate;
 extern bool MPDEV;
 
 void StartSync(const std::string &Data){
-    //std::thread t1(SyncResources,Data.substr(1,Data.find(':')-1),std::stoi(Data.substr(Data.find(':')+1)));
-    std::thread t1(SyncResources,"127.0.0.1",30814);
+    std::thread t1(SyncResources,Data.substr(1,Data.find(':')-1),std::stoi(Data.substr(Data.find(':')+1)));
+    //std::thread t1(SyncResources,"127.0.0.1",30814);
     t1.detach();
 }
 

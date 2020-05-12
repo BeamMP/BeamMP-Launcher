@@ -6,10 +6,14 @@
 #include <iostream>
 #include <string>
 #include <WS2tcpip.h>
+#include <thread>
+
 #pragma comment (lib, "ws2_32.lib")
 extern bool Terminate;
 extern bool MPDEV;
 SOCKET TCPSock;
+
+
 void TCPSend(const std::string&Data){
    if(TCPSock == INVALID_SOCKET){
        Terminate = true;
@@ -29,10 +33,11 @@ void TCPSend(const std::string&Data){
    }
 }
 
+
 void ServerParser(const std::string& Data);
 void TCPRcv(){
-    char buf[10240];
-    int len = 10240;
+    char buf[4096];
+    int len = 4096;
     ZeroMemory(buf, len);
     if(TCPSock == INVALID_SOCKET){
         Terminate = true;
@@ -67,9 +72,11 @@ void TCPClientMain(const std::string& IP,int Port){
         WSACleanup();
         return;
     }
+
     ServerAddr.sin_family = AF_INET;
     ServerAddr.sin_port = htons(Port);
     inet_pton(AF_INET, IP.c_str(), &ServerAddr.sin_addr);
+
     RetCode = connect(TCPSock, (SOCKADDR *) &ServerAddr, sizeof(ServerAddr));
     if(RetCode != 0)
     {

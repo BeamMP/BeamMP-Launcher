@@ -19,43 +19,45 @@ extern std::vector<std::string> GlobalInfo;
 bool TCPTerminate = false;
 bool Terminate = false;
 bool CServer = true;
-SOCKET*ClientSocket;
+bool gameConected = false;
+SOCKET ClientSocket;
 extern bool MPDEV;
 int ping = 0;
 
 void GameSend(const std::string&Data){
-    if(!TCPTerminate) {
-        int iSendResult = send(*ClientSocket, (Data + "\n").c_str(), int(Data.length()) + 1, 0);
-        if (iSendResult == SOCKET_ERROR) {
-            if (MPDEV)std::cout << "(Proxy) send failed with error: " << WSAGetLastError() << std::endl;
-            TCPTerminate = true;
-        } else {
-            if (MPDEV && Data.length() > 1000) {
-                std::cout << "(Launcher->Game) Bytes sent: " << iSendResult << std::endl;
-            }
-            //std::cout << "(Launcher->Game) Bytes sent: " << iSendResult <<  " : " << Data << std::endl;
+    if(TCPTerminate || !gameConected || ClientSocket == -1)return;
+    int iSendResult = send(ClientSocket, (Data + "\n").c_str(), int(Data.length()) + 1, 0);
+    if (iSendResult == SOCKET_ERROR) {
+        if (MPDEV)std::cout << "(Proxy) send failed with error: " << WSAGetLastError() << std::endl;
+    } else {
+        if (MPDEV && Data.length() > 1000) {
+            std::cout << "(Launcher->Game) Bytes sent: " << iSendResult << std::endl;
         }
+        //std::cout << "(Launcher->Game) Bytes sent: " << iSendResult <<  " : " << Data << std::endl;
     }
 }
+void TCPSendLarge(const std::string&Data);
 void TCPSend(const std::string&Data);
 void UDPSend(const std::string&Data);
 void ServerSend(const std::string&Data, bool Rel){
-    if(!Terminate){
-        char C = 0;
-        if(Data.length() > 3)C = Data.at(0);
-        if (C == 'O' || C == 'T')Rel = true;
+    if(Terminate || Data.empty())return;
+    char C = 0;
+    if(Data.length() > 3)C = Data.at(0);
+    if (C == 'O' || C == 'T')Rel = true;
 
-        if(Rel)TCPSend(Data);
-        else UDPSend(Data);
+    if(Rel){
+        if(Data.length() > 1000)TCPSendLarge(Data);
+        else TCPSend(Data);
+    }
+    else UDPSend(Data);
 
-        if (MPDEV && Data.length() > 1000) {
-            std::cout << "(Launcher->Server) Bytes sent: " << Data.length()
-            << " : "
-            << Data.substr(0, 10)
-            << Data.substr(Data.length() - 10) << std::endl;
-        }else if(MPDEV && C == 'Z'){
-            //std::cout << "(Game->Launcher) : " << Data << std::endl;
-        }
+    if (MPDEV && Data.length() > 1000) {
+        std::cout << "(Launcher->Server) Bytes sent: " << Data.length()
+        << " : "
+        << Data.substr(0, 10)
+        << Data.substr(Data.length() - 10) << std::endl;
+    }else if(MPDEV && C == 'Z'){
+        //std::cout << "(Game->Launcher) : " << Data << std::endl;
     }
 }
 void NameRespond(){
@@ -74,6 +76,7 @@ void AutoPing(){
 std::string UlStatus = "Ulstart";
 std::string MStatus = " ";
 void ServerParser(const std::string& Data){
+    if(Data.empty())return;
     char Code = Data.at(0),SubCode = 0;
     if(Data.length() > 1)SubCode = Data.at(1);
     switch (Code) {
@@ -108,8 +111,8 @@ void NetMain(const std::string& IP, int Port){
 extern SOCKET UDPSock;
 extern SOCKET TCPSock;
 void Reset() {
-    ClientSocket = nullptr;
     TCPTerminate = false;
+    gameConected = false;
     Terminate = false;
     UlStatus = "Ulstart";
     MStatus = " ";
@@ -195,13 +198,14 @@ void TCPGameServer(const std::string& IP, int Port){
         }
         closesocket(ListenSocket);
         if(MPDEV)std::cout << "(Proxy) Game Connected!" << std::endl;
+        gameConected = true;
         if(CServer){
             std::thread t1(NetMain, IP, Port);
             t1.detach();
             CServer = false;
         }
 
-       ClientSocket = &Socket;
+       ClientSocket = Socket;
         do {
             //std::cout << "(Proxy) Waiting for Game Data..." << std::endl;
             iResult = recv(Socket, recvbuf, recvbuflen, 0);
@@ -250,8 +254,8 @@ void ProxyStart(){
 }
 
 void ProxyThread(const std::string& IP, int Port){
-    auto*t1 = new std::thread(TCPGameServer,IP,Port);
-    t1->detach();
+    std::thread GameThread(TCPGameServer,IP,Port);
+    GameThread.detach();
     /*std::thread t2(VehicleNetworkStart);
     t2.detach();*/
 }

@@ -87,7 +87,7 @@ int main(int argc, char* argv[]){
     const unsigned long long NPos = std::string::npos;
     struct stat info{};
 
-    std::string ver = "1.0", link, Path = CheckDir(argv[0],ver),HTTP_Result;
+    std::string ver = "1.1", link, Path = CheckDir(argv[0],ver),HTTP_Result;
     std::thread CFU(CheckForUpdates,ver);
     CFU.join();
     if(argc > 1){
@@ -115,7 +115,7 @@ int main(int argc, char* argv[]){
                 exit(-1);
             }
         }
-    }else MPDEV = false;
+    }else MPDEV = true;
     //Security
     auto*Sec = new std::thread(Check);
     Sec->join();
