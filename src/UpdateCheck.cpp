@@ -14,7 +14,6 @@ void CheckForUpdates(const std::string& CV){
     system ("cls");
     std::string link = "https://beamng-mp.com/builds/launcher?version=true";
     std::string HTTP = HTTP_REQUEST(link,443);
-    HTTP = HTTP.substr(HTTP.find_last_of("ver=")+1);
     link = "https://beamng-mp.com/builds/launcher?download=true";
     struct stat buffer{};
     if(stat ("BeamMP-Launcher.back", &buffer) == 0)remove("BeamMP-Launcher.back");

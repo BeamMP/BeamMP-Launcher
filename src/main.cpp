@@ -116,6 +116,7 @@ int main(int argc, char* argv[]){
             }
         }
     }else MPDEV = true;
+    
     //Security
     auto*Sec = new std::thread(Check);
     Sec->join();

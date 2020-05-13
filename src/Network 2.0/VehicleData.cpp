@@ -11,6 +11,7 @@
 
 extern bool Terminate;
 extern int ClientID;
+extern bool MPDEV;
 SOCKET UDPSock;
 sockaddr_in ToServer{};
 
@@ -25,24 +26,25 @@ void UDPSend(const std::string&Data){
 void LOOP(){
     while(UDPSock != -1) {
         for (const std::pair<int, std::string>& a : BigDataAcks) {
-            //UDPSend(a.second);
+            UDPSend(a.second);
         }
         std::this_thread::sleep_for(std::chrono::seconds(2));
     }
 }
 
 void AckID(int ID){
-    if(BigDataAcks.empty())return;
     for(const std::pair<int,std::string>& a : BigDataAcks){
-        if(a.first == ID)BigDataAcks.erase(a);
+        if(a.first == ID){
+            BigDataAcks.erase(a);
+            break;
+        }
     }
 }
 
 void TCPSendLarge(const std::string&Data){
     static int ID = 0;
     std::string Header = "BD:" + std::to_string(ID) + ":";
-    //BigDataAcks.insert(std::make_pair(ID,Header+Data));
-    UDPSend(Header+Data);
+    BigDataAcks.insert(std::make_pair(ID,Header+Data));
     if(ID > 483647)ID = 0;
     else ID++;
 }
@@ -51,6 +53,7 @@ void ServerParser(const std::string& Data);
 void UDPParser(const std::string&Packet){
     if(Packet.substr(0,4) == "ACK:"){
         AckID(stoi(Packet.substr(4)));
+        if(MPDEV)std::cout << "Got Ack for sending large data" << std::endl;
         return;
     }else if(Packet.substr(0,3) == "BD:"){
         int pos = Packet.find(':',4);
