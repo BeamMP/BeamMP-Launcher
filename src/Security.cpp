@@ -57,7 +57,7 @@ std::string QueryKey(HKEY hKey,int ID)
             hKey,                    // key handle
             achClass,                // buffer for class name
             &cchClassName,           // size of class string
-            NULL,                    // reserved
+            nullptr,                    // reserved
             &cSubKeys,               // number of subkeys
             &cbMaxSubKey,            // longest subkey size
             &cchMaxClass,            // longest class string
@@ -79,9 +79,9 @@ std::string QueryKey(HKEY hKey,int ID)
             retCode = RegEnumKeyEx(hKey, i,
                                    achKey,
                                    &cbName,
-                                   NULL,
-                                   NULL,
-                                   NULL,
+                                   nullptr,
+                                   nullptr,
+                                   nullptr,
                                    &ftLastWriteTime);
             if (retCode == ERROR_SUCCESS)
             {
@@ -100,22 +100,22 @@ std::string QueryKey(HKEY hKey,int ID)
             retCode = RegEnumValue(hKey, i,
                                    achValue,
                                    &cchValue,
-                                   NULL,
-                                   NULL,
-                                   NULL,
-                                   NULL);
+                                   nullptr,
+                                   nullptr,
+                                   nullptr,
+                                   nullptr);
 
             if (retCode == ERROR_SUCCESS )
             {
                 DWORD lpData = cbMaxValueData;
                 buffer[0] = '\0';
-                LONG dwRes = RegQueryValueEx(hKey, achValue, 0, NULL, buffer, &lpData);
+                LONG dwRes = RegQueryValueEx(hKey, achValue, nullptr, nullptr, buffer, &lpData);
                 std::string data = reinterpret_cast<const char *const>(buffer);
                 std::string key = achValue;
                 switch (ID){
-                    case 1: if(data.find(HTA("737465616d")) != std::string::npos)return data; break;
+                    case 1: if(key == HTA("537465616d50617468") && data.find(HTA("737465616d")) != std::string::npos)return data;break;
                     case 2: if(key == HTA("4e616d65") && data == HTA("4265616d4e472e6472697665"))return data; break;
-                    case 3: return data.substr(0,data.length()-2); break;
+                    case 3: return data.substr(0,data.length()-2);
                     case 4: if(key == HTA("75736572706174685f6f76657272696465"))return data;
                     default: break;
                 }
@@ -149,11 +149,11 @@ void ExitError(){
 }
 
 void Check(){
-    /*HKEY_CLASSES_ROOT\\beamng\\DefaultIcon
-    HKEY_USERS\.DEFAULT\Software\Classes\steam\Shell\Open\Command
-    HKEY_CURRENT_USER\\Software\Valve\Steam\Apps\284160*/
+    /*.HKEY_CURRENT_USER\Software\Valve\Steam
+    HKEY_CURRENT_USER\\Software\Valve\Steam\Apps\284160
+    HKEY_CLASSES_ROOT\\beamng\\DefaultIcon */
     //Sandbox Scramble technique
-    std::string K1 = HTA("2e44454641554c545c536f6674776172655c436c61737365735c737465616d5c5368656c6c5c4f70656e5c436f6d6d616e64");
+    std::string K1 = HTA("536f6674776172655c56616c76655c537465616d");
     std::string K2 = HTA("536f6674776172655c56616c76655c537465616d5c417070735c323834313630");
     std::string K3 = HTA("6265616d6e675c44656661756c7449636f6e");
     std::string MSG1 = HTA("4572726f722120796f7520646f206e6f74206f776e204265616d4e4721"); //Error! you do not own BeamNG!
@@ -163,12 +163,12 @@ void Check(){
     //not used : Warning! you own the game but a cracked game was found on your machine!
 
     HKEY hKey;
-    LONG dwRegOPenKey = OpenKey(HKEY_USERS, K1.c_str(), &hKey);
+    LONG dwRegOPenKey = OpenKey(HKEY_CURRENT_USER, K1.c_str(), &hKey);
     if(dwRegOPenKey == ERROR_SUCCESS) {
         Result = QueryKey(hKey, 1);
         if(Result.empty()){Exit(MSG1 + " Code 1");}
         SData.push_back(Result);
-        Result = Result.substr(1,Result.find_last_of('\\')) + HTA("7573657264617461");
+        Result += HTA("2f7573657264617461");
         struct stat buffer{};
         if(stat (Result.c_str(), &buffer) == 0){
             auto *F = new std::thread(Find,HTA("3238343136302e6a736f6e"),Result);
@@ -198,7 +198,7 @@ void Check(){
         }
         SData.push_back(Result);
         TraceBack++;
-    }
+    }else{Exit(MSG2+ ". Code : 5");}
     //Memory Cleaning
     K3.clear();
     //MSG.clear();

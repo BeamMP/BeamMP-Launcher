@@ -44,9 +44,9 @@ std::string STCPRecv(SOCKET socket){
     return std::string(buf);
 }
 
-void ProxyThread(const std::string& IP, int port);
-void SyncResources(const std::string&IP,int Port){
-    if(MPDEV)std::cout << "Called" << std::endl;
+extern bool Terminate;
+void SyncResources(SOCKET TCPSock){
+    if(MPDEV)std::cout << "SyncResources Called" << std::endl;
     std::string FileList;
     struct stat info{};
     if(stat( "Resources", &info) != 0){
@@ -156,6 +156,4 @@ void SyncResources(const std::string&IP,int Port){
     if(WSACleanup() != 0)
         if(MPDEV)printf("Client: WSACleanup() failed!...\n");
 */
-
-    ProxyThread(IP,Port);
 }

@@ -46,7 +46,7 @@ void ServerSend(const std::string&Data, bool Rel){
     if (C == 'O' || C == 'T')Rel = true;
 
     if(Rel){
-        if(Data.length() > 1000)TCPSendLarge(Data);
+        if(Data.length() > 1000 || Data.substr(0,2) == "Od")TCPSendLarge(Data);
         else TCPSend(Data);
     }
     else UDPSend(Data);

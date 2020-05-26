@@ -59,6 +59,7 @@ void TCPRcv(){
 }
 
 
+void SyncResources(SOCKET TCPSock);
 void TCPClientMain(const std::string& IP,int Port){
     WSADATA wsaData;
     SOCKADDR_IN ServerAddr;
@@ -87,6 +88,7 @@ void TCPClientMain(const std::string& IP,int Port){
     }
     getsockname(TCPSock, (SOCKADDR *)&ServerAddr, (int *)sizeof(ServerAddr));
 
+    SyncResources(TCPSock);
     while(!Terminate){
         TCPRcv();
     }

@@ -9,12 +9,16 @@ std::string HTTP_REQUEST(const std::string&url,int port);
 std::string HTA(const std::string& hex);
 void SystemExec(const std::string& cmd);
 void WinExec(const std::string& cmd);
+void Exit(const std::string& Msg);
 
 void CheckForUpdates(const std::string& CV){
     system ("cls");
     std::string link = "https://beamng-mp.com/builds/launcher?version=true";
     std::string HTTP = HTTP_REQUEST(link,443);
     link = "https://beamng-mp.com/builds/launcher?download=true";
+    if(HTTP.find_first_of("0123456789") == std::string::npos){
+        Exit("Primary Servers Offline! sorry for the inconvenience!");
+    }
     struct stat buffer{};
     if(stat ("BeamMP-Launcher.back", &buffer) == 0)remove("BeamMP-Launcher.back");
     if(HTTP > CV){
