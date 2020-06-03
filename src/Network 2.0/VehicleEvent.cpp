@@ -4,7 +4,6 @@
 
 #include <chrono>
 #include <iostream>
-#include <string>
 #include <WS2tcpip.h>
 #include <thread>
 
@@ -58,7 +57,7 @@ void TCPRcv(){
     ServerParser(std::string(buf));
 }
 
-
+void GameSend(const std::string&Data);
 void SyncResources(SOCKET TCPSock);
 void TCPClientMain(const std::string& IP,int Port){
     WSADATA wsaData;
@@ -89,11 +88,9 @@ void TCPClientMain(const std::string& IP,int Port){
     getsockname(TCPSock, (SOCKADDR *)&ServerAddr, (int *)sizeof(ServerAddr));
 
     SyncResources(TCPSock);
-    while(!Terminate){
-        TCPRcv();
-    }
-
-
+    while(!Terminate)TCPRcv();
+    GameSend("T");
+    ////Game Send Terminate
     if( shutdown(TCPSock, SD_SEND) != 0 && MPDEV)
         std::cout << "(TCP) shutdown error code: " << WSAGetLastError() << std::endl;
 

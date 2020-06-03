@@ -126,7 +126,7 @@ int main(int argc, char* argv[]){
     std::string GamePath = SData.at(2);
     if(MPDEV)std::cout << "You own BeamNG on this machine!" << std::endl;
     std::cout << "Game Version : " << CheckVer(GamePath) << std::endl;
-    std::string ExeDir = "\""+GamePath.substr(0,GamePath.find_last_of('\\')) + R"(\Bin64\BeamNG.drive.x64.exe")";
+    std::string ExeDir = GamePath.substr(0,GamePath.find_last_of('\\')) + R"(\Bin64\BeamNG.drive.x64.exe)";
     std::string Settings = Path + "\\settings\\uiapps-layouts.json";
     if(stat(Settings.c_str(),&info)!=0){
        link = "https://beamng-mp.com/client-data";

@@ -26,17 +26,28 @@ void DeleteKey(){
     RegOpenKeyEx(HKEY_CURRENT_USER, sk, 0, KEY_ALL_ACCESS, &hKey);
     RegDeleteValueA(hKey, TEXT("userpath_override"));
 }
-void RollBack(const std::string&Val){
-    std::this_thread::sleep_for(std::chrono::seconds(7));
+void RollBack(const std::string&Val,int T){
+    std::this_thread::sleep_for(std::chrono::seconds(T));
     if(!Val.empty())Write(Val);
     else DeleteKey();
 }
 void StartGame(const std::string&ExeDir,const std::string&Current){
-    std::cout << "Game Launched!\n";
-    std::thread RB(RollBack,Write(Current));
-    RB.detach();
-    SystemExec(ExeDir + " -nocrashreport");
-    std::cout << "\nGame Closed! launcher closing in 5 secs\n";
+    BOOL bSuccess = FALSE;
+    PROCESS_INFORMATION pi;
+    STARTUPINFO si = {0};
+    si.cb = sizeof(si);
+    std::string BaseDir = ExeDir.substr(0,ExeDir.find_last_of('\\'));
+    bSuccess = CreateProcessA(ExeDir.c_str(), nullptr, nullptr, nullptr, TRUE, 0, nullptr, BaseDir.c_str(), &si, &pi);
+    if (bSuccess)
+    {
+        std::cout << "Game Launched!\n";
+        DWORD dwPid = pi.dwProcessId; //Gets the PID
+        std::thread RB(RollBack,Write(Current),7);
+        RB.detach();
+        WaitForSingleObject(pi.hProcess, INFINITE);
+        std::cout << "\nGame Closed! launcher closing in 5 secs\n";
+    }else std::cout << "\nFailed to Launch the game! launcher closing in 5 secs\n";
+    RollBack(Write(Current),0);
     std::this_thread::sleep_for(std::chrono::seconds(5));
     exit(2);
 }

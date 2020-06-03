@@ -12,7 +12,6 @@
 #include <vector>
 
 int ClientID = -1;
-
 extern int DEFAULT_PORT;
 std::chrono::time_point<std::chrono::steady_clock> PingStart,PingEnd;
 extern std::vector<std::string> GlobalInfo;
@@ -36,20 +35,19 @@ void GameSend(const std::string&Data){
         //std::cout << "(Launcher->Game) Bytes sent: " << iSendResult <<  " : " << Data << std::endl;
     }
 }
-void TCPSendLarge(const std::string&Data);
+void SendLarge(const std::string&Data);
 void TCPSend(const std::string&Data);
 void UDPSend(const std::string&Data);
 void ServerSend(const std::string&Data, bool Rel){
     if(Terminate || Data.empty())return;
     char C = 0;
+    bool Ack = false;
     if(Data.length() > 3)C = Data.at(0);
-    if (C == 'O' || C == 'T')Rel = true;
-
-    if(Rel){
-        if(Data.length() > 1000 || Data.substr(0,2) == "Od")TCPSendLarge(Data);
+    if (C == 'O' || C == 'T')Ack = true;
+    if(Ack || Rel){
+        if(Ack || Data.length() > 1000)SendLarge(Data);
         else TCPSend(Data);
-    }
-    else UDPSend(Data);
+    }else UDPSend(Data);
 
     if (MPDEV && Data.length() > 1000) {
         std::cout << "(Launcher->Server) Bytes sent: " << Data.length()
