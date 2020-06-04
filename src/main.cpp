@@ -42,8 +42,7 @@ void Exit(const std::string& Msg){
     exit(-1);
 }
 
-std::string CheckDir(char*dir, const std::string& ver){
-    system(("title BeamMP Launcher v" + ver).c_str());
+std::string CheckDir(char*dir){
     char*temp;size_t len;
     struct stat info{};
     _dupenv_s(&temp, &len,"APPDATA");
@@ -83,23 +82,13 @@ std::string CheckVer(const std::string &path){
     return temp;
 }
 int main(int argc, char* argv[]){
-
     const unsigned long long NPos = std::string::npos;
     struct stat info{};
-
-    std::string ver = "1.22", link, Path = CheckDir(argv[0],ver),HTTP_Result;
-    std::thread CFU(CheckForUpdates,ver);
-    CFU.join();
-    if(argc > 1){
-        std::string Port = argv[1];
-        if(Port.find_first_not_of("0123456789") == NPos){
-            DEFAULT_PORT = std::stoi(Port);
-            std::cout << "Running on custom port : " << DEFAULT_PORT << std::endl;
-        }
-    }
+    system("cls");
+    std::string ver = "1.3", link, HTTP_Result;
+    SetWindowTextA(GetConsoleWindow(),("BeamMP Launcher v" + ver).c_str());
     std::thread t1(Discord_Main);
     t1.detach();
-
     std::cout << "Connecting to discord client..." << std::endl;
     while(GlobalInfo.empty()){
         GlobalInfo = GetDiscordInfo();
@@ -116,7 +105,18 @@ int main(int argc, char* argv[]){
             }
         }
     }else MPDEV = true;
-    
+    std::string Path = CheckDir(argv[0]);
+    std::thread CFU(CheckForUpdates,ver);
+    CFU.join();
+
+    if(argc > 1){
+        std::string Port = argv[1];
+        if(Port.find_first_not_of("0123456789") == NPos){
+            DEFAULT_PORT = std::stoi(Port);
+            std::cout << "Running on custom port : " << DEFAULT_PORT << std::endl;
+        }
+    }
+
     //Security
     auto*Sec = new std::thread(Check);
     Sec->join();

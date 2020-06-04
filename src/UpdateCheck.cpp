@@ -12,7 +12,6 @@ void WinExec(const std::string& cmd);
 void Exit(const std::string& Msg);
 
 void CheckForUpdates(const std::string& CV){
-    system ("cls");
     std::string link = "https://beamng-mp.com/builds/launcher?version=true";
     std::string HTTP = HTTP_REQUEST(link,443);
     link = "https://beamng-mp.com/builds/launcher?download=true";
@@ -22,6 +21,7 @@ void CheckForUpdates(const std::string& CV){
     struct stat buffer{};
     if(stat ("BeamMP-Launcher.back", &buffer) == 0)remove("BeamMP-Launcher.back");
     if(HTTP > CV){
+        system("cls");
         std::cout << "Update found!" << std::endl;
         std::cout << "Updating..." << std::endl;
         SystemExec("rename BeamMP-Launcher.exe BeamMP-Launcher.back>nul");
