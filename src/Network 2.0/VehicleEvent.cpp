@@ -7,7 +7,7 @@
 #include <WS2tcpip.h>
 #include <thread>
 
-#pragma comment (lib, "ws2_32.lib")
+extern std::string UlStatus;
 extern bool Terminate;
 extern bool MPDEV;
 SOCKET TCPSock;
@@ -80,6 +80,7 @@ void TCPClientMain(const std::string& IP,int Port){
     RetCode = connect(TCPSock, (SOCKADDR *) &ServerAddr, sizeof(ServerAddr));
     if(RetCode != 0)
     {
+        UlStatus = "UlConnection Failed!";
         std::cout << "Client: connect failed! Error code: " << WSAGetLastError() << std::endl;
         closesocket(TCPSock);
         WSACleanup();

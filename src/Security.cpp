@@ -3,7 +3,6 @@
 ///
 #include <filesystem>
 #include <Windows.h>
-#include <iostream>
 #include <string>
 #include <vector>
 #include <array>
@@ -16,7 +15,7 @@ void Exit(const std::string& Msg);
 int TraceBack = 0;
 
 std::vector<std::string> SData;
-std::string Result;
+
 
 std::string HTA(const std::string& hex)
 {
@@ -113,8 +112,8 @@ std::string QueryKey(HKEY hKey,int ID)
                 std::string data = reinterpret_cast<const char *const>(buffer);
                 std::string key = achValue;
                 switch (ID){
-                    case 1: if(key == HTA("537465616d50617468") && data.find(HTA("737465616d")) != std::string::npos)return data;break;
-                    case 2: if(key == HTA("4e616d65") && data == HTA("4265616d4e472e6472697665"))return data; break;
+                    case 1: if(key == HTA("537465616d50617468"))return data;break;
+                    case 2: if(key == HTA("4e616d65") && data == HTA("4265616d4e472e6472697665"))return data;break;
                     case 3: return data.substr(0,data.length()-2);
                     case 4: if(key == HTA("75736572706174685f6f76657272696465"))return data;
                     default: break;
@@ -125,7 +124,7 @@ std::string QueryKey(HKEY hKey,int ID)
     delete [] buffer;
     return "";
 }
-namespace fs = std::experimental::filesystem;
+namespace fs = std::filesystem;
 void FileList(std::vector<std::string>&a,const std::string& Path){
     for (const auto &entry : fs::directory_iterator(Path)) {
         int pos = entry.path().filename().string().find('.');
@@ -153,6 +152,7 @@ void Check(){
     HKEY_CURRENT_USER\\Software\Valve\Steam\Apps\284160
     HKEY_CLASSES_ROOT\\beamng\\DefaultIcon */
     //Sandbox Scramble technique
+    std::string Result;
     std::string K1 = HTA("536f6674776172655c56616c76655c537465616d");
     std::string K2 = HTA("536f6674776172655c56616c76655c537465616d5c417070735c323834313630");
     std::string K3 = HTA("6265616d6e675c44656661756c7449636f6e");
@@ -205,6 +205,7 @@ void Check(){
     MSG1.clear();
     MSG2.clear();
     MSG3.clear();
+    Result.clear();
     RegCloseKey(hKey);
 }
 

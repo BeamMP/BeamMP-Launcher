@@ -1,9 +1,6 @@
 ////
 //// Created by Anonymous275 on 3/3/2020.
 ////
-#define ENET_IMPLEMENTATION
-
-#include <condition_variable>
 #include <WinSock2.h>
 #include <WS2tcpip.h>
 #include <iostream>
@@ -14,7 +11,6 @@
 int ClientID = -1;
 extern int DEFAULT_PORT;
 std::chrono::time_point<std::chrono::steady_clock> PingStart,PingEnd;
-extern std::vector<std::string> GlobalInfo;
 bool TCPTerminate = false;
 bool Terminate = false;
 bool CServer = true;
@@ -43,25 +39,21 @@ void ServerSend(const std::string&Data, bool Rel){
     char C = 0;
     bool Ack = false;
     if(Data.length() > 3)C = Data.at(0);
-    if (C == 'O' || C == 'T')Ack = true;
+    if (C == 'O' || C == 'T' || C == 'C')Ack = true;
     if(Ack || Rel){
         if(Ack || Data.length() > 1000)SendLarge(Data);
         else TCPSend(Data);
     }else UDPSend(Data);
 
     if (MPDEV && Data.length() > 1000) {
-        std::cout << "(Launcher->Server) Bytes sent: " << Data.length()
-        << " : "
-        << Data.substr(0, 10)
-        << Data.substr(Data.length() - 10) << std::endl;
+        std::cout << "(Launcher->Server) Bytes sent: " + std::to_string(Data.length()) + " : "
+        + Data.substr(0, 10)
+        + Data.substr(Data.length() - 10) + "\n";
     }else if(MPDEV && C == 'Z'){
         //std::cout << "(Game->Launcher) : " << Data << std::endl;
     }
 }
-void NameRespond(){
-    std::string Packet = "NR" + GlobalInfo.at(0)+":"+GlobalInfo.at(2);
-    ServerSend(Packet,true);
-}
+
 
 void AutoPing(){
     while(!Terminate){
@@ -84,9 +76,6 @@ void ServerParser(const std::string& Data){
         case 'p':
             PingEnd = std::chrono::high_resolution_clock::now();
             ping = std::chrono::duration_cast<std::chrono::milliseconds>(PingEnd-PingStart).count();
-            return;
-        case 'N':
-            if(SubCode == 'R')NameRespond();
             return;
         case 'M':
             MStatus = Data;

@@ -29,8 +29,6 @@ void StartSync(const std::string &Data){
 std::string Parse(const std::string& Data){
     char Code = Data.substr(0,1).at(0), SubCode = 0;
     if(Data.length() > 1)SubCode = Data.substr(1,1).at(0);
-    ////std::cout << "Code : " << Code << std::endl;
-    ////std::cout << "Data : " << Data.substr(1) << std::endl;
     switch (Code){
         case 'A':
             return Data.substr(0,1);

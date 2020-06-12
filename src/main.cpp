@@ -10,7 +10,6 @@
 #include <vector>
 #include <thread>
 
-#pragma comment(lib, "urlmon.lib")
 void Download(const std::string& URL,const std::string& OutFileName);
 void StartGame(const std::string&ExeDir,const std::string&Current);
 std::string HTTP_REQUEST(const std::string&url,int port);
@@ -85,7 +84,7 @@ int main(int argc, char* argv[]){
     const unsigned long long NPos = std::string::npos;
     struct stat info{};
     system("cls");
-    std::string ver = "1.3", link, HTTP_Result;
+    std::string ver = "1.31", link, HTTP_Result;
     SetWindowTextA(GetConsoleWindow(),("BeamMP Launcher v" + ver).c_str());
     std::thread t1(Discord_Main);
     t1.detach();
