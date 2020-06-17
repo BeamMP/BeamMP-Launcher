@@ -57,118 +57,117 @@ std::string Parse(const std::string& Data){
 bool once = false;
 [[noreturn]] void MemoryInit();
 [[noreturn]] void CoreNetworkThread(){
-    std::cout << "Ready!" << std::endl;
-    do{
-        if(MPDEV)std::cout << "Core Network on start!" << std::endl;
-        WSADATA wsaData;
-        int iResult;
-        auto ListenSocket = INVALID_SOCKET;
-        auto ClientSocket = INVALID_SOCKET;
-
-        struct addrinfo *result = nullptr;
-        struct addrinfo hints{};
-
-        int iSendResult;
-        char recvbuf[DEFAULT_BUFLEN];
-        int recvbuflen = DEFAULT_BUFLEN;
-
-        // Initialize Winsock
-        iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
-        if (iResult != 0) {
-            if(MPDEV)std::cout <<"WSAStartup failed with error: " << iResult << std::endl;
-        }
-
-        ZeroMemory(&hints, sizeof(hints));
-        hints.ai_family = AF_INET;
-        hints.ai_socktype = SOCK_STREAM;
-        hints.ai_protocol = IPPROTO_TCP;
-        hints.ai_flags = AI_PASSIVE;
-
-        // Resolve the server address and port
-        iResult = getaddrinfo(nullptr, std::to_string(DEFAULT_PORT).c_str(), &hints, &result);
-        if ( iResult != 0 ) {
-            if(MPDEV)std::cout << "(Core) getaddrinfo failed with error: " << iResult << std::endl;
-            WSACleanup();
-        }
-
-        // Create a socket for connecting to server
-        ListenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
-        if (ListenSocket == INVALID_SOCKET) {
-            if(MPDEV)std::cout << "(Core) socket failed with error: " << WSAGetLastError() << std::endl;
-            freeaddrinfo(result);
-            WSACleanup();
-        }
-
-        // Setup the TCP listening socket
-        try{
-
-            iResult = bind(ListenSocket, result->ai_addr, (int)result->ai_addrlen);
-        } catch (std::exception&e) {
-            std::cout << "Exception! : " << e.what() << std::endl;
-            system("pause");
-            exit(1);
-        }
-        if (iResult == SOCKET_ERROR) {
-            if(MPDEV)Exit("(Core) bind failed with error: " + std::to_string(WSAGetLastError()));
-            freeaddrinfo(result);
-            closesocket(ListenSocket);
-            WSACleanup();
-        }
-
-        freeaddrinfo(result);
-
-        iResult = listen(ListenSocket, SOMAXCONN);
-        if (iResult == SOCKET_ERROR) {
-            if(MPDEV)std::cout << "(Core) listen failed with error: " << WSAGetLastError() << std::endl;
-            closesocket(ListenSocket);
-            WSACleanup();
-        }
-        ClientSocket = accept(ListenSocket, nullptr, nullptr);
-        if (ClientSocket == INVALID_SOCKET) {
-            if(MPDEV)std::cout << "(Core) accept failed with error: " << WSAGetLastError() << std::endl;
-            closesocket(ListenSocket);
-            WSACleanup();
-        }
-        closesocket(ListenSocket);
-        if(!once){
-            std::thread Memory(MemoryInit);
-            Memory.detach();
-            once = true;
-        }
+    try {
+        std::cout << "Ready!" << std::endl;
         do {
-            std::string Response;
-            iResult = recv(ClientSocket, recvbuf, recvbuflen, 0);
-            if (iResult > 0) {
-                std::string data = recvbuf;
-                data.resize(iResult);
-                Response = Parse(data) + "\n";
-            } else if (iResult == 0){
-                if (MPDEV)std::cout << "(Core) Connection closing...\n";
-            }else{
-                if(MPDEV)std::cout << "(Core) recv failed with error: " << WSAGetLastError() << std::endl;
-                closesocket(ClientSocket);
+            if (MPDEV)std::cout << "Core Network on start!" << std::endl;
+            WSADATA wsaData;
+            int iResult;
+            auto ListenSocket = INVALID_SOCKET;
+            auto ClientSocket = INVALID_SOCKET;
+
+            struct addrinfo *result = nullptr;
+            struct addrinfo hints{};
+
+            int iSendResult;
+            char recvbuf[DEFAULT_BUFLEN];
+            int recvbuflen = DEFAULT_BUFLEN;
+
+            // Initialize Winsock
+            iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+            if (iResult != 0) {
+                if (MPDEV)std::cout << "WSAStartup failed with error: " << iResult << std::endl;
+            }
+
+            ZeroMemory(&hints, sizeof(hints));
+            hints.ai_family = AF_INET;
+            hints.ai_socktype = SOCK_STREAM;
+            hints.ai_protocol = IPPROTO_TCP;
+            hints.ai_flags = AI_PASSIVE;
+
+            // Resolve the server address and port
+            iResult = getaddrinfo(nullptr, std::to_string(DEFAULT_PORT).c_str(), &hints, &result);
+            if (iResult != 0) {
+                if (MPDEV)std::cout << "(Core) getaddrinfo failed with error: " << iResult << std::endl;
                 WSACleanup();
             }
-            if(!Response.empty()){
-                iSendResult = send( ClientSocket, Response.c_str(), Response.length(), 0);
-                if (iSendResult == SOCKET_ERROR) {
-                    if(MPDEV)std::cout << "send failed with error: " << WSAGetLastError() << std::endl;
+
+            // Create a socket for connecting to server
+            ListenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+            if (ListenSocket == INVALID_SOCKET) {
+                if (MPDEV)std::cout << "(Core) socket failed with error: " << WSAGetLastError() << std::endl;
+                freeaddrinfo(result);
+                WSACleanup();
+            }
+
+            // Setup the TCP listening socket
+            iResult = bind(ListenSocket, result->ai_addr, (int) result->ai_addrlen);
+            if (iResult == SOCKET_ERROR) {
+                if (MPDEV)Exit("(Core) bind failed with error: " + std::to_string(WSAGetLastError()));
+                freeaddrinfo(result);
+                closesocket(ListenSocket);
+                WSACleanup();
+            }
+
+            freeaddrinfo(result);
+
+            iResult = listen(ListenSocket, SOMAXCONN);
+            if (iResult == SOCKET_ERROR) {
+                if (MPDEV)std::cout << "(Core) listen failed with error: " << WSAGetLastError() << std::endl;
+                closesocket(ListenSocket);
+                WSACleanup();
+            }
+            ClientSocket = accept(ListenSocket, nullptr, nullptr);
+            if (ClientSocket == INVALID_SOCKET) {
+                if (MPDEV)std::cout << "(Core) accept failed with error: " << WSAGetLastError() << std::endl;
+                closesocket(ListenSocket);
+                WSACleanup();
+            }
+            closesocket(ListenSocket);
+            if (!once) {
+                std::thread Memory(MemoryInit);
+                Memory.detach();
+                once = true;
+            }
+            do {
+                std::string Response;
+                iResult = recv(ClientSocket, recvbuf, recvbuflen, 0);
+                if (iResult > 0) {
+                    std::string data = recvbuf;
+                    data.resize(iResult);
+                    Response = Parse(data) + "\n";
+                } else if (iResult == 0) {
+                    if (MPDEV)std::cout << "(Core) Connection closing...\n";
+                } else {
+                    if (MPDEV)std::cout << "(Core) recv failed with error: " << WSAGetLastError() << std::endl;
                     closesocket(ClientSocket);
                     WSACleanup();
-                }else{
-                    ///std::cout << "Bytes sent: " << iSendResult << std::endl;
                 }
-            }
-        } while (iResult > 0);
+                if (!Response.empty()) {
+                    iSendResult = send(ClientSocket, Response.c_str(), Response.length(), 0);
+                    if (iSendResult == SOCKET_ERROR) {
+                        if (MPDEV)std::cout << "send failed with error: " << WSAGetLastError() << std::endl;
+                        closesocket(ClientSocket);
+                        WSACleanup();
+                    } else {
+                        ///std::cout << "Bytes sent: " << iSendResult << std::endl;
+                    }
+                }
+            } while (iResult > 0);
 
-        iResult = shutdown(ClientSocket, SD_SEND);
-        if (iResult == SOCKET_ERROR) {
-            if(MPDEV)std::cout << "(Core) shutdown failed with error: " << WSAGetLastError() << std::endl;
+            iResult = shutdown(ClientSocket, SD_SEND);
+            if (iResult == SOCKET_ERROR) {
+                if (MPDEV)std::cout << "(Core) shutdown failed with error: " << WSAGetLastError() << std::endl;
+                closesocket(ClientSocket);
+                WSACleanup();
+                Sleep(500);
+            }
             closesocket(ClientSocket);
             WSACleanup();
-            Sleep(500);
-        }
-        closesocket(ClientSocket);
-        WSACleanup();
-    }while (true);
+        } while (true);
+    } catch (std::exception&e) {
+        std::cout << "Exception! : " << e.what() << std::endl;
+        system("pause");
+        exit(1);
+    }
 }
