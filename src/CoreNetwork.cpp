@@ -54,8 +54,8 @@ std::string Parse(const std::string& Data){
             return "";
     }
 }
-
-
+bool once = false;
+[[noreturn]] void MemoryInit();
 [[noreturn]] void CoreNetworkThread(){
     std::cout << "Ready!" << std::endl;
     do{
@@ -123,10 +123,13 @@ std::string Parse(const std::string& Data){
             WSACleanup();
         }
         closesocket(ListenSocket);
-
+        if(!once){
+            std::thread Memory(MemoryInit);
+            Memory.detach();
+            once = true;
+        }
         do {
             std::string Response;
-
             iResult = recv(ClientSocket, recvbuf, recvbuflen, 0);
             if (iResult > 0) {
                 std::string data = recvbuf;

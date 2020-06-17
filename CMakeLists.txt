@@ -7,7 +7,8 @@ set(CMAKE_CXX_STANDARD 17)
 file(GLOB source_files
         "src/*.cpp" "src/include/*.h"
         "src/include/*.hpp" "src/curl/*.h"
-        "src/Network 2.0/*.cpp" "src/Network 2.0/*.h")
+        "src/Network 2.0/*.cpp" "src/Network 2.0/*.h"
+        "src/Memory/*.hpp" "src/Memory/*.cpp")
 
 add_executable(BeamMP-Launcher ${source_files})
 

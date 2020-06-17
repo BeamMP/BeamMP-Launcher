@@ -84,7 +84,7 @@ int main(int argc, char* argv[]){
     const unsigned long long NPos = std::string::npos;
     struct stat info{};
     system("cls");
-    std::string ver = "1.31", link, HTTP_Result;
+    std::string ver = "1.4", link, HTTP_Result;
     SetWindowTextA(GetConsoleWindow(),("BeamMP Launcher v" + ver).c_str());
     std::thread t1(Discord_Main);
     t1.detach();
@@ -103,7 +103,7 @@ int main(int argc, char* argv[]){
                 exit(-1);
             }
         }
-    }else MPDEV = true;
+    }else MPDEV = false;
     std::string Path = CheckDir(argv[0]);
     std::thread CFU(CheckForUpdates,ver);
     CFU.join();
@@ -121,7 +121,6 @@ int main(int argc, char* argv[]){
     Sec->join();
     delete Sec;
     if(SData.size() != 3)ExitError();
-
     std::string GamePath = SData.at(2);
     if(MPDEV)std::cout << "You own BeamNG on this machine!" << std::endl;
     std::cout << "Game Version : " << CheckVer(GamePath) << std::endl;

@@ -12,7 +12,7 @@
 
 extern std::vector<std::string> GlobalInfo;
 void Exit(const std::string& Msg);
-namespace fs = std::filesystem;
+namespace fs = std::experimental::filesystem;
 extern std::string UlStatus;
 extern bool Terminate;
 extern bool MPDEV;
@@ -124,6 +124,10 @@ void SyncResources(SOCKET Sock){
         } while (LFS.tellp() != std::stoi(*FS));
         LFS.close();
     }
-    STCPSend(Sock,"Done");
+    if(!FNames.empty()){
+        STCPSend(Sock,"Done");
+    }
+    FNames.clear();
+    FSizes.clear();
     std::cout << "Done!" << std::endl;
 }

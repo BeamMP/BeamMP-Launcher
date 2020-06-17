@@ -124,7 +124,7 @@ std::string QueryKey(HKEY hKey,int ID)
     delete [] buffer;
     return "";
 }
-namespace fs = std::filesystem;
+namespace fs = std::experimental::filesystem;
 void FileList(std::vector<std::string>&a,const std::string& Path){
     for (const auto &entry : fs::directory_iterator(Path)) {
         int pos = entry.path().filename().string().find('.');
@@ -135,18 +135,17 @@ void FileList(std::vector<std::string>&a,const std::string& Path){
 }
 bool Continue = false;
 void Find(const std::string& FName,const std::string& Path){
-    auto *FS = new std::vector<std::string>;
-    FileList(*FS,Path);
-    for(const std::string&a : *FS){
+    std::vector<std::string> FS;
+    FileList(FS,Path);
+    for(const std::string&a : FS){
         if(a.find(FName)!=std::string::npos)Continue = true;
     }
-    delete FS;
+    FS.clear();
 }
 void ExitError(){
     std::string MSG2 = HTA("4572726f722120506c6561736520436f6e7461637420537570706f7274");
     Exit(MSG2 + " Code 2");
 }
-
 void Check(){
     /*.HKEY_CURRENT_USER\Software\Valve\Steam
     HKEY_CURRENT_USER\\Software\Valve\Steam\Apps\284160
@@ -161,7 +160,6 @@ void Check(){
     std::string MSG3 = HTA("596f7520646f206e6f74206f776e207468652067616d65206f6e2074686973206d616368696e6521"); //You do not own the game on this machine!
     //std::string MSG = HTA("5761726e696e672120796f75206f776e207468652067616d6520627574206120637261636b65642067616d652077617320666f756e64206f6e20796f7572206d616368696e6521");
     //not used : Warning! you own the game but a cracked game was found on your machine!
-
     HKEY hKey;
     LONG dwRegOPenKey = OpenKey(HKEY_CURRENT_USER, K1.c_str(), &hKey);
     if(dwRegOPenKey == ERROR_SUCCESS) {
@@ -170,7 +168,7 @@ void Check(){
         SData.push_back(Result);
         Result += HTA("2f7573657264617461");
         struct stat buffer{};
-        if(stat (Result.c_str(), &buffer) == 0){
+        if(stat(Result.c_str(), &buffer) == 0){
             auto *F = new std::thread(Find,HTA("3238343136302e6a736f6e"),Result);
             F->join();
             delete F;

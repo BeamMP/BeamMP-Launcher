@@ -31,6 +31,8 @@ void RollBack(const std::string&Val,int T){
     if(!Val.empty())Write(Val);
     else DeleteKey();
 }
+
+void SetPID(DWORD PID);
 void StartGame(const std::string&ExeDir,const std::string&Current){
     BOOL bSuccess = FALSE;
     PROCESS_INFORMATION pi;
@@ -41,7 +43,7 @@ void StartGame(const std::string&ExeDir,const std::string&Current){
     if (bSuccess)
     {
         std::cout << "Game Launched!\n";
-        DWORD dwPid = pi.dwProcessId; //Gets the PID
+        SetPID(pi.dwProcessId);
         std::thread RB(RollBack,Write(Current),7);
         RB.detach();
         WaitForSingleObject(pi.hProcess, INFINITE);
