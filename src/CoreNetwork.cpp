@@ -100,7 +100,14 @@ bool once = false;
         }
 
         // Setup the TCP listening socket
-        iResult = bind(ListenSocket, result->ai_addr, (int)result->ai_addrlen);
+        try{
+
+            iResult = bind(ListenSocket, result->ai_addr, (int)result->ai_addrlen);
+        } catch (std::exception&e) {
+            std::cout << "Exception! : " << e.what() << std::endl;
+            system("pause");
+            exit(1);
+        }
         if (iResult == SOCKET_ERROR) {
             if(MPDEV)Exit("(Core) bind failed with error: " + std::to_string(WSAGetLastError()));
             freeaddrinfo(result);
