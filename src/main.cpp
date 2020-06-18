@@ -103,7 +103,7 @@ int main(int argc, char* argv[]){
                 exit(-1);
             }
         }
-    }else MPDEV = false;
+    }else MPDEV = true;
     std::string Path = CheckDir(argv[0]);
     std::thread CFU(CheckForUpdates,ver);
     CFU.join();
