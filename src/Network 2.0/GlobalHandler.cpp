@@ -106,7 +106,6 @@ void Reset() {
     UDPSock = -1;
     TCPSock = -1;
 }
-
 std::string Compress(const std::string&Data);
 std::string Decompress(const std::string&Data);
 void TCPGameServer(const std::string& IP, int Port){

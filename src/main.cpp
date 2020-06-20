@@ -42,27 +42,18 @@ void Exit(const std::string& Msg){
 }
 
 std::string CheckDir(char*dir){
-    char*temp;size_t len;
     struct stat info{};
-    _dupenv_s(&temp, &len,"APPDATA");
-    std::string DN = "BeamMP-Launcher.exe",CDir = dir, AD = temp,FN = CDir.substr(CDir.find_last_of('\\')+1,CDir.size());
-    AD += "\\BeamMP-Launcher";
+    std::string DN = "BeamMP-Launcher.exe",CDir = dir,FN = CDir.substr(CDir.find_last_of('\\')+1);
     if(FN != DN){
         if(stat(DN.c_str(),&info)==0)remove(DN.c_str());
         SystemExec("rename \""+ FN +"\" " + DN + ">nul");
     }
-    if(CDir.substr(0,CDir.find_last_of('\\')) != AD){
-        _mkdir(AD.c_str());
-        SystemExec(R"(move "BeamMP-Launcher.exe" ")" + AD + "\">nul");
-    }
-    SetCurrentDirectoryA(AD.c_str());
-    SystemExec("rename *.exe " + DN + ">nul");
-    SystemExec(R"(powershell "$s=(New-Object -COM WScript.Shell).CreateShortcut('%userprofile%\Desktop\BeamMP-Launcher.lnk');$s.TargetPath=')"+AD+"\\"+DN+"';$s.Save()\"");
+    //SystemExec(R"(powershell "$s=(New-Object -COM WScript.Shell).CreateShortcut('%userprofile%\Desktop\BeamMP-Launcher.lnk');$s.TargetPath=')"+AD+"\\"+DN+"';$s.Save()\"");
     if(stat("BeamNG",&info))SystemExec("mkdir BeamNG>nul");
-    if(stat("BeamNG\\mods",&info))SystemExec("mkdir BeamNG\\mods>nul");
+    if(!stat("BeamNG\\mods",&info))SystemExec("RD /S /Q BeamNG\\mods>nul");
+    SystemExec("mkdir BeamNG\\mods>nul");
     if(stat("BeamNG\\settings",&info))SystemExec("mkdir BeamNG\\settings>nul");
-    SetFileAttributesA("BeamNG",2|4);
-    return AD + "\\BeamNG";
+    return CDir.substr(0,CDir.find_last_of('\\')) + "\\BeamNG";
 }
 
 std::string CheckVer(const std::string &path){
@@ -111,9 +102,12 @@ int main(int argc, char* argv[]){
     if(argc > 1){
         std::string Port = argv[1];
         if(Port.find_first_not_of("0123456789") == NPos){
-            DEFAULT_PORT = std::stoi(Port);
-            std::cout << "Running on custom port : " << DEFAULT_PORT << std::endl;
+            if(std::stoi(Port) > 1000){
+                DEFAULT_PORT = std::stoi(Port);
+                std::cout << "Running on custom port : " << DEFAULT_PORT << std::endl;
+            }
         }
+        if(argc > 2)MPDEV = false;
     }
 
     //Security

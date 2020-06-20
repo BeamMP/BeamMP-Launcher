@@ -15,8 +15,9 @@ void Exit(const std::string& Msg);
 namespace fs = std::experimental::filesystem;
 extern std::string UlStatus;
 extern bool Terminate;
+extern bool Confirm;
 extern bool MPDEV;
-
+std::string ListOfMods;
 std::vector<std::string> Split(const std::string& String,const std::string& delimiter){
     std::vector<std::string> Val;
     size_t pos = 0;
@@ -47,7 +48,7 @@ void STCPSend(SOCKET socket,const std::string&Data){
         Terminate = true;
         return;
     }
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
 }
 std::pair<char*,int> STCPRecv(SOCKET socket){
     char buf[64000];
@@ -76,6 +77,13 @@ void CheckForDir(){
         _wmkdir(L"Resources");
     }
 }
+void WaitForConfirm(){
+    while(!Terminate && !Confirm){
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+    Confirm = false;
+}
+
 void SyncResources(SOCKET Sock){
     if(MPDEV)std::cout << "SyncResources Called" << std::endl;
     CheckForDir();
@@ -83,28 +91,50 @@ void SyncResources(SOCKET Sock){
     STCPSend(Sock,"SR");
     char* Res = STCPRecv(Sock).first;
     if(strlen(Res) == 0){
+        std::cout << "Didn't Receive any mod from server skipping..." << std::endl;
         STCPSend(Sock,"Done");
+        UlStatus = "UlDone";
+        ListOfMods = "-";
+        std::cout << "Done!" << std::endl;
         return;
     }
     std::vector<std::string> list = Split(std::string(Res), ";");
     std::vector<std::string> FNames(list.begin(), list.begin() + (list.size() / 2));
     std::vector<std::string> FSizes(list.begin() + (list.size() / 2), list.end());
     list.clear();
-
+    int Amount = 0,Pos = 0;
     struct stat info{};
+    std::string a,t;
+    for(const std::string&N : FNames){
+        if(!N.empty()){
+            t += N.substr(N.find_last_of('/')+1) + ";";
+        }
+    }
+    if(t.empty())ListOfMods = "-";
+    else ListOfMods = t;
+    t.clear();
+
     for(auto FN = FNames.begin(),FS = FSizes.begin(); FN != FNames.end() && !Terminate; ++FN,++FS) {
-        std::string a;
+        int pos = FN->find_last_of('/');
+        if (pos == std::string::npos)continue;
+        Amount++;
+    }
+    for(auto FN = FNames.begin(),FS = FSizes.begin(); FN != FNames.end() && !Terminate; ++FN,++FS) {
         int pos = FN->find_last_of('/');
         if (pos != std::string::npos) {
             a = "Resources" + FN->substr(pos);
         } else continue;
         char *Data;
-
+        Pos++;
         if (stat(a.c_str(), &info) == 0) {
             if (FS->find_first_not_of("0123456789") != std::string::npos)continue;
-            if (fs::file_size(a) == std::stoi(*FS)) {
+            if (fs::file_size(a) == std::stoi(*FS)){
+                UlStatus = "UlLoading Resource: (" + std::to_string(Pos) + "/" + std::to_string(Amount) +
+                           "): " + a.substr(a.find_last_of('/'));
+                fs::copy_file(a, "BeamNG/mods"+a.substr(a.find_last_of('/')), fs::copy_options::overwrite_existing);
+                WaitForConfirm();
                 continue;
-            } else remove(a.c_str());
+            }else remove(a.c_str());
         }
         CheckForDir();
         std::ofstream LFS;
@@ -119,15 +149,21 @@ void SyncResources(SOCKET Sock){
             LFS.write(Data, Pair.second);
             float per = LFS.tellp() / std::stof(*FS) * 100;
             std::string Percent = std::to_string(truncf(per * 10) / 10);
-            UlStatus = "UlDownloading Resource: " + a.substr(a.find_last_of('/')) + " (" +
+            UlStatus = "UlDownloading Resource: (" + std::to_string(Pos) + "/" + std::to_string(Amount) +
+                       "): " + a.substr(a.find_last_of('/')) + " (" +
                        Percent.substr(0, Percent.find('.') + 2) + "%)";
         } while (LFS.tellp() != std::stoi(*FS));
         LFS.close();
-    }
-    if(!FNames.empty()){
-        STCPSend(Sock,"Done");
+        UlStatus = "UlLoading Resource: (" + std::to_string(Pos) + "/" + std::to_string(Amount) +
+                   "): " + a.substr(a.find_last_of('/'));
+        fs::copy_file(a, "BeamNG/mods"+a.substr(a.find_last_of('/')), fs::copy_options::overwrite_existing);
+        WaitForConfirm();
     }
     FNames.clear();
     FSizes.clear();
+    a.clear();
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    UlStatus = "UlDone";
+    STCPSend(Sock,"Done");
     std::cout << "Done!" << std::endl;
 }

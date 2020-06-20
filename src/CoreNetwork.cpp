@@ -19,8 +19,10 @@ extern int ping;
 extern bool Terminate;
 extern bool TCPTerminate;
 extern bool MPDEV;
-
+extern std::string ListOfMods;
+bool Confirm = false;
 void StartSync(const std::string &Data){
+    Terminate = false;
     std::thread t1(ProxyThread,Data.substr(1,Data.find(':')-1),std::stoi(Data.substr(Data.find(':')+1)));
     //std::thread t1(ProxyThread,"127.0.0.1",30814);
     t1.detach();
@@ -35,8 +37,14 @@ std::string Parse(const std::string& Data){
         case 'B':
             return Code + HTTP_REQUEST("s1.yourthought.co.uk/servers-info",3599);
         case 'C':
+            ListOfMods.clear();
             StartSync(Data);
-            return "";
+            std::cout << "Called Connect" << std::endl;
+            while(ListOfMods.empty() && !Terminate){
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+            }
+            if(ListOfMods == "-")return "";
+            else return "L"+ListOfMods;
         case 'U':
             if(SubCode == 'l')return UlStatus;
             if(SubCode == 'p')return "Up" + std::to_string(ping);
@@ -49,6 +57,9 @@ std::string Parse(const std::string& Data){
                 TCPTerminate = true; ////Revisit later when TCP is stable
             }
             if(SubCode == 'G')exit(2);
+            return "";
+        case 'R': //will send mod name useful??
+            Confirm = true;
             return "";
         default:
             return "";
