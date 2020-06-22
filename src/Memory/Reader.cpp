@@ -4,6 +4,7 @@
 #include "Memory.hpp"
 #include <iostream>
 #include <thread>
+extern std::string MStatus;
 extern bool MPDEV;
 Memory Game;
 std::string GameVer(HANDLE processHandle, long long Address){
@@ -34,7 +35,7 @@ void SetPID(DWORD PID){
     while(true){
         Map = LoadedMap(processHandle,Lib1);
         if(!Map.empty() && Map != "-1" && Map.find("/info.json") != std::string::npos && Map != Temp){
-            std::cout << "You just loaded: " << Map << std::endl;
+            if(MStatus.find(Map) == std::string::npos)exit(5);
             Temp = Map;
         }
         Map.clear();

@@ -79,7 +79,7 @@ void CheckForDir(){
 }
 void WaitForConfirm(){
     while(!Terminate && !Confirm){
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
     Confirm = false;
 }
@@ -131,6 +131,7 @@ void SyncResources(SOCKET Sock){
             if (fs::file_size(a) == std::stoi(*FS)){
                 UlStatus = "UlLoading Resource: (" + std::to_string(Pos) + "/" + std::to_string(Amount) +
                            "): " + a.substr(a.find_last_of('/'));
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 fs::copy_file(a, "BeamNG/mods"+a.substr(a.find_last_of('/')), fs::copy_options::overwrite_existing);
                 WaitForConfirm();
                 continue;
@@ -156,13 +157,13 @@ void SyncResources(SOCKET Sock){
         LFS.close();
         UlStatus = "UlLoading Resource: (" + std::to_string(Pos) + "/" + std::to_string(Amount) +
                    "): " + a.substr(a.find_last_of('/'));
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
         fs::copy_file(a, "BeamNG/mods"+a.substr(a.find_last_of('/')), fs::copy_options::overwrite_existing);
         WaitForConfirm();
     }
     FNames.clear();
     FSizes.clear();
     a.clear();
-    std::this_thread::sleep_for(std::chrono::seconds(2));
     UlStatus = "UlDone";
     STCPSend(Sock,"Done");
     std::cout << "Done!" << std::endl;

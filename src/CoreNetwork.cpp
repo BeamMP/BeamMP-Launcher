@@ -6,10 +6,8 @@
 #include <iostream>
 #include <string>
 #include <thread>
-#define DEFAULT_BUFLEN 64000
-
+#include <set>
 extern int DEFAULT_PORT;
-
 std::string HTTP_REQUEST(const std::string&url,int port);
 void ProxyThread(const std::string& IP, int port);
 void Exit(const std::string& Msg);
@@ -21,8 +19,10 @@ extern bool TCPTerminate;
 extern bool MPDEV;
 extern std::string ListOfMods;
 bool Confirm = false;
+std::set<std::string> Conf;
 void StartSync(const std::string &Data){
     Terminate = false;
+    Conf.clear();
     std::thread t1(ProxyThread,Data.substr(1,Data.find(':')-1),std::stoi(Data.substr(Data.find(':')+1)));
     //std::thread t1(ProxyThread,"127.0.0.1",30814);
     t1.detach();
@@ -39,7 +39,7 @@ std::string Parse(const std::string& Data){
         case 'C':
             ListOfMods.clear();
             StartSync(Data);
-            std::cout << "Called Connect" << std::endl;
+            std::cout << "Connecting to server" << std::endl;
             while(ListOfMods.empty() && !Terminate){
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             }
@@ -54,12 +54,15 @@ std::string Parse(const std::string& Data){
         case 'Q':
             if(SubCode == 'S'){
                 Terminate = true;
-                TCPTerminate = true; ////Revisit later when TCP is stable
+                TCPTerminate = true;
             }
             if(SubCode == 'G')exit(2);
             return "";
-        case 'R': //will send mod name useful??
-            Confirm = true;
+        case 'R': //will send mod name
+            if(Conf.find(Data) == Conf.end()){
+                Conf.insert(Data);
+                Confirm = true;
+            }
             return "";
         default:
             return "";
@@ -81,8 +84,8 @@ bool once = false;
             struct addrinfo hints{};
 
             int iSendResult;
-            char recvbuf[DEFAULT_BUFLEN];
-            int recvbuflen = DEFAULT_BUFLEN;
+            char recvbuf[64000];
+            int recvbuflen = 64000;
 
             // Initialize Winsock
             iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);

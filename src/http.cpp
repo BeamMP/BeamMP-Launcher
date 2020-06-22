@@ -5,7 +5,8 @@
 #define CURL_STATICLIB
 #include "curl/curl.h"
 #include <iostream>
-
+#include <string>
+void Exit(const std::string& Msg);
 static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
 {
     ((std::string*)userp)->append((char*)contents, size * nmemb);
@@ -84,7 +85,7 @@ void Download(const std::string& URL,const std::string& Path)
         res = curl_easy_perform(curl);
         curl_easy_cleanup(curl);
         if(CURLE_OK != res) {
-            fprintf(stderr, "Failed to download! Code : %d\n", res);
+            Exit("Failed to download! Code : " + std::to_string(res) + "\n Maybe try as admin?");
         }
     }
     if(file.stream)fclose(file.stream);

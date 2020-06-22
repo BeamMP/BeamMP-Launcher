@@ -51,6 +51,7 @@ std::string CheckDir(char*dir){
     //SystemExec(R"(powershell "$s=(New-Object -COM WScript.Shell).CreateShortcut('%userprofile%\Desktop\BeamMP-Launcher.lnk');$s.TargetPath=')"+AD+"\\"+DN+"';$s.Save()\"");
     if(stat("BeamNG",&info))SystemExec("mkdir BeamNG>nul");
     if(!stat("BeamNG\\mods",&info))SystemExec("RD /S /Q BeamNG\\mods>nul");
+    if(!stat("BeamNG\\mods",&info))Exit("");
     SystemExec("mkdir BeamNG\\mods>nul");
     if(stat("BeamNG\\settings",&info))SystemExec("mkdir BeamNG\\settings>nul");
     return CDir.substr(0,CDir.find_last_of('\\')) + "\\BeamNG";
