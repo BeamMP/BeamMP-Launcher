@@ -14,6 +14,7 @@ extern std::vector<std::string> GlobalInfo;
 void Exit(const std::string& Msg);
 namespace fs = std::experimental::filesystem;
 extern std::string UlStatus;
+extern bool TCPTerminate;
 extern bool Terminate;
 extern bool Confirm;
 extern bool MPDEV;
@@ -88,9 +89,18 @@ void SyncResources(SOCKET Sock){
     if(MPDEV)std::cout << "SyncResources Called" << std::endl;
     CheckForDir();
     STCPSend(Sock,"NR" + GlobalInfo.at(0)+":"+GlobalInfo.at(2));
+    auto Res = STCPRecv(Sock);
+    std::string msg = Res.first;
+    if(msg.size() < 2 || msg.substr(0,2) != "WS"){
+        Terminate = true;
+        TCPTerminate = true;
+        UlStatus = "UlDisconnected";
+        std::cout << "Terminated!" << std::endl;
+        return;
+    }
     STCPSend(Sock,"SR");
-    char* Res = STCPRecv(Sock).first;
-    if(strlen(Res) == 0){
+    Res = STCPRecv(Sock);
+    if(strlen(Res.first) == 0){
         std::cout << "Didn't Receive any mod from server skipping..." << std::endl;
         STCPSend(Sock,"Done");
         UlStatus = "UlDone";
@@ -98,7 +108,7 @@ void SyncResources(SOCKET Sock){
         std::cout << "Done!" << std::endl;
         return;
     }
-    std::vector<std::string> list = Split(std::string(Res), ";");
+    std::vector<std::string> list = Split(std::string(Res.first), ";");
     std::vector<std::string> FNames(list.begin(), list.begin() + (list.size() / 2));
     std::vector<std::string> FSizes(list.begin() + (list.size() / 2), list.end());
     list.clear();
