@@ -85,7 +85,7 @@ void Download(const std::string& URL,const std::string& Path)
         res = curl_easy_perform(curl);
         curl_easy_cleanup(curl);
         if(CURLE_OK != res) {
-            Exit("Failed to download! Code : " + std::to_string(res) + "\n Maybe try as admin?");
+            Exit("Failed to download! Code : " + std::to_string(res));
         }
     }
     if(file.stream)fclose(file.stream);

@@ -18,14 +18,13 @@ std::vector<std::string> GetDiscordInfo();
 extern std::vector<std::string> SData;
 std::vector<std::string> GlobalInfo;
 std::string getHardwareID();
+std::string ver = "1.41";
 int DEFAULT_PORT = 4444;
 void Discord_Main();
 bool MPDEV = false;
 void ProxyStart();
 void ExitError();
 void Check();
-
-
 void SystemExec(const std::string& cmd){
     system(cmd.c_str());
 }
@@ -40,10 +39,19 @@ void Exit(const std::string& Msg){
     std::cin.ignore();
     exit(-1);
 }
-
-std::string CheckDir(char*dir){
+void ReLaunch(int argc,char*args[]){
+    std::string Arg;
+    for(int c = 2; c <= argc; c++){
+        Arg += " ";
+        Arg += args[c-1];
+    }
+    system("cls");
+    ShellExecute(nullptr,"runas","BeamMP-Launcher.exe",Arg.c_str(),nullptr,SW_SHOWNORMAL);
+    exit(1);
+}
+std::string CheckDir(int argc,char*args[]){
     struct stat info{};
-    std::string DN = "BeamMP-Launcher.exe",CDir = dir,FN = CDir.substr(CDir.find_last_of('\\')+1);
+    std::string DN = "BeamMP-Launcher.exe",CDir = args[0],FN = CDir.substr(CDir.find_last_of('\\')+1);
     if(FN != DN){
         if(stat(DN.c_str(),&info)==0)remove(DN.c_str());
         SystemExec("rename \""+ FN +"\" " + DN + ">nul");
@@ -51,7 +59,7 @@ std::string CheckDir(char*dir){
     //SystemExec(R"(powershell "$s=(New-Object -COM WScript.Shell).CreateShortcut('%userprofile%\Desktop\BeamMP-Launcher.lnk');$s.TargetPath=')"+AD+"\\"+DN+"';$s.Save()\"");
     if(stat("BeamNG",&info))SystemExec("mkdir BeamNG>nul");
     if(!stat("BeamNG\\mods",&info))SystemExec("RD /S /Q BeamNG\\mods>nul");
-    if(!stat("BeamNG\\mods",&info))Exit("");
+    if(!stat("BeamNG\\mods",&info))ReLaunch(argc,args);
     SystemExec("mkdir BeamNG\\mods>nul");
     if(stat("BeamNG\\settings",&info))SystemExec("mkdir BeamNG\\settings>nul");
     return CDir.substr(0,CDir.find_last_of('\\')) + "\\BeamNG";
@@ -76,7 +84,7 @@ int main(int argc, char* argv[]){
     const unsigned long long NPos = std::string::npos;
     struct stat info{};
     system("cls");
-    std::string ver = "1.4", link, HTTP_Result;
+    std::string link, HTTP_Result;
     SetWindowTextA(GetConsoleWindow(),("BeamMP Launcher v" + ver).c_str());
     std::thread t1(Discord_Main);
     t1.detach();
@@ -96,7 +104,7 @@ int main(int argc, char* argv[]){
             }
         }
     }else MPDEV = true;
-    std::string Path = CheckDir(argv[0]);
+    std::string Path = CheckDir(argc,argv);
     std::thread CFU(CheckForUpdates,ver);
     CFU.join();
 

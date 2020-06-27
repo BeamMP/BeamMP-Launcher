@@ -54,7 +54,7 @@ void LOOP(){
 void AckID(int ID){
     for(PacketData* p : BigDataAcks){
         if(p->ID == ID){
-            BigDataAcks.erase(p);
+            p->Tries = 25;
             break;
         }
     }

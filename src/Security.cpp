@@ -23,7 +23,7 @@ std::string HTA(const std::string& hex)
     for (size_t i = 0; i < hex.length(); i += 2)
     {
         std::string part = hex.substr(i, 2);
-        char ch = stoul(part, nullptr, 16);
+        char ch = char(stoul(part, nullptr, 16));
         ascii += ch;
     }
     return ascii;
@@ -231,17 +231,17 @@ char* HashMD5(char* data, DWORD *result)
     char *strHash;
     strHash = (char*)malloc(500);
     memset(strHash, '\0', 500);
-    if (!CryptAcquireContext(&cryptProv, NULL, MS_DEF_PROV, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT))
+    if (!CryptAcquireContext(&cryptProv, nullptr, MS_DEF_PROV, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT))
     {
         dwStatus = GetLastError();
-        printf("CryptAcquireContext failed: %d\n", dwStatus);
+        printf("CryptAcquireContext failed: %lu\n", dwStatus);
         *result = dwStatus;
         return nullptr;
     }
     if (!CryptCreateHash(cryptProv, CALG_MD5, 0, 0, &cryptHash))
     {
         dwStatus = GetLastError();
-        printf("CryptCreateHash failed: %d\n", dwStatus);
+        printf("CryptCreateHash failed: %lu\n", dwStatus);
         CryptReleaseContext(cryptProv, 0);
         *result = dwStatus;
         return nullptr;
@@ -249,7 +249,7 @@ char* HashMD5(char* data, DWORD *result)
     if (!CryptHashData(cryptHash, (BYTE*)data, strlen(data), 0))
     {
         dwStatus = GetLastError();
-        printf("CryptHashData failed: %d\n", dwStatus);
+        printf("CryptHashData failed: %lu\n", dwStatus);
         CryptReleaseContext(cryptProv, 0);
         CryptDestroyHash(cryptHash);
         *result = dwStatus;
@@ -258,7 +258,7 @@ char* HashMD5(char* data, DWORD *result)
     if (!CryptGetHashParam(cryptHash, HP_HASHVAL, hash, &cbHash, 0))
     {
         dwStatus = GetLastError();
-        printf("CryptGetHashParam failed: %d\n", dwStatus);
+        printf("CryptGetHashParam failed: %lu\n", dwStatus);
         CryptReleaseContext(cryptProv, 0);
         CryptDestroyHash(cryptHash);
         *result = dwStatus;

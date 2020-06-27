@@ -15,6 +15,7 @@ void Exit(const std::string& Msg);
 namespace fs = std::experimental::filesystem;
 extern std::string UlStatus;
 extern bool TCPTerminate;
+extern std::string ver;
 extern bool Terminate;
 extern bool Confirm;
 extern bool MPDEV;
@@ -88,7 +89,8 @@ void WaitForConfirm(){
 void SyncResources(SOCKET Sock){
     if(MPDEV)std::cout << "SyncResources Called" << std::endl;
     CheckForDir();
-    STCPSend(Sock,"NR" + GlobalInfo.at(0)+":"+GlobalInfo.at(2));
+    STCPSend(Sock,"NR" + GlobalInfo.at(0) + ":" +GlobalInfo.at(2));
+    STCPSend(Sock,"VC" + ver);
     auto Res = STCPRecv(Sock);
     std::string msg = Res.first;
     if(msg.size() < 2 || msg.substr(0,2) != "WS"){
@@ -100,11 +102,10 @@ void SyncResources(SOCKET Sock){
     }
     STCPSend(Sock,"SR");
     Res = STCPRecv(Sock);
-    if(strlen(Res.first) == 0){
-        std::cout << "Didn't Receive any mod from server skipping..." << std::endl;
-        STCPSend(Sock,"Done");
-        UlStatus = "UlDone";
+    if(strlen(Res.first) == 0 || std::string(Res.first) == "-"){
+        std::cout << "Didn't Receive any mods..." << std::endl;
         ListOfMods = "-";
+        STCPSend(Sock,"Done");
         std::cout << "Done!" << std::endl;
         return;
     }
@@ -149,22 +150,24 @@ void SyncResources(SOCKET Sock){
         }
         CheckForDir();
         std::ofstream LFS;
-        STCPSend(Sock, "f" + *FN);
         do {
-            auto Pair = STCPRecv(Sock);
-            Data = Pair.first;
-            if (strcmp(Data, "Cannot Open") == 0 || Terminate)break;
-            if(!LFS.is_open()){
-                LFS.open(a.c_str(), std::ios_base::app | std::ios::binary);
-            }
-            LFS.write(Data, Pair.second);
-            float per = LFS.tellp() / std::stof(*FS) * 100;
-            std::string Percent = std::to_string(truncf(per * 10) / 10);
-            UlStatus = "UlDownloading Resource: (" + std::to_string(Pos) + "/" + std::to_string(Amount) +
-                       "): " + a.substr(a.find_last_of('/')) + " (" +
-                       Percent.substr(0, Percent.find('.') + 2) + "%)";
-        } while (LFS.tellp() != std::stoi(*FS));
-        LFS.close();
+            STCPSend(Sock, "f" + *FN);
+            do {
+                auto Pair = STCPRecv(Sock);
+                Data = Pair.first;
+                if (strcmp(Data, "Cannot Open") == 0 || Terminate)break;
+                if (!LFS.is_open()) {
+                    LFS.open(a.c_str(), std::ios_base::app | std::ios::binary);
+                }
+                LFS.write(Data, Pair.second);
+                float per = LFS.tellp() / std::stof(*FS) * 100;
+                std::string Percent = std::to_string(truncf(per * 10) / 10);
+                UlStatus = "UlDownloading Resource: (" + std::to_string(Pos) + "/" + std::to_string(Amount) +
+                           "): " + a.substr(a.find_last_of('/')) + " (" +
+                           Percent.substr(0, Percent.find('.') + 2) + "%)";
+            } while (LFS.tellp() != std::stoi(*FS) && LFS.tellp() < std::stoi(*FS));
+            LFS.close();
+        }while(fs::file_size(a) != std::stoi(*FS));
         UlStatus = "UlLoading Resource: (" + std::to_string(Pos) + "/" + std::to_string(Amount) +
                    "): " + a.substr(a.find_last_of('/'));
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
@@ -174,7 +177,6 @@ void SyncResources(SOCKET Sock){
     FNames.clear();
     FSizes.clear();
     a.clear();
-    UlStatus = "UlDone";
     STCPSend(Sock,"Done");
     std::cout << "Done!" << std::endl;
 }

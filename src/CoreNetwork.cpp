@@ -43,7 +43,7 @@ std::string Parse(const std::string& Data){
             while(ListOfMods.empty() && !Terminate){
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             }
-            if(ListOfMods == "-")return "";
+            if(ListOfMods == "-")return "L";
             else return "L"+ListOfMods;
         case 'U':
             if(SubCode == 'l')return UlStatus;
@@ -122,9 +122,7 @@ bool once = false;
                 closesocket(ListenSocket);
                 WSACleanup();
             }
-
-            freeaddrinfo(result);
-
+            
             iResult = listen(ListenSocket, SOMAXCONN);
             if (iResult == SOCKET_ERROR) {
                 if (MPDEV)std::cout << "(Core) listen failed with error: " << WSAGetLastError() << std::endl;
