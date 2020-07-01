@@ -18,7 +18,7 @@ std::vector<std::string> GetDiscordInfo();
 extern std::vector<std::string> SData;
 std::vector<std::string> GlobalInfo;
 std::string getHardwareID();
-std::string ver = "1.41";
+std::string ver = "1.43";
 int DEFAULT_PORT = 4444;
 void Discord_Main();
 bool MPDEV = false;
@@ -56,7 +56,6 @@ std::string CheckDir(int argc,char*args[]){
         if(stat(DN.c_str(),&info)==0)remove(DN.c_str());
         SystemExec("rename \""+ FN +"\" " + DN + ">nul");
     }
-    //SystemExec(R"(powershell "$s=(New-Object -COM WScript.Shell).CreateShortcut('%userprofile%\Desktop\BeamMP-Launcher.lnk');$s.TargetPath=')"+AD+"\\"+DN+"';$s.Save()\"");
     if(stat("BeamNG",&info))SystemExec("mkdir BeamNG>nul");
     if(!stat("BeamNG\\mods",&info))SystemExec("RD /S /Q BeamNG\\mods>nul");
     if(!stat("BeamNG\\mods",&info))ReLaunch(argc,args);
@@ -130,7 +129,7 @@ int main(int argc, char* argv[]){
     std::string ExeDir = GamePath.substr(0,GamePath.find_last_of('\\')) + R"(\Bin64\BeamNG.drive.x64.exe)";
     std::string Settings = Path + "\\settings\\uiapps-layouts.json";
     if(stat(Settings.c_str(),&info)!=0){
-       link = "https://beamng-mp.com/client-data";
+       link = "https://beamng-mp.com/client-ui-data";
        std::cout << "Downloading default config..." << std::endl;
        Download(link,Settings);
        std::cout << "Download Complete!" << std::endl;

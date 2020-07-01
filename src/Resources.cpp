@@ -9,7 +9,7 @@
 #include <string>
 #include <thread>
 #include <vector>
-
+#include <set>
 extern std::vector<std::string> GlobalInfo;
 void Exit(const std::string& Msg);
 namespace fs = std::experimental::filesystem;
@@ -96,7 +96,7 @@ void SyncResources(SOCKET Sock){
     if(msg.size() < 2 || msg.substr(0,2) != "WS"){
         Terminate = true;
         TCPTerminate = true;
-        UlStatus = "UlDisconnected";
+        UlStatus = "UlDisconnected: outdated server/client";
         std::cout << "Terminated!" << std::endl;
         return;
     }
@@ -152,6 +152,7 @@ void SyncResources(SOCKET Sock){
         std::ofstream LFS;
         do {
             STCPSend(Sock, "f" + *FN);
+            //std::set<std::pair<char*,int>> segments;
             do {
                 auto Pair = STCPRecv(Sock);
                 Data = Pair.first;
@@ -159,18 +160,25 @@ void SyncResources(SOCKET Sock){
                 if (!LFS.is_open()) {
                     LFS.open(a.c_str(), std::ios_base::app | std::ios::binary);
                 }
-                LFS.write(Data, Pair.second);
-                float per = LFS.tellp() / std::stof(*FS) * 100;
+                LFS.write(Data,Pair.second);
+                /*char* Segment = new char[Pair.second];
+                memcpy_s(Segment,Pair.second,Data,Pair.second);
+                segments.insert(std::make_pair(Segment,Pair.second));
+                total += Pair.second;*/
+                float per = LFS.tellp()/ std::stof(*FS) * 100;
                 std::string Percent = std::to_string(truncf(per * 10) / 10);
                 UlStatus = "UlDownloading Resource: (" + std::to_string(Pos) + "/" + std::to_string(Amount) +
                            "): " + a.substr(a.find_last_of('/')) + " (" +
                            Percent.substr(0, Percent.find('.') + 2) + "%)";
             } while (LFS.tellp() != std::stoi(*FS) && LFS.tellp() < std::stoi(*FS));
+            UlStatus = "UlLoading Resource: (" + std::to_string(Pos) + "/" + std::to_string(Amount) +
+                       "): " + a.substr(a.find_last_of('/'));
+            /*for(auto p : segments){
+                LFS.write(p.first,p.second);
+            }*/
+            //segments.clear();
             LFS.close();
         }while(fs::file_size(a) != std::stoi(*FS));
-        UlStatus = "UlLoading Resource: (" + std::to_string(Pos) + "/" + std::to_string(Amount) +
-                   "): " + a.substr(a.find_last_of('/'));
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
         fs::copy_file(a, "BeamNG/mods"+a.substr(a.find_last_of('/')), fs::copy_options::overwrite_existing);
         WaitForConfirm();
     }

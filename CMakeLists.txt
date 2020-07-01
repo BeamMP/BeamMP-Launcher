@@ -11,5 +11,4 @@ file(GLOB source_files
         "src/Memory/*.hpp" "src/Memory/*.cpp")
 
 add_executable(BeamMP-Launcher ${source_files})
-
 target_link_libraries(BeamMP-Launcher ws2_32 urlmon discord-rpc libcurl_a zlibstatic)
