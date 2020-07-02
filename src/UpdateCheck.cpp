@@ -3,7 +3,7 @@
 ///
 
 #include <iostream>
-
+#include <thread>
 int Download(const std::string& URL,const std::string& path);
 std::string HTTP_REQUEST(const std::string&url,int port);
 std::string HTA(const std::string& hex);
@@ -21,12 +21,20 @@ void CheckForUpdates(int argc,char*args[],const std::string& CV){
     struct stat buffer{};
     if(stat ("BeamMP-Launcher.back", &buffer) == 0)remove("BeamMP-Launcher.back");
     if(HTTP > CV){
-        ReLaunch(argc,args);
         system("cls");
         std::cout << "Update found!" << std::endl;
         std::cout << "Updating..." << std::endl;
         SystemExec("rename BeamMP-Launcher.exe BeamMP-Launcher.back>nul");
-        Download(link, "BeamMP-Launcher.exe");
+        if(int i = Download(link, "BeamMP-Launcher.exe") != -1){
+            std::cout << "Launcher Update failed! trying again... code : " << i << std::endl;
+            std::this_thread::sleep_for(std::chrono::seconds(2));
+            if(int i2 = Download(link, "BeamMP-Launcher.exe") != -1){
+                std::cout << "Launcher Update failed! code : " << i2 << std::endl;
+                std::this_thread::sleep_for(std::chrono::seconds(5));
+                ReLaunch(argc,args);
+            }
+
+        }
         WinExec("BeamMP-Launcher.exe");
         exit(1);
     }else{

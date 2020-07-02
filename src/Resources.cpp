@@ -87,7 +87,7 @@ void WaitForConfirm(){
 
 void SyncResources(SOCKET Sock){
     std::cout << "Checking Resources..." << std::endl;
-    std::string HandShakeVer = "1.43";
+    std::string HandShakeVer = "1.46";
     CheckForDir();
     STCPSend(Sock,"NR" + GlobalInfo.at(0) + ":" +GlobalInfo.at(2));
     STCPSend(Sock,"VC" + HandShakeVer);
@@ -96,7 +96,7 @@ void SyncResources(SOCKET Sock){
     if(msg.size() < 2 || msg.substr(0,2) != "WS"){
         Terminate = true;
         TCPTerminate = true;
-        UlStatus = "UlDisconnected: outdated server/client";
+        UlStatus = "UlDisconnected: full or outdated server";
         std::cout << "Terminated!" << std::endl;
         return;
     }
@@ -158,7 +158,10 @@ void SyncResources(SOCKET Sock){
                 auto Pair = STCPRecv(Sock);
                 char* Data = Pair.first;
                 size_t BytesRcv = Pair.second;
-                if (strcmp(Data, "Cannot Open") == 0 || Terminate)break;
+                if (strcmp(Data, "Cannot Open") == 0 || Terminate){
+                    delete[] Data;
+                    break;
+                }
                 memcpy_s(File+Recv,BytesRcv,Data,BytesRcv);
                 Recv += BytesRcv;
                 float per = float(Recv)/std::stof(*FS) * 100;

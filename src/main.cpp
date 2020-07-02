@@ -18,7 +18,7 @@ std::vector<std::string> GetDiscordInfo();
 extern std::vector<std::string> SData;
 std::vector<std::string> GlobalInfo;
 std::string getHardwareID();
-char* ver = (char*)"1.45";
+char* ver = (char*)"1.46";
 int DEFAULT_PORT = 4444;
 void Discord_Main();
 bool Dev = false;
@@ -136,6 +136,7 @@ int main(int argc, char* argv[]){
        link = "https://beamng-mp.com/client-ui-data";
        std::cout << "Downloading default config..." << std::endl;
        if(int i = Download(link,DUI) != -1){
+            remove(DUI.c_str());
             std::cout << "Error! Failed to download code : " << i << std::endl;
             std::this_thread::sleep_for(std::chrono::seconds(3));
             ReLaunch(argc,argv);
