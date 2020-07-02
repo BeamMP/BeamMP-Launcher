@@ -10,18 +10,18 @@
 #include <vector>
 #include <thread>
 
-void Download(const std::string& URL,const std::string& OutFileName);
+int Download(const std::string& URL,const std::string& OutFileName);
 void StartGame(const std::string&ExeDir,const std::string&Current);
 std::string HTTP_REQUEST(const std::string&url,int port);
-void CheckForUpdates(const std::string& CV);
+void CheckForUpdates(int argc,char*args[],const std::string& CV);
 std::vector<std::string> GetDiscordInfo();
 extern std::vector<std::string> SData;
 std::vector<std::string> GlobalInfo;
 std::string getHardwareID();
-std::string ver = "1.43";
+char* ver = (char*)"1.45";
 int DEFAULT_PORT = 4444;
 void Discord_Main();
-bool MPDEV = false;
+bool Dev = false;
 void ProxyStart();
 void ExitError();
 void Check();
@@ -35,7 +35,7 @@ void WinExec(const std::string& cmd){
 
 void Exit(const std::string& Msg){
     std::cout << Msg << std::endl;
-    std::cout << "Press Enter to continue . . .";
+    std::cout << "Press Enter to continue...";
     std::cin.ignore();
     exit(-1);
 }
@@ -56,7 +56,10 @@ std::string CheckDir(int argc,char*args[]){
         if(stat(DN.c_str(),&info)==0)remove(DN.c_str());
         SystemExec("rename \""+ FN +"\" " + DN + ">nul");
     }
-    if(stat("BeamNG",&info))SystemExec("mkdir BeamNG>nul");
+    if(stat("BeamNG",&info)){
+        SystemExec("mkdir BeamNG>nul");
+        if(stat("BeamNG",&info))ReLaunch(argc,args);
+    }
     if(!stat("BeamNG\\mods",&info))SystemExec("RD /S /Q BeamNG\\mods>nul");
     if(!stat("BeamNG\\mods",&info))ReLaunch(argc,args);
     SystemExec("mkdir BeamNG\\mods>nul");
@@ -84,7 +87,7 @@ int main(int argc, char* argv[]){
     struct stat info{};
     system("cls");
     std::string link, HTTP_Result;
-    SetWindowTextA(GetConsoleWindow(),("BeamMP Launcher v" + ver).c_str());
+    SetWindowTextA(GetConsoleWindow(),("BeamMP Launcher v" + std::string(ver)).c_str());
     std::thread t1(Discord_Main);
     t1.detach();
     std::cout << "Connecting to discord client..." << std::endl;
@@ -102,9 +105,9 @@ int main(int argc, char* argv[]){
                 exit(-1);
             }
         }
-    }else MPDEV = true;
+    }else Dev = true;
     std::string Path = CheckDir(argc,argv);
-    std::thread CFU(CheckForUpdates,ver);
+    std::thread CFU(CheckForUpdates,argc,argv,std::string(ver));
     CFU.join();
 
     if(argc > 1){
@@ -115,7 +118,7 @@ int main(int argc, char* argv[]){
                 std::cout << "Running on custom port : " << DEFAULT_PORT << std::endl;
             }
         }
-        if(argc > 2)MPDEV = false;
+        if(argc > 2)Dev = false;
     }
 
     //Security
@@ -124,17 +127,26 @@ int main(int argc, char* argv[]){
     delete Sec;
     if(SData.size() != 3)ExitError();
     std::string GamePath = SData.at(2);
-    if(MPDEV)std::cout << "You own BeamNG on this machine!" << std::endl;
+    if(Dev)std::cout << "You own BeamNG on this machine!" << std::endl;
     std::cout << "Game Version : " << CheckVer(GamePath) << std::endl;
     std::string ExeDir = GamePath.substr(0,GamePath.find_last_of('\\')) + R"(\Bin64\BeamNG.drive.x64.exe)";
-    std::string Settings = Path + "\\settings\\uiapps-layouts.json";
-    if(stat(Settings.c_str(),&info)!=0){
+    std::string DUI = Path + R"(\settings\uiapps-layouts.json)";
+    std::string GS = Path + R"(\settings\game-settings.ini)";
+    if(stat(DUI.c_str(),&info)!=0 || stat(GS.c_str(),&info)!=0){
        link = "https://beamng-mp.com/client-ui-data";
        std::cout << "Downloading default config..." << std::endl;
-       Download(link,Settings);
+       if(int i = Download(link,DUI) != -1){
+            std::cout << "Error! Failed to download code : " << i << std::endl;
+            std::this_thread::sleep_for(std::chrono::seconds(3));
+            ReLaunch(argc,argv);
+       }
+       link = "https://beamng-mp.com/client-settings-data";
+       Download(link,GS);
        std::cout << "Download Complete!" << std::endl;
     }
-    if(!MPDEV){
+    DUI.clear();
+    GS.clear();
+    if(!Dev){
         std::cout << "Downloading mod..." << std::endl;
         link = "https://beamng-mp.com/builds/client?did="+GlobalInfo.at(2);
         Download(link,Path + R"(\mods\BeamMP.zip)");

@@ -12,7 +12,7 @@
 
 extern bool Terminate;
 extern int ClientID;
-extern bool MPDEV;
+extern bool Dev;
 SOCKET UDPSock;
 sockaddr_in ToServer{};
 struct PacketData{
@@ -149,7 +149,7 @@ void HandleChunk(const std::string&Data){
 void UDPParser(const std::string&Packet){
     if(Packet.substr(0,4) == "ACK:"){
         AckID(stoi(Packet.substr(4)));
-        if(MPDEV)std::cout << "Got Ack for data" << std::endl;
+        if(Dev)std::cout << "Got Ack for data" << std::endl;
         return;
     }else if(Packet.substr(0,3) == "BD:"){
         int pos = Packet.find(':',4);

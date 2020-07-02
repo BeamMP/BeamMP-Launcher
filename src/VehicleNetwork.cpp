@@ -10,7 +10,7 @@
 #include <queue>
 
 extern bool TCPTerminate;
-extern bool MPDEV;
+extern bool Dev;
 void Print(const std::string&MSG);
 std::queue<std::string> VNTCPQueue;
 //void RUDPSEND(const std::string&Data,bool Rel);
@@ -24,12 +24,12 @@ void Responder(const SOCKET *CS){
             VNTCPQueue.front() += "\n";
             iSendResult = send(ClientSocket, VNTCPQueue.front().c_str(), VNTCPQueue.front().length(), 0);
             if (iSendResult == SOCKET_ERROR) {
-                if(MPDEV)std::cout << "(VN) send failed with error: " << WSAGetLastError() << std::endl;
+                if(Dev)std::cout << "(VN) send failed with error: " << WSAGetLastError() << std::endl;
                 break;
             } else {
                 if(iSendResult > 1000){
-                    if(MPDEV){std::cout << "(Launcher->Game VN) Bytes sent: " << iSendResult <<  " : " <<  VNTCPQueue.front().substr(0,10)
-                              << VNTCPQueue.front().substr(VNTCPQueue.front().length()-10) << std::endl;}
+                    if(Dev){std::cout << "(Launcher->Game VN) Bytes sent: " << iSendResult << " : " << VNTCPQueue.front().substr(0, 10)
+                                        << VNTCPQueue.front().substr(VNTCPQueue.front().length()-10) << std::endl;}
                 }
                 VNTCPQueue.pop();
             }
@@ -41,7 +41,7 @@ std::string Compress(const std::string&Data);
 std::string Decompress(const std::string&Data);
 void VehicleNetworkStart(){
     do {
-        if(MPDEV)std::cout << "VN on Start" << std::endl;
+        if(Dev)std::cout << "VN on Start" << std::endl;
         WSADATA wsaData;
         int iResult;
         SOCKET ListenSocket = INVALID_SOCKET;
@@ -57,7 +57,7 @@ void VehicleNetworkStart(){
         // Initialize Winsock
         iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
         if (iResult != 0) {
-            if(MPDEV)std::cout << "(VN) WSAStartup failed with error: " << iResult << std::endl;
+            if(Dev)std::cout << "(VN) WSAStartup failed with error: " << iResult << std::endl;
             std::cin.get();
             exit(-1);
         }
@@ -71,7 +71,7 @@ void VehicleNetworkStart(){
         // Resolve the server address and port
         iResult = getaddrinfo(nullptr, DEFAULT_PORT, &hints, &result);
         if (iResult != 0) {
-            if(MPDEV)std::cout << "(VN) getaddrinfo failed with error: " << iResult << std::endl;
+            if(Dev)std::cout << "(VN) getaddrinfo failed with error: " << iResult << std::endl;
             WSACleanup();
             break;
         }
@@ -79,7 +79,7 @@ void VehicleNetworkStart(){
         // Create a socket for connecting to server
         ListenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
         if (ListenSocket == INVALID_SOCKET) {
-            if(MPDEV)std::cout << "(VN) socket failed with error: " << WSAGetLastError() << std::endl;
+            if(Dev)std::cout << "(VN) socket failed with error: " << WSAGetLastError() << std::endl;
             freeaddrinfo(result);
             WSACleanup();
             break;
@@ -88,7 +88,7 @@ void VehicleNetworkStart(){
         // Setup the TCP listening socket
         iResult = bind(ListenSocket, result->ai_addr, (int) result->ai_addrlen);
         if (iResult == SOCKET_ERROR) {
-            if(MPDEV)std::cout << "(VN) bind failed with error: " << WSAGetLastError() << std::endl;
+            if(Dev)std::cout << "(VN) bind failed with error: " << WSAGetLastError() << std::endl;
             freeaddrinfo(result);
             closesocket(ListenSocket);
             WSACleanup();
@@ -99,20 +99,20 @@ void VehicleNetworkStart(){
 
         iResult = listen(ListenSocket, SOMAXCONN);
         if (iResult == SOCKET_ERROR) {
-            if(MPDEV)std::cout << "(VN) listen failed with error: " << WSAGetLastError() << std::endl;
+            if(Dev)std::cout << "(VN) listen failed with error: " << WSAGetLastError() << std::endl;
             closesocket(ListenSocket);
             WSACleanup();
             continue;
         }
         ClientSocket = accept(ListenSocket, NULL, NULL);
         if (ClientSocket == INVALID_SOCKET) {
-            if(MPDEV)std::cout << "(VN) accept failed with error: " << WSAGetLastError() << std::endl;
+            if(Dev)std::cout << "(VN) accept failed with error: " << WSAGetLastError() << std::endl;
             closesocket(ListenSocket);
             WSACleanup();
             continue;
         }
         closesocket(ListenSocket);
-        if(MPDEV)std::cout << "(VN) Game Connected!" << std::endl;
+        if(Dev)std::cout << "(VN) Game Connected!" << std::endl;
 
         std::thread TCPSend(Responder,&ClientSocket);
         TCPSend.detach();
@@ -125,7 +125,7 @@ void VehicleNetworkStart(){
                 memcpy(&buff[0],recvbuf,iResult);
                 buff.resize(iResult);
                 //Print(buff);
-                if(MPDEV) {
+                if(Dev) {
                     std::string cmp = Compress(buff), dcm = Decompress(cmp);
                     std::cout << "Compressed Size : " << cmp.length() << std::endl;
                     std::cout << "Decompressed Size : " << dcm.length() << std::endl;
@@ -138,13 +138,13 @@ void VehicleNetworkStart(){
                 //RUDPSEND(buff,false);
                 //std::cout << "(Game->Launcher VN) Data : " << buff.length() << std::endl;
             } else if (iResult == 0) {
-                if(MPDEV)std::cout << "(VN) Connection closing...\n";
+                if(Dev)std::cout << "(VN) Connection closing...\n";
                 closesocket(ClientSocket);
                 WSACleanup();
 
                 continue;
             } else {
-                if(MPDEV)std::cout << "(VN) recv failed with error: " << WSAGetLastError() << std::endl;
+                if(Dev)std::cout << "(VN) recv failed with error: " << WSAGetLastError() << std::endl;
                 closesocket(ClientSocket);
                 WSACleanup();
                 continue;
@@ -153,7 +153,7 @@ void VehicleNetworkStart(){
 
         iResult = shutdown(ClientSocket, SD_SEND);
         if (iResult == SOCKET_ERROR) {
-            if(MPDEV)std::cout << "(VN) shutdown failed with error: " << WSAGetLastError() << std::endl;
+            if(Dev)std::cout << "(VN) shutdown failed with error: " << WSAGetLastError() << std::endl;
             closesocket(ClientSocket);
             WSACleanup();
             continue;

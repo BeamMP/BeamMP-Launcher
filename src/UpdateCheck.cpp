@@ -4,14 +4,14 @@
 
 #include <iostream>
 
-void Download(const std::string& URL,const std::string& path);
+int Download(const std::string& URL,const std::string& path);
 std::string HTTP_REQUEST(const std::string&url,int port);
 std::string HTA(const std::string& hex);
 void SystemExec(const std::string& cmd);
 void WinExec(const std::string& cmd);
 void Exit(const std::string& Msg);
-
-void CheckForUpdates(const std::string& CV){
+void ReLaunch(int argc,char*args[]);
+void CheckForUpdates(int argc,char*args[],const std::string& CV){
     std::string link = "https://beamng-mp.com/builds/launcher?version=true";
     std::string HTTP = HTTP_REQUEST(link,443);
     link = "https://beamng-mp.com/builds/launcher?download=true";
@@ -21,6 +21,7 @@ void CheckForUpdates(const std::string& CV){
     struct stat buffer{};
     if(stat ("BeamMP-Launcher.back", &buffer) == 0)remove("BeamMP-Launcher.back");
     if(HTTP > CV){
+        ReLaunch(argc,args);
         system("cls");
         std::cout << "Update found!" << std::endl;
         std::cout << "Updating..." << std::endl;

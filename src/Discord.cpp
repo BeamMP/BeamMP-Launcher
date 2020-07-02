@@ -11,7 +11,7 @@
 #include <chrono>
 #include <thread>
 #include <vector>
-extern bool MPDEV;
+extern bool Dev;
 static const char* APPLICATION_ID = "629743237988352010";
 static int64_t StartTime;
 static int SendPresence = 1;
@@ -61,22 +61,22 @@ static void handleDiscordReady(const DiscordUser* connectedUser)
 
 static void handleDiscordDisconnected(int errcode, const char* message)
 {
-    if(MPDEV)printf("\nDiscord: disconnected (%d: %s)\n", errcode, message);
+    if(Dev)printf("\nDiscord: disconnected (%d: %s)\n", errcode, message);
 }
 
 static void handleDiscordError(int errcode, const char* message)
 {
-    if(MPDEV)printf("\nDiscord: error (%d: %s)\n", errcode, message);
+    if(Dev)printf("\nDiscord: error (%d: %s)\n", errcode, message);
 }
 
 static void handleDiscordJoin(const char* secret)
 {
-    if(MPDEV)printf("\nDiscord: join (%s)\n", secret);
+    if(Dev)printf("\nDiscord: join (%s)\n", secret);
 }
 
 static void handleDiscordSpectate(const char* secret)
 {
-    if(MPDEV)printf("\nDiscord: spectate (%s)\n", secret);
+    if(Dev)printf("\nDiscord: spectate (%s)\n", secret);
 }
 
 static void handleDiscordJoinRequest(const DiscordUser* request)

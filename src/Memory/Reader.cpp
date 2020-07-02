@@ -5,7 +5,7 @@
 #include <iostream>
 #include <thread>
 extern std::string MStatus;
-extern bool MPDEV;
+extern bool Dev;
 Memory Game;
 std::string GameVer(HANDLE processHandle, long long Address){
     //lib_Beam
@@ -23,7 +23,7 @@ void SetPID(DWORD PID){
     Game.PID = PID;
 }
 [[noreturn]] void MemoryInit(){
-    if(Game.PID == 0 && !MPDEV)exit(4);
+    if(Game.PID == 0 && !Dev)exit(4);
     HANDLE processHandle;
     long long ExeBase; //BeamNG.drive.x64.exe
     long long Lib1 = 0x180000000; //libbeamng.x64.dll Contains Vehicle Data

@@ -5,27 +5,26 @@
 #include <chrono>
 #include <iostream>
 #include <WS2tcpip.h>
-#include <thread>
 
 extern std::string UlStatus;
 extern bool Terminate;
-extern bool MPDEV;
+extern bool Dev;
 SOCKET TCPSock;
 
 
 void TCPSend(const std::string&Data){
-   if(TCPSock == INVALID_SOCKET){
+   if(TCPSock == -1){
        Terminate = true;
        return;
    }
    int BytesSent = send(TCPSock, Data.c_str(), int(Data.length())+1, 0);
    if (BytesSent == 0){
-       if(MPDEV)std::cout << "(TCP) Connection closing..." << std::endl;
+       if(Dev)std::cout << "(TCP) Connection closing..." << std::endl;
        Terminate = true;
        return;
    }
    else if (BytesSent < 0) {
-       if(MPDEV)std::cout << "(TCP) send failed with error: " << WSAGetLastError() << std::endl;
+       if(Dev)std::cout << "(TCP) send failed with error: " << WSAGetLastError() << std::endl;
        closesocket(TCPSock);
        Terminate = true;
        return;
@@ -38,18 +37,18 @@ void TCPRcv(){
     char buf[4096];
     int len = 4096;
     ZeroMemory(buf, len);
-    if(TCPSock == INVALID_SOCKET){
+    if(TCPSock == -1){
         Terminate = true;
         return;
     }
     int BytesRcv = recv(TCPSock, buf, len,0);
     if (BytesRcv == 0){
-        if(MPDEV)std::cout << "(TCP) Connection closing..." << std::endl;
+        if(Dev)std::cout << "(TCP) Connection closing..." << std::endl;
         Terminate = true;
         return;
     }
     else if (BytesRcv < 0) {
-        if(MPDEV)std::cout << "(TCP) recv failed with error: " << WSAGetLastError() << std::endl;
+        if(Dev)std::cout << "(TCP) recv failed with error: " << WSAGetLastError() << std::endl;
         closesocket(TCPSock);
         Terminate = true;
         return;
@@ -84,6 +83,7 @@ void TCPClientMain(const std::string& IP,int Port){
         std::cout << "Client: connect failed! Error code: " << WSAGetLastError() << std::endl;
         closesocket(TCPSock);
         WSACleanup();
+        Terminate = true;
         return;
     }
     getsockname(TCPSock, (SOCKADDR *)&ServerAddr, (int *)sizeof(ServerAddr));
@@ -92,12 +92,12 @@ void TCPClientMain(const std::string& IP,int Port){
     while(!Terminate)TCPRcv();
     GameSend("T");
     ////Game Send Terminate
-    if( shutdown(TCPSock, SD_SEND) != 0 && MPDEV)
+    if( shutdown(TCPSock, SD_SEND) != 0 && Dev)
         std::cout << "(TCP) shutdown error code: " << WSAGetLastError() << std::endl;
 
-    if(closesocket(TCPSock) != 0 && MPDEV)
+    if(closesocket(TCPSock) != 0 && Dev)
         std::cout << "(TCP) Cannot close socket. Error code: " << WSAGetLastError() << std::endl;
 
-    if(WSACleanup() != 0 && MPDEV)
+    if(WSACleanup() != 0 && Dev)
         std::cout << "(TCP) Client: WSACleanup() failed!..." << std::endl;
 }

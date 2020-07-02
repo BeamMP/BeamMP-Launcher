@@ -16,16 +16,16 @@ bool Terminate = false;
 bool CServer = true;
 bool gameConected = false;
 SOCKET ClientSocket;
-extern bool MPDEV;
+extern bool Dev;
 int ping = 0;
 
 void GameSend(const std::string&Data){
     if(TCPTerminate || !gameConected || ClientSocket == -1)return;
     int iSendResult = send(ClientSocket, (Data + "\n").c_str(), int(Data.length()) + 1, 0);
     if (iSendResult == SOCKET_ERROR) {
-        if (MPDEV)std::cout << "(Proxy) send failed with error: " << WSAGetLastError() << std::endl;
+        if (Dev)std::cout << "(Proxy) send failed with error: " << WSAGetLastError() << std::endl;
     } else {
-        if (MPDEV && Data.length() > 1000) {
+        if (Dev && Data.length() > 1000) {
             std::cout << "(Launcher->Game) Bytes sent: " << iSendResult << std::endl;
         }
         //std::cout << "(Launcher->Game) Bytes sent: " << iSendResult <<  " : " << Data << std::endl;
@@ -45,11 +45,11 @@ void ServerSend(const std::string&Data, bool Rel){
         else TCPSend(Data);
     }else UDPSend(Data);
 
-    if (MPDEV && Data.length() > 1000) {
+    if (Dev && Data.length() > 1000) {
         std::cout << "(Launcher->Server) Bytes sent: " + std::to_string(Data.length()) + " : "
         + Data.substr(0, 10)
         + Data.substr(Data.length() - 10) + "\n";
-    }else if(MPDEV && C == 'Z'){
+    }else if(Dev && C == 'Z'){
         //std::cout << "(Game->Launcher) : " << Data << std::endl;
     }
 }
@@ -109,14 +109,14 @@ void Reset() {
 std::string Compress(const std::string&Data);
 std::string Decompress(const std::string&Data);
 void TCPGameServer(const std::string& IP, int Port){
-    if(MPDEV)std::cout << "Game server Started! " << IP << ":" << Port << std::endl;
+    if(Dev)std::cout << "Game server Started! " << IP << ":" << Port << std::endl;
     do {
         Reset();
         if(CServer) {
             std::thread Client(TCPClientMain, IP, Port);
             Client.detach();
         }
-        if(MPDEV)std::cout << "Game server on Start" << std::endl;
+        if(Dev)std::cout << "Game server on Start" << std::endl;
         WSADATA wsaData;
         int iResult;
         SOCKET ListenSocket = INVALID_SOCKET;
@@ -130,7 +130,7 @@ void TCPGameServer(const std::string& IP, int Port){
         // Initialize Winsock
         iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
         if (iResult != 0) {
-            if(MPDEV)std::cout << "(Proxy) WSAStartup failed with error: " << iResult << std::endl;
+            if(Dev)std::cout << "(Proxy) WSAStartup failed with error: " << iResult << std::endl;
             exit(-1);
         }
 
@@ -142,7 +142,7 @@ void TCPGameServer(const std::string& IP, int Port){
         // Resolve the server address and port
         iResult = getaddrinfo(nullptr, std::to_string(DEFAULT_PORT+1).c_str(), &hints, &result);
         if (iResult != 0) {
-            if(MPDEV)std::cout << "(Proxy) getaddrinfo failed with error: " << iResult << std::endl;
+            if(Dev)std::cout << "(Proxy) getaddrinfo failed with error: " << iResult << std::endl;
             WSACleanup();
             break;
         }
@@ -150,7 +150,7 @@ void TCPGameServer(const std::string& IP, int Port){
         // Create a socket for connecting to server
         ListenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
         if (ListenSocket == INVALID_SOCKET) {
-            if(MPDEV)std::cout << "(Proxy) socket failed with error: " << WSAGetLastError() << std::endl;
+            if(Dev)std::cout << "(Proxy) socket failed with error: " << WSAGetLastError() << std::endl;
             freeaddrinfo(result);
             WSACleanup();
             break;
@@ -159,7 +159,7 @@ void TCPGameServer(const std::string& IP, int Port){
         // Setup the TCP listening socket
         iResult = bind(ListenSocket, result->ai_addr, (int) result->ai_addrlen);
         if (iResult == SOCKET_ERROR) {
-            if(MPDEV)std::cout << "(Proxy) bind failed with error: " << WSAGetLastError() << std::endl;
+            if(Dev)std::cout << "(Proxy) bind failed with error: " << WSAGetLastError() << std::endl;
             freeaddrinfo(result);
             closesocket(ListenSocket);
             WSACleanup();
@@ -170,20 +170,20 @@ void TCPGameServer(const std::string& IP, int Port){
 
         iResult = listen(ListenSocket, SOMAXCONN);
         if (iResult == SOCKET_ERROR) {
-            if(MPDEV)std::cout << "(Proxy) listen failed with error: " << WSAGetLastError() << std::endl;
+            if(Dev)std::cout << "(Proxy) listen failed with error: " << WSAGetLastError() << std::endl;
             closesocket(ListenSocket);
             WSACleanup();
             continue;
         }
         Socket = accept(ListenSocket, nullptr, nullptr);
         if (Socket == INVALID_SOCKET) {
-            if(MPDEV)std::cout << "(Proxy) accept failed with error: " << WSAGetLastError() << std::endl;
+            if(Dev)std::cout << "(Proxy) accept failed with error: " << WSAGetLastError() << std::endl;
             closesocket(ListenSocket);
             WSACleanup();
             continue;
         }
         closesocket(ListenSocket);
-        if(MPDEV)std::cout << "(Proxy) Game Connected!" << std::endl;
+        if(Dev)std::cout << "(Proxy) Game Connected!" << std::endl;
         gameConected = true;
         if(CServer){
             std::thread t1(NetMain, IP, Port);
@@ -204,13 +204,13 @@ void TCPGameServer(const std::string& IP, int Port){
                 ServerSend(buff,false);
 
             } else if (iResult == 0) {
-                if(MPDEV)std::cout << "(Proxy) Connection closing...\n";
+                if(Dev)std::cout << "(Proxy) Connection closing...\n";
                 closesocket(Socket);
                 WSACleanup();
                 Terminate = true;
                 continue;
             } else {
-                if(MPDEV)std::cout << "(Proxy) recv failed with error: " << WSAGetLastError() << std::endl;
+                if(Dev)std::cout << "(Proxy) recv failed with error: " << WSAGetLastError() << std::endl;
                 closesocket(Socket);
                 WSACleanup();
                 continue;
@@ -219,7 +219,7 @@ void TCPGameServer(const std::string& IP, int Port){
 
         iResult = shutdown(Socket, SD_SEND);
         if (iResult == SOCKET_ERROR) {
-            if(MPDEV)std::cout << "(Proxy) shutdown failed with error: " << WSAGetLastError() << std::endl;
+            if(Dev)std::cout << "(Proxy) shutdown failed with error: " << WSAGetLastError() << std::endl;
             TCPTerminate = true;
             Terminate = true;
             closesocket(Socket);
@@ -235,7 +235,7 @@ void VehicleNetworkStart();
 void CoreNetworkThread();
 void ProxyStart(){
     std::thread t1(CoreNetworkThread);
-    if(MPDEV)std::cout << "Core Network Started!\n";
+    if(Dev)std::cout << "Core Network Started!\n";
     t1.join();
 }
 

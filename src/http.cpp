@@ -14,7 +14,7 @@ static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *use
 }
 std::string HTTP_REQUEST(const std::string& IP,int port){
     CURL *curl;
-    CURLcode res;
+    //CURLcode res;
     std::string readBuffer;
     curl = curl_easy_init();
     if(curl) {
@@ -22,7 +22,7 @@ std::string HTTP_REQUEST(const std::string& IP,int port){
         curl_easy_setopt(curl, CURLOPT_PORT, port);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
-        res = curl_easy_perform(curl);
+        curl_easy_perform(curl);
         curl_easy_cleanup(curl);
     }
     curl_global_cleanup();
@@ -65,7 +65,7 @@ static size_t my_fwrite(void *buffer,size_t size,size_t nmemb,void *stream)
     return fwrite(buffer, size, nmemb, out->stream);
 }
 
-void Download(const std::string& URL,const std::string& Path)
+int Download(const std::string& URL,const std::string& Path)
 {
     CURL *curl;
     CURLcode res;
@@ -85,10 +85,11 @@ void Download(const std::string& URL,const std::string& Path)
         res = curl_easy_perform(curl);
         curl_easy_cleanup(curl);
         if(CURLE_OK != res) {
-            Exit("Failed to download! Code : " + std::to_string(res));
+            return res;
         }
     }
     if(file.stream)fclose(file.stream);
     curl_global_cleanup();
     std::cout << std::endl;
+    return -1;
 }
