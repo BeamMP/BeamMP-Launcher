@@ -82,6 +82,7 @@ std::string CheckVer(const std::string &path){
     }
     return temp;
 }
+std::string HTA(const std::string& hex);
 int main(int argc, char* argv[]){
     const unsigned long long NPos = std::string::npos;
     struct stat info{};
@@ -99,13 +100,17 @@ int main(int argc, char* argv[]){
     std::cout << "Client Connected!" << std::endl;
     link = "https://beamng-mp.com/entitlement?did="+GlobalInfo.at(2);
     HTTP_Result = HTTP_REQUEST(link,443);
-    if(HTTP_Result.find("\"MDEV\"") == NPos){
-        if (HTTP_Result.find("\"MOD\"") == NPos && HTTP_Result.find("\"EA\"") == NPos){
+    /*if (HTTP_Result.find("\"MOD\"") == NPos && HTTP_Result.find("\"EA\"") == NPos){
             if (HTTP_Result.find("\"SUPPORT\"") == NPos && HTTP_Result.find("\"YT\"") == NPos){
                 exit(-1);
             }
-        }
-    }else Dev = true;
+        }*/
+    if(HTTP_Result.find('"') == NPos && HTTP_Result != "[]"){
+        std::cout << HTA("596f7520617265206e6f7420696e20746865206f6666696369616c204265616d4d5020446973636f726420706c65617365206a6f696e20616e642074727920616761696e2068747470733a2f2f646973636f72642e67672f6265616d6d70") << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(3));
+        exit(-1);
+    }
+    if(HTTP_Result.find("\"MDEV\"") != NPos)Dev = true;
     std::string Path = CheckDir(argc,argv);
     std::thread CFU(CheckForUpdates,argc,argv,std::string(ver));
     CFU.join();

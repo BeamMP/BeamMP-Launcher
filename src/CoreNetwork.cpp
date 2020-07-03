@@ -19,6 +19,7 @@ extern bool TCPTerminate;
 extern bool Dev;
 extern std::string ListOfMods;
 bool Confirm = false;
+void Reset();
 std::set<std::string> Conf;
 void StartSync(const std::string &Data){
     UlStatus = "UlLoading...";
@@ -36,6 +37,9 @@ std::string Parse(const std::string& Data){
         case 'A':
             return Data.substr(0,1);
         case 'B':
+            Reset();
+            Terminate = true;
+            TCPTerminate = true;
             return Code + HTTP_REQUEST("s1.yourthought.co.uk/servers-info",3599);
         case 'C':
             ListOfMods.clear();
@@ -54,6 +58,7 @@ std::string Parse(const std::string& Data){
             return MStatus;
         case 'Q':
             if(SubCode == 'S'){
+                Reset();
                 Terminate = true;
                 TCPTerminate = true;
             }
@@ -113,16 +118,16 @@ bool once = false;
                 if (Dev)std::cout << "(Core) socket failed with error: " << WSAGetLastError() << std::endl;
                 freeaddrinfo(result);
                 WSACleanup();
+            }else{
+                iResult = bind(ListenSocket, result->ai_addr, (int) result->ai_addrlen);
+                if (iResult == SOCKET_ERROR) {
+                    if (Dev)Exit("(Core) bind failed with error: " + std::to_string(WSAGetLastError()));
+                    freeaddrinfo(result);
+                    closesocket(ListenSocket);
+                    WSACleanup();
+                }
             }
 
-            // Setup the TCP listening socket
-            iResult = bind(ListenSocket, result->ai_addr, (int) result->ai_addrlen);
-            if (iResult == SOCKET_ERROR) {
-                if (Dev)Exit("(Core) bind failed with error: " + std::to_string(WSAGetLastError()));
-                freeaddrinfo(result);
-                closesocket(ListenSocket);
-                WSACleanup();
-            }
             
             iResult = listen(ListenSocket, SOMAXCONN);
             if (iResult == SOCKET_ERROR) {
@@ -148,7 +153,7 @@ bool once = false;
                 if (iResult > 0) {
                     std::string data = recvbuf;
                     data.resize(iResult);
-                    Response = Parse(data) + "\n";
+                    Response = Parse(data);
                 } else if (iResult == 0) {
                     if (Dev)std::cout << "(Core) Connection closing...\n";
                 } else {
@@ -157,7 +162,7 @@ bool once = false;
                     WSACleanup();
                 }
                 if (!Response.empty()) {
-                    iSendResult = send(ClientSocket, Response.c_str(), Response.length(), 0);
+                    iSendResult = send(ClientSocket, (Response+"\n").c_str(), int(Response.length())+1, 0);
                     if (iSendResult == SOCKET_ERROR) {
                         if (Dev)std::cout << "send failed with error: " << WSAGetLastError() << std::endl;
                         closesocket(ClientSocket);

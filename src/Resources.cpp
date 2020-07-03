@@ -148,7 +148,6 @@ void SyncResources(SOCKET Sock){
             }else remove(a.c_str());
         }
         CheckForDir();
-
         do {
             STCPSend(Sock, "f" + *FN);
             int Recv = 0,Size = std::stoi(*FS);
@@ -159,7 +158,7 @@ void SyncResources(SOCKET Sock){
                 char* Data = Pair.first;
                 size_t BytesRcv = Pair.second;
                 if (strcmp(Data, "Cannot Open") == 0 || Terminate){
-                    delete[] Data;
+                    if(BytesRcv != 0)delete[] Data;
                     break;
                 }
                 memcpy_s(File+Recv,BytesRcv,Data,BytesRcv);
@@ -171,6 +170,7 @@ void SyncResources(SOCKET Sock){
                            Percent.substr(0, Percent.find('.') + 2) + "%)";
                 delete[] Data;
             } while (Recv != Size && Recv < Size && !Terminate);
+            if(Terminate)break;
             UlStatus = "UlLoading Resource: (" + std::to_string(Pos) + "/" + std::to_string(Amount) +
                        "): " + a.substr(a.find_last_of('/'));
             std::ofstream LFS;
@@ -182,12 +182,17 @@ void SyncResources(SOCKET Sock){
             ZeroMemory(File,Size);
             delete[] File;
         }while(fs::file_size(a) != std::stoi(*FS) && !Terminate);
-        fs::copy_file(a, "BeamNG/mods"+a.substr(a.find_last_of('/')), fs::copy_options::overwrite_existing);
+        if(!Terminate)fs::copy_file(a, "BeamNG/mods"+a.substr(a.find_last_of('/')), fs::copy_options::overwrite_existing);
         WaitForConfirm();
     }
     FNames.clear();
     FSizes.clear();
     a.clear();
-    STCPSend(Sock,"Done");
-    std::cout << "Done!" << std::endl;
+    if(!Terminate){
+        STCPSend(Sock,"Done");
+        std::cout << "Done!" << std::endl;
+    }else{
+        UlStatus = "Ulstart";
+        std::cout << "Connection Terminated!" << std::endl;
+    }
 }

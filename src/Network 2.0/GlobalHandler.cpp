@@ -97,13 +97,15 @@ void NetMain(const std::string& IP, int Port){
 }
 extern SOCKET UDPSock;
 extern SOCKET TCPSock;
-void Reset() {
+void Reset(){
     TCPTerminate = false;
     gameConected = false;
     Terminate = false;
     UlStatus = "Ulstart";
     MStatus = " ";
+    if(UDPSock != SOCKET_ERROR)closesocket(UDPSock);
     UDPSock = -1;
+    if(TCPSock != SOCKET_ERROR)closesocket(TCPSock);
     TCPSock = -1;
 }
 std::string Compress(const std::string&Data);
