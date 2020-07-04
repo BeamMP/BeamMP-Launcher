@@ -21,9 +21,11 @@ extern std::string ListOfMods;
 bool Confirm = false;
 void Reset();
 std::set<std::string> Conf;
+
 void StartSync(const std::string &Data){
     UlStatus = "UlLoading...";
     Terminate = false;
+    TCPTerminate = false;
     Conf.clear();
     std::thread t1(ProxyThread,Data.substr(1,Data.find(':')-1),std::stoi(Data.substr(Data.find(':')+1)));
     //std::thread t1(ProxyThread,"127.0.0.1",30814);

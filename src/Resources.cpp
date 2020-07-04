@@ -13,6 +13,7 @@
 extern std::vector<std::string> GlobalInfo;
 void Exit(const std::string& Msg);
 namespace fs = std::experimental::filesystem;
+std::string HTA(const std::string& hex);
 extern std::string UlStatus;
 extern bool TCPTerminate;
 extern bool Terminate;
@@ -85,12 +86,12 @@ void WaitForConfirm(){
     Confirm = false;
 }
 
+extern char* ver;
 void SyncResources(SOCKET Sock){
     std::cout << "Checking Resources..." << std::endl;
-    std::string HandShakeVer = "1.46";
     CheckForDir();
-    STCPSend(Sock,"NR" + GlobalInfo.at(0) + ":" +GlobalInfo.at(2));
-    STCPSend(Sock,"VC" + HandShakeVer);
+    STCPSend(Sock,HTA("4e52") + GlobalInfo.at(0) + ":" + HTA(GlobalInfo.at(2)));
+    STCPSend(Sock,std::string("5643")+ver);
     auto Res = STCPRecv(Sock);
     std::string msg = Res.first;
     if(msg.size() < 2 || msg.substr(0,2) != "WS"){

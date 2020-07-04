@@ -5,7 +5,7 @@
 #define CURL_STATICLIB
 #include "curl/curl.h"
 #include <iostream>
-#include <string>
+
 void Exit(const std::string& Msg);
 static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
 {

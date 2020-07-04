@@ -28,6 +28,7 @@ std::string HTA(const std::string& hex)
     }
     return ascii;
 }
+
 LONG OpenKey(HKEY root,const char* path,PHKEY hKey){
     return RegOpenKeyEx(root, reinterpret_cast<LPCSTR>(path), 0, KEY_READ, hKey);
 }

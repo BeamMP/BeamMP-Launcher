@@ -12,15 +12,12 @@
 #include <thread>
 #include <vector>
 extern bool Dev;
+extern char*EName;
 static const char* APPLICATION_ID = "629743237988352010";
 static int64_t StartTime;
 static int SendPresence = 1;
-static std::vector<std::string> LocalInfo;
-
-std::vector<std::string> GetDiscordInfo(){
-    return LocalInfo;
-}
-
+std::vector<std::string> GlobalInfo;
+std::string hta(const std::string& hex);
 static void updateDiscordPresence()
 {
     if (SendPresence) {
@@ -48,15 +45,28 @@ static void updateDiscordPresence()
     }
 }
 
+std::string ATH(const std::string& text){
+    std::string hex;
+    for (const char&c : text) {
+        int des = (int)c;
+        char*C = new char[5]{0};
+        _itoa_s(des,C,5,16);
+        hex += C;
+        delete[] C;
+    }
+    return hex;
+}
+
 static void handleDiscordReady(const DiscordUser* connectedUser)
 {
     /*printf("\nDiscord: connected to user %s#%s - %s\n",
            connectedUser->username,
            connectedUser->discriminator,
            connectedUser->userId);*/
-    LocalInfo.emplace_back(connectedUser->username);
-    LocalInfo.emplace_back(connectedUser->discriminator);
-    LocalInfo.emplace_back(connectedUser->userId);
+    GlobalInfo.emplace_back(connectedUser->username);
+    GlobalInfo.emplace_back(ATH(connectedUser->discriminator));
+    GlobalInfo.emplace_back(ATH(connectedUser->userId));
+    GlobalInfo.emplace_back(connectedUser->userId);
 }
 
 static void handleDiscordDisconnected(int errcode, const char* message)
@@ -112,6 +122,7 @@ static void handleDiscordJoinRequest(const DiscordUser* request)
      }*/
 }
 
+
 static void discordInit()
 {
     DiscordEventHandlers handlers;
@@ -122,7 +133,7 @@ static void discordInit()
     handlers.joinGame = handleDiscordJoin;
     handlers.spectateGame = handleDiscordSpectate;
     handlers.joinRequest = handleDiscordJoinRequest;
-    Discord_Initialize(APPLICATION_ID, &handlers, 1, NULL);
+    Discord_Initialize(APPLICATION_ID, &handlers, 1,nullptr);
 }
 
 [[noreturn]] static void Loop()
@@ -139,14 +150,37 @@ static void discordInit()
         Discord_UpdateConnection();
 #endif
         Discord_RunCallbacks();
-        if(LocalInfo.empty()){
+        if(GlobalInfo.empty()){
             std::this_thread::sleep_for(std::chrono::milliseconds(250));
         }else std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     }
 }
+void SystemExec(const std::string& cmd);
+[[noreturn]] void SecurityLoop(){
+    static std::string t;
+    static std::string t1;
+    static std::string t2;
+    t.clear();
+    t1.clear();
+    t2.clear();
+    while(true){
+        if(!GlobalInfo.empty() && GlobalInfo.size() == 4){
+            if(t.empty()){
+                t = GlobalInfo.at(0);
+                t1 = GlobalInfo.at(1);
+                t2 = GlobalInfo.at(2);
+            }else if(t2 != ATH(GlobalInfo.at(3)) || t != GlobalInfo.at(0) ||
+            t1 != GlobalInfo.at(1) || t2 != GlobalInfo.at(2))exit(0);
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
+}
+
 
 void Discord_Main()
 {
+    auto*S = new std::thread(SecurityLoop);
+    S->detach();
     discordInit();
     Loop();
     Discord_Shutdown();
