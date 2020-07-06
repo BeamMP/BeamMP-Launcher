@@ -1,7 +1,6 @@
 ////
 //// Created by Anonymous275 on 3/3/2020.
 ////
-
 #include <iostream>
 #include <urlmon.h>
 #include <direct.h>
@@ -9,7 +8,6 @@
 #include <string>
 #include <vector>
 #include <thread>
-
 int Download(const std::string& URL,const std::string& OutFileName);
 void StartGame(const std::string&ExeDir,const std::string&Current);
 std::string HTTP_REQUEST(const std::string&url,int port);
@@ -101,33 +99,38 @@ void CheckName(int argc,char* args[]){
         URelaunch(argc,args);
     }
 }
-
-
+void SecurityCheck(){
+    std::ifstream f(HTA(EName), std::ios::binary);
+    f.seekg(0, std::ios_base::end);
+    std::streampos fileSize = f.tellg();
+    /*if(fileSize > 0x61A80){
+        remove(HTA(EName).c_str());
+        exit(0);
+    }*/
+    f.close();
+}
 int main(int argc, char* argv[]){
     const unsigned long long NPos = std::string::npos;
     struct stat info{};
     system("cls");
     SetWindowTextA(GetConsoleWindow(),("BeamMP Launcher v" + HTA(ver)).c_str());
     CheckName(argc,argv);
-    DWORD prev_mode;
-    GetConsoleMode(GetCurrentProcess(), &prev_mode);
-    SetConsoleMode(GetCurrentProcess(), ENABLE_EXTENDED_FLAGS | (prev_mode & ~ENABLE_QUICK_EDIT_MODE));
-
+    SecurityCheck();
     std::string link, HTTP_Result;
     std::thread t1(Discord_Main);
     t1.detach();
     std::cout << "Connecting to discord client..." << std::endl;
     while(GlobalInfo.empty())std::this_thread::sleep_for(std::chrono::milliseconds(300));
     std::cout << "Client Connected!" << std::endl;
-    link = HTA("68747470733a2f2f6265616d6e672d6d702e636f6d2f656e7469746c656d656e743f6469643d")+
-            HTA(GlobalInfo.at(2));
     //https://beamng-mp.com/entitlement?did=
-    HTTP_Result = HTTP_REQUEST(link,443);
+    HTTP_Result = HTTP_REQUEST(HTA("68747470733a2f2f6265616d6e672d6d702e636f6d2f656e7469746c656d656e743f6469643d")+
+                               HTA(GlobalInfo.at(2)),443);
     /*if (HTTP_Result.find("\"MOD\"") == NPos && HTTP_Result.find("\"EA\"") == NPos){
             if (HTTP_Result.find("\"SUPPORT\"") == NPos && HTTP_Result.find("\"YT\"") == NPos){
                 exit(-1);
             }
         }*/
+    SecurityCheck();
     if(HTTP_Result.find('"') == NPos && HTTP_Result != "[]"){
         std::cout << HTA("596f7520617265206e6f7420696e20746865206f6666696369616c204265616d4d5020446973636f726420706c65617365206a6f696e20616e642074727920616761696e2068747470733a2f2f646973636f72642e67672f6265616d6d70") << std::endl;
         std::this_thread::sleep_for(std::chrono::seconds(3));
@@ -153,6 +156,7 @@ int main(int argc, char* argv[]){
     auto*Sec = new std::thread(Check);
     Sec->join();
     delete Sec;
+    SecurityCheck();
     if(SData.size() != 3)ExitError();
     std::string GamePath = SData.at(2);
     std::cout << "Game Version : " << CheckVer(GamePath) << std::endl;
@@ -185,6 +189,7 @@ int main(int argc, char* argv[]){
         std::thread Game(StartGame,ExeDir,(Path + "\\"));
         Game.detach();
     }else{
+        SecurityCheck();
         std::cout << "Name : " << GlobalInfo.at(0) << std::endl;
         std::cout << "Discriminator : " << HTA(GlobalInfo.at(1)) << std::endl;
         std::cout << "Unique ID : " << HTA(GlobalInfo.at(2)) << std::endl;

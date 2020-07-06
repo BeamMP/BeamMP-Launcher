@@ -11,6 +11,8 @@
 #include <chrono>
 #include <thread>
 #include <vector>
+#include <fstream>
+#include <urlmon.h>
 extern bool Dev;
 extern char*EName;
 static const char* APPLICATION_ID = "629743237988352010";
@@ -18,6 +20,7 @@ static int64_t StartTime;
 static int SendPresence = 1;
 std::vector<std::string> GlobalInfo;
 std::string hta(const std::string& hex);
+void SystemExec(const std::string& cmd);
 static void updateDiscordPresence()
 {
     if (SendPresence) {
@@ -155,7 +158,17 @@ static void discordInit()
         }else std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     }
 }
-void SystemExec(const std::string& cmd);
+void SecurityCheck2(){
+    std::ifstream f(hta(EName), std::ios::binary);
+    f.seekg(0, std::ios_base::end);
+    std::streampos fileSize = f.tellg();
+    /*if(fileSize > 0x61A80){
+        remove(hta(EName).c_str());
+        exit(0);
+    }*/
+    f.close();
+}
+
 [[noreturn]] void SecurityLoop(){
     static std::string t;
     static std::string t1;
@@ -172,6 +185,7 @@ void SystemExec(const std::string& cmd);
             }else if(t2 != ATH(GlobalInfo.at(3)) || t != GlobalInfo.at(0) ||
             t1 != GlobalInfo.at(1) || t2 != GlobalInfo.at(2))exit(0);
         }
+        SecurityCheck2();
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 }
@@ -181,6 +195,7 @@ void Discord_Main()
 {
     auto*S = new std::thread(SecurityLoop);
     S->detach();
+    delete S;
     discordInit();
     Loop();
     Discord_Shutdown();
