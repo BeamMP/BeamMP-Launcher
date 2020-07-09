@@ -14,6 +14,8 @@ extern std::vector<std::string> GlobalInfo;
 void Exit(const std::string& Msg);
 namespace fs = std::experimental::filesystem;
 std::string HTA(const std::string& hex);
+std::string Encrypt(std::string msg);
+std::string Decrypt(std::string msg);
 extern std::string UlStatus;
 extern bool TCPTerminate;
 extern bool Terminate;
@@ -90,11 +92,11 @@ extern char* ver;
 void SyncResources(SOCKET Sock){
     std::cout << "Checking Resources..." << std::endl;
     CheckForDir();
-    STCPSend(Sock,HTA("4e52") + GlobalInfo.at(0) + ":" + HTA(GlobalInfo.at(2)));
-    STCPSend(Sock,std::string("5643")+ver);
+    STCPSend(Sock,Encrypt(HTA("4e52") + GlobalInfo.at(0) + ":" + HTA(GlobalInfo.at(2))));
+    STCPSend(Sock,Encrypt(HTA(std::string("5643")+ver)));
     auto Res = STCPRecv(Sock);
     std::string msg = Res.first;
-    if(msg.size() < 2 || msg.substr(0,2) != "WS"){
+    if(msg.size() < 2 || Decrypt(msg).substr(0,2) != "WS"){
         Terminate = true;
         TCPTerminate = true;
         UlStatus = "UlDisconnected: full or outdated server";

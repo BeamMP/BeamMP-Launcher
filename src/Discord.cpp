@@ -158,14 +158,17 @@ static void discordInit()
         }else std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     }
 }
+
 void SecurityCheck2(){
+    int i = 0;
     std::ifstream f(hta(EName), std::ios::binary);
     f.seekg(0, std::ios_base::end);
     std::streampos fileSize = f.tellg();
-    /*if(fileSize > 0x61A80){
-        remove(hta(EName).c_str());
-        exit(0);
-    }*/
+    if(IsDebuggerPresent() || fileSize > 0x60B5F){
+        i++;
+        GlobalInfo.clear();
+    }
+    if(i)GlobalInfo.clear();
     f.close();
 }
 
@@ -186,13 +189,13 @@ void SecurityCheck2(){
             t1 != GlobalInfo.at(1) || t2 != GlobalInfo.at(2))exit(0);
         }
         SecurityCheck2();
+        if(IsDebuggerPresent())GlobalInfo.clear();
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 }
 
 
-void Discord_Main()
-{
+void Discord_Main(){
     auto*S = new std::thread(SecurityLoop);
     S->detach();
     delete S;

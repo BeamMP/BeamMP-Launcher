@@ -17,7 +17,7 @@ bool CServer = true;
 bool gameConected = false;
 SOCKET ClientSocket;
 extern bool Dev;
-int ping = 0;
+int ping = -1;
 
 void GameSend(const std::string&Data){
     if(TCPTerminate || !gameConected || ClientSocket == -1)return;

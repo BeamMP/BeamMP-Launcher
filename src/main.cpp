@@ -17,7 +17,8 @@ extern std::vector<std::string> GlobalInfo;
 std::string HTA(const std::string& hex);
 extern std::vector<std::string> SData;
 std::string getHardwareID();
-char* ver = (char*)"312e3438"; //1.48
+char* ver = (char*)"312e3530"; //1.50
+char* patchlevel = (char*)"";
 int DEFAULT_PORT = 4444;
 void Discord_Main();
 bool Dev = false;
@@ -99,21 +100,28 @@ void CheckName(int argc,char* args[]){
         URelaunch(argc,args);
     }
 }
+
 void SecurityCheck(){
+    int i = 0;
     std::ifstream f(HTA(EName), std::ios::binary);
     f.seekg(0, std::ios_base::end);
     std::streampos fileSize = f.tellg();
-    /*if(fileSize > 0x61A80){
-        remove(HTA(EName).c_str());
-        exit(0);
-    }*/
+    if(IsDebuggerPresent() || fileSize > 0x60B5F){
+        i++;
+        GlobalInfo.clear();
+        GlobalInfo.at(13);
+    }
+    if(i){
+        GlobalInfo.clear();
+        GlobalInfo.at(13);
+    }
     f.close();
 }
 int main(int argc, char* argv[]){
     const unsigned long long NPos = std::string::npos;
     struct stat info{};
     system("cls");
-    SetWindowTextA(GetConsoleWindow(),("BeamMP Launcher v" + HTA(ver)).c_str());
+    SetConsoleTitleA(("BeamMP Launcher v" + HTA(ver) + patchlevel).c_str());
     CheckName(argc,argv);
     SecurityCheck();
     std::string link, HTTP_Result;
@@ -122,14 +130,15 @@ int main(int argc, char* argv[]){
     std::cout << "Connecting to discord client..." << std::endl;
     while(GlobalInfo.empty())std::this_thread::sleep_for(std::chrono::milliseconds(300));
     std::cout << "Client Connected!" << std::endl;
-    //https://beamng-mp.com/entitlement?did=
+    //https://beamng-mp.com/entitlement?did=(ID)&t=l;
     HTTP_Result = HTTP_REQUEST(HTA("68747470733a2f2f6265616d6e672d6d702e636f6d2f656e7469746c656d656e743f6469643d")+
-                               HTA(GlobalInfo.at(2)),443);
+                               HTA(GlobalInfo.at(2) + "26743d6c"),443);
     /*if (HTTP_Result.find("\"MOD\"") == NPos && HTTP_Result.find("\"EA\"") == NPos){
             if (HTTP_Result.find("\"SUPPORT\"") == NPos && HTTP_Result.find("\"YT\"") == NPos){
                 exit(-1);
             }
         }*/
+
     SecurityCheck();
     if(HTTP_Result.find('"') == NPos && HTTP_Result != "[]"){
         std::cout << HTA("596f7520617265206e6f7420696e20746865206f6666696369616c204265616d4d5020446973636f726420706c65617365206a6f696e20616e642074727920616761696e2068747470733a2f2f646973636f72642e67672f6265616d6d70") << std::endl;
@@ -138,7 +147,7 @@ int main(int argc, char* argv[]){
     }
     if(HTTP_Result.find(HTA("224d44455622")) != NPos)Dev = true;
     std::string Path = CheckDir(argc,argv);
-    std::thread CFU(CheckForUpdates,argc,argv,HTA(ver));
+    std::thread CFU(CheckForUpdates,argc,argv,HTA(ver)+patchlevel);
     CFU.join();
 
     if(argc > 1){
@@ -180,7 +189,7 @@ int main(int argc, char* argv[]){
     GS.clear();
     if(!Dev){
         std::cout << "Downloading mod..." << std::endl;
-        //https://beamng-mp.com/builds/client?did=
+        //https://beamng-mp.com/builds/client?did=(ID)
         link = HTA("68747470733a2f2f6265616d6e672d6d702e636f6d2f6275696c64732f636c69656e743f6469643d")
                 +HTA(GlobalInfo.at(2));
         Download(link,Path + R"(\mods\BeamMP.zip)");

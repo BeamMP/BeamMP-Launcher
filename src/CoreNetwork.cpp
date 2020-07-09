@@ -28,6 +28,7 @@ void StartSync(const std::string &Data){
     Terminate = false;
     TCPTerminate = false;
     Conf.clear();
+    ping = -1;
     std::thread t1(ProxyThread,Data.substr(1,Data.find(':')-1),std::stoi(Data.substr(Data.find(':')+1)));
     //std::thread t1(ProxyThread,"127.0.0.1",30814);
     t1.detach();
@@ -64,6 +65,7 @@ std::string Parse(const std::string& Data){
                 Reset();
                 Terminate = true;
                 TCPTerminate = true;
+                ping = -1;
             }
             if(SubCode == 'G')exit(2);
             return "";
