@@ -3,10 +3,19 @@
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
+/* @(#) $Id$ */
 
 #ifndef ZCONF_H
 #define ZCONF_H
+/* #undef Z_PREFIX */
+/* #undef Z_HAVE_UNISTD_H */
 
+/*
+ * If you *really* need a unique prefix for all types and library functions,
+ * compile with -DZ_PREFIX. The "standard" zlib should be compiled without it.
+ * Even better than compiling with -DZ_PREFIX would be to use configure to set
+ * this permanently in zconf.h using "./configure --zprefix".
+ */
 #ifdef Z_PREFIX     /* may be set to #if 1 by ./configure */
 #  define Z_PREFIX_SET
 

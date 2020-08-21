@@ -1,11 +1,14 @@
 ///
 /// Created by Anonymous275 on 6/17/2020
 ///
+#include "Network/network.h"
+#include "Security/Game.h"
+#include "Security/Enc.h"
 #include "Memory.hpp"
+#include "Startup.h"
 #include <iostream>
 #include <thread>
-extern std::string MStatus;
-extern bool Dev;
+
 Memory Game;
 std::string GameVer(HANDLE processHandle, long long Address){
     //lib_Beam
@@ -15,15 +18,16 @@ std::string GameVer(HANDLE processHandle, long long Address){
 }
 std::string LoadedMap(HANDLE processHandle, long long Address){
     //lib_Beam
-    Address += 0x1B0688;
-    std::vector<int> Off = {0x2F8,0x0};
+    //History : 0x1B0688
+    Address += 0x1A1668;
+    std::vector<int> Off = {0x140,0x0};
     return Game.ReadPointerText(processHandle,Address,Off);
 }
-void SetPID(DWORD PID){
-    Game.PID = PID;
-}
-[[noreturn]] void MemoryInit(){
-    if(Game.PID == 0 && !Dev)exit(4);
+
+void MemoryInit(){
+    if(Dev)return;
+    Game.PID = GamePID;
+    if(Game.PID == 0)exit(4);
     HANDLE processHandle;
     long long ExeBase; //BeamNG.drive.x64.exe
     long long Lib1 = 0x180000000; //libbeamng.x64.dll Contains Vehicle Data

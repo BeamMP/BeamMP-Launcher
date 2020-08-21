@@ -1,14 +1,9 @@
-cmake_minimum_required(VERSION 3.15)
-
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2")
-project(BeamMP-Launcher)
+cmake_minimum_required(VERSION 3.10)
+project(Launcher)
 set(CMAKE_CXX_STANDARD 17)
-
-file(GLOB source_files
-        "src/*.cpp" "src/include/*.h"
-        "src/include/*.hpp" "src/curl/*.h"
-        "src/Network 2.0/*.cpp" "src/Network 2.0/*.h"
-        "src/Memory/*.hpp" "src/Memory/*.cpp")
-
-add_executable(BeamMP-Launcher ${source_files})
-target_link_libraries(BeamMP-Launcher ws2_32 urlmon discord-rpc libcurl_a zlibstatic)
+file(GLOB source_files "src/*.cpp" "src/*/*.cpp" "src/*/*.hpp" "include/*.h"  "include/*/*.h")
+add_executable(${PROJECT_NAME} ${source_files})
+set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "BeamMP-Launcher")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
+target_link_libraries(${PROJECT_NAME} ws2_32 urlmon rstrtmgr discord-rpc zlibstatic libcurl_a)
+target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)

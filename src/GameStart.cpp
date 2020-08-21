@@ -1,55 +1,78 @@
 ///
-/// Created by Anonymous275 on 5/2/2020
+/// Created by Anonymous275 on 7/19/2020
 ///
+#include "Security/Enc.h"
 #include <Windows.h>
+#include "Startup.h"
+#include "Logger.h"
 #include <iostream>
 #include <thread>
-
+unsigned long GamePID = 0;
 std::string QueryKey(HKEY hKey,int ID);
-void SystemExec(const std::string&cmd);
-void Exit(const std::string& Msg);
-
+void DeleteKey(){
+    HKEY hKey;
+    LPCTSTR sk = Sec("Software\\BeamNG\\BeamNG.drive");
+    RegOpenKeyEx(HKEY_CURRENT_USER, sk, 0, KEY_ALL_ACCESS, &hKey);
+    RegDeleteValueA(hKey, Sec("userpath_override"));
+}
 std::string Write(const std::string&Path){
     HKEY hKey;
-    LPCTSTR sk = TEXT("Software\\BeamNG\\BeamNG.drive");
+    LPCTSTR sk = Sec("Software\\BeamNG\\BeamNG.drive");
     LONG openRes = RegOpenKeyEx(HKEY_CURRENT_USER, sk, 0, KEY_ALL_ACCESS, &hKey);
-    if (openRes != ERROR_SUCCESS)Exit("Error! Please launch the game at least once");
+    if (openRes != ERROR_SUCCESS){
+        error(Sec("Please launch the game at least once"));
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+        exit(5);
+    }
     std::string Query = QueryKey(hKey,4);
-    LONG setRes = RegSetValueEx(hKey, TEXT("userpath_override"), 0, REG_SZ, (LPBYTE)Path.c_str(), Path.size());
-    if(setRes != ERROR_SUCCESS)Exit("Error! Failed to launch the game code 1");
+    LONG setRes = RegSetValueEx(hKey, Sec("userpath_override"), 0, REG_SZ, (LPBYTE)Path.c_str(), DWORD(Path.size()));
+    if(setRes != ERROR_SUCCESS){
+        error(Sec("Failed to launch the game"));
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+        exit(5);
+    }
     RegCloseKey(hKey);
     return Query;
 }
-void DeleteKey(){
-    HKEY hKey;
-    LPCTSTR sk = TEXT("Software\\BeamNG\\BeamNG.drive");
-    RegOpenKeyEx(HKEY_CURRENT_USER, sk, 0, KEY_ALL_ACCESS, &hKey);
-    RegDeleteValueA(hKey, TEXT("userpath_override"));
-}
 void RollBack(const std::string&Val,int T){
     std::this_thread::sleep_for(std::chrono::seconds(T));
-    if(!Val.empty())Write(Val);
-    else DeleteKey();
+    if(!Val.empty()){
+        if(Write(Val) == Val)DeleteKey();
+    }else DeleteKey();
 }
-
-void SetPID(DWORD PID);
-void StartGame(const std::string&ExeDir,const std::string&Current){
+std::string Restore;
+void OnExit(){
+    RollBack(Restore,0);
+}
+void StartGame(std::string Dir,std::string Current){
+    Current = Current.substr(0,Current.find_last_of('\\')) + Sec("\\BeamNG\\");
     BOOL bSuccess = FALSE;
     PROCESS_INFORMATION pi;
     STARTUPINFO si = {0};
     si.cb = sizeof(si);
-    std::string BaseDir = ExeDir.substr(0,ExeDir.find_last_of('\\'));
-    bSuccess = CreateProcessA(ExeDir.c_str(), nullptr, nullptr, nullptr, TRUE, 0, nullptr, BaseDir.c_str(), &si, &pi);
-    if (bSuccess)
-    {
-        std::cout << "Game Launched!\n";
-        SetPID(pi.dwProcessId);
-        std::thread RB(RollBack,Write(Current),7);
+    std::string BaseDir = Dir + Sec("\\Bin64");
+    Dir += Sec(R"(\Bin64\BeamNG.drive.x64.exe)");
+    bSuccess = CreateProcessA(Dir.c_str(), nullptr, nullptr, nullptr, TRUE, 0, nullptr, BaseDir.c_str(), &si, &pi);
+    if (bSuccess){
+        info(Sec("Game Launched!"));
+        GamePID = pi.dwProcessId;
+        Restore = Write(Current);
+        atexit(OnExit);
+        std::thread RB(RollBack,Restore,7);
         RB.detach();
         WaitForSingleObject(pi.hProcess, INFINITE);
-        std::cout << "\nGame Closed! launcher closing in 5 secs\n";
-    }else std::cout << "\nFailed to Launch the game! launcher closing in 5 secs\n";
-    RollBack(Write(Current),0);
+        error(Sec("Game Closed! launcher closing soon"));
+        RollBack(Restore,0);
+    }else{
+        error(Sec("Failed to Launch the game! launcher closing soon"));
+        RollBack(Write(Current),0);
+    }
     std::this_thread::sleep_for(std::chrono::seconds(5));
     exit(2);
+}
+void InitGame(const std::string& Dir,const std::string&Current){
+    if(!Dev){
+        std::thread Game(StartGame, Dir, Current);
+        Game.detach();
+    }
 }

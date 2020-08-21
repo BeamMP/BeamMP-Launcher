@@ -9,8 +9,7 @@
 #include <vector>
 #include <psapi.h>
 
-class Memory
-{
+class Memory{
 public:
     DWORD PID = 0;
     int GetProcessId(const std::string& processName);

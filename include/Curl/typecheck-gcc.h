@@ -581,7 +581,7 @@ typedef CURLcode (_curl_ssl_ctx_callback2)(CURL *, void *, const void *);
 typedef CURLcode (_curl_ssl_ctx_callback3)(CURL *, const void *, void *);
 typedef CURLcode (_curl_ssl_ctx_callback4)(CURL *, const void *, const void *);
 #ifdef HEADER_SSL_H
-/* hack: if we included OpenSSL's ssl.h, we know about SSL_CTX
+/* hTRG: if we included OpenSSL's ssl.h, we know about SSL_CTX
  * this will of course break if we're included before OpenSSL headers...
  */
 typedef CURLcode (_curl_ssl_ctx_callback5)(CURL *, SSL_CTX, void *);

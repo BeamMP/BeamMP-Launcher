@@ -31,8 +31,7 @@ int Memory::GetProcessId(const std::string& processName) {
     return pe32.th32ProcessID;
 }
 
-long long Memory::GetModuleBase(HANDLE processHandle, const std::string &sModuleName)
-{
+long long Memory::GetModuleBase(HANDLE processHandle, const std::string &sModuleName){
     HMODULE *hModules = nullptr;
     char szBuf[50];
     DWORD cModules;
@@ -74,8 +73,7 @@ void PrintAllBases(HANDLE processHandle){
     delete[] hModules;
 }
 
-BOOL Memory::SetPrivilege(HANDLE hToken, LPCTSTR lpszPrivilege, BOOL bEnablePrivilege)
-{
+BOOL Memory::SetPrivilege(HANDLE hToken, LPCTSTR lpszPrivilege, BOOL bEnablePrivilege){
     TOKEN_PRIVILEGES tp;
     LUID luid;
 
@@ -215,7 +213,7 @@ double Memory::ReadPointerDouble(HANDLE processHandle, long long startAddress, i
 std::string Memory::ReadText(HANDLE processHandle, long long address) {
     if (address == -1)
         return "-1";
-    char buffer = !0;
+    char buffer = 1;
     char* stringToRead = new char[128];
     SIZE_T NumberOfBytesToRead = sizeof(buffer);
     SIZE_T NumberOfBytesActuallyRead;

@@ -1,206 +1,126 @@
 ///
-/// Created by Anonymous275 on 3/25/2020
+/// Created by Anonymous275 on 7/16/2020
 ///
-
-#define _CRT_SECURE_NO_WARNINGS
-#include <cstdint>
-#include <cstdio>
-#include <cstring>
-#include <ctime>
-#include "include/discord_rpc.h"
-#include <chrono>
+#include "Discord/discord_rpc.h"
+#include "Security/Enc.h"
+#include "Logger.h"
+#include <iostream>
 #include <thread>
-#include <vector>
-#include <fstream>
-#include <urlmon.h>
-extern bool Dev;
-extern char*EName;
-static const char* APPLICATION_ID = "629743237988352010";
-static int64_t StartTime;
-static int SendPresence = 1;
-std::vector<std::string> GlobalInfo;
-std::string hta(const std::string& hex);
-void SystemExec(const std::string& cmd);
-static void updateDiscordPresence()
-{
-    if (SendPresence) {
-        char buffer[256];
-        DiscordRichPresence discordPresence;
-        memset(&discordPresence, 0, sizeof(discordPresence));
-        discordPresence.state = "Playing with friends!";
-        //sprintf(buffer, "Frustration level: %d", FrustrationLevel);
-        //discordPresence.details = buffer;
-        discordPresence.startTimestamp = StartTime;
-        //discordPresence.endTimestamp = time(0) + 5 * 60;
-        discordPresence.largeImageKey = "mainlogo";
-        //discordPresence.smallImageKey = "logo";
-        //discordPresence.partyId = "party1234";
-        //discordPresence.partySize = 1;
-        //discordPresence.partyMax = 6;
-        //discordPresence.matchSecret = "xyzzy";
-        //discordPresence.joinSecret = "join";
-        //discordPresence.spectateSecret = "look";
-        //discordPresence.instance = 0;
-        Discord_UpdatePresence(&discordPresence);
-    }
-    else {
-        Discord_ClearPresence();
-    }
+#include <ctime>
+struct DInfo{
+    std::string Name;
+    std::string Tag;
+    std::string DID;
+};
+DInfo* DiscordInfo = nullptr;
+void DASM();
+int64_t StartTime;
+void updateDiscordPresence(){
+    //if (SendPresence) {
+    //char buffer[256];
+    DiscordRichPresence discordPresence;
+    memset(&discordPresence, 0, sizeof(discordPresence));
+    std::string P = Sec("Playing with friends!");
+    discordPresence.state = P.c_str();
+    //sprintf(buffer, "Frustration level: %d", FrustrationLevel);
+    //discordPresence.details = buffer;
+    discordPresence.startTimestamp = StartTime;
+    //discordPresence.endTimestamp = time(0) + 5 * 60;
+    std::string L = Sec("mainlogo");
+    discordPresence.largeImageKey = L.c_str();
+    //discordPresence.smallImageKey = "logo";
+    //discordPresence.partyId = "party1234";
+    //discordPresence.partySize = 1;
+    //discordPresence.partyMax = 6;
+    //discordPresence.matchSecret = "xyzzy";
+    //discordPresence.joinSecret = "join";
+    //discordPresence.spectateSecret = "look";
+    //discordPresence.instance = 0;
+    Discord_UpdatePresence(&discordPresence);
+    //}
+    //else {
+    // Discord_ClearPresence();
+    //}
 }
-
-std::string ATH(const std::string& text){
-    std::string hex;
-    for (const char&c : text) {
-        int des = (int)c;
-        char*C = new char[5]{0};
-        _itoa_s(des,C,5,16);
-        hex += C;
-        delete[] C;
-    }
-    return hex;
+void handleDiscordReady(const DiscordUser* User){
+    DiscordInfo = new DInfo{
+        LocalEnc(User->username),
+        LocalEnc(User->discriminator),
+        LocalEnc(User->userId)
+    };
 }
-
-static void handleDiscordReady(const DiscordUser* connectedUser)
-{
-    /*printf("\nDiscord: connected to user %s#%s - %s\n",
-           connectedUser->username,
-           connectedUser->discriminator,
-           connectedUser->userId);*/
-    GlobalInfo.emplace_back(connectedUser->username);
-    GlobalInfo.emplace_back(ATH(connectedUser->discriminator));
-    GlobalInfo.emplace_back(ATH(connectedUser->userId));
-    GlobalInfo.emplace_back(connectedUser->userId);
-}
-
-static void handleDiscordDisconnected(int errcode, const char* message)
-{
-    if(Dev)printf("\nDiscord: disconnected (%d: %s)\n", errcode, message);
-}
-
-static void handleDiscordError(int errcode, const char* message)
-{
-    if(Dev)printf("\nDiscord: error (%d: %s)\n", errcode, message);
-}
-
-static void handleDiscordJoin(const char* secret)
-{
-    if(Dev)printf("\nDiscord: join (%s)\n", secret);
-}
-
-static void handleDiscordSpectate(const char* secret)
-{
-    if(Dev)printf("\nDiscord: spectate (%s)\n", secret);
-}
-
-static void handleDiscordJoinRequest(const DiscordUser* request)
-{
-    /* int response = -1;
-     char yn[4];
-     printf("\nDiscord: join request from %s#%s - %s\n",
-            request->username,
-            request->discriminator,
-            request->userId);
-     do {
-         printf("Accept? (y/n)");
-         if (!prompt(yn, sizeof(yn))) {
-             break;
-         }
-
-         if (!yn[0]) {
-             continue;
-         }
-
-         if (yn[0] == 'y') {
-             response = DISCORD_REPLY_YES;
-             break;
-         }
-
-         if (yn[0] == 'n') {
-             response = DISCORD_REPLY_NO;
-             break;
-         }
-     } while (1);
-     if (response != -1) {
-         Discord_Respond(request->userId, response);
-     }*/
-}
-
-
-static void discordInit()
-{
+void discordInit(){
     DiscordEventHandlers handlers;
     memset(&handlers, 0, sizeof(handlers));
     handlers.ready = handleDiscordReady;
-    handlers.disconnected = handleDiscordDisconnected;
+    /*handlers.disconnected = handleDiscordDisconnected;
     handlers.errored = handleDiscordError;
     handlers.joinGame = handleDiscordJoin;
     handlers.spectateGame = handleDiscordSpectate;
-    handlers.joinRequest = handleDiscordJoinRequest;
-    Discord_Initialize(APPLICATION_ID, &handlers, 1,nullptr);
+    handlers.joinRequest = handleDiscordJoinRequest;*/
+    std::string a = Sec("629743237988352010");
+    Discord_Initialize(a.c_str(), &handlers, 1,nullptr);
 }
-
-[[noreturn]] static void Loop()
-{
-    char line[512];
-    char* space;
-
-    StartTime = time(0);
-
+[[noreturn]] void Loop(){
+    StartTime = time(nullptr);
     while (true) {
         updateDiscordPresence();
-
-#ifdef DISCORD_DISABLE_IO_THREAD
-        Discord_UpdateConnection();
-#endif
+        #ifdef DISCORD_DISABLE_IO_THREAD
+            Discord_UpdateConnection();
+        #endif
         Discord_RunCallbacks();
-        if(GlobalInfo.empty()){
+        if(DiscordInfo == nullptr){
             std::this_thread::sleep_for(std::chrono::milliseconds(250));
-        }else std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+        }else std::this_thread::sleep_for(std::chrono::seconds(2));
     }
 }
-
-void SecurityCheck2(){
-    int i = 0;
-    std::ifstream f(hta(EName), std::ios::binary);
-    f.seekg(0, std::ios_base::end);
-    std::streampos fileSize = f.tellg();
-    if(IsDebuggerPresent() || fileSize > 0x60B5F){
-        i++;
-        GlobalInfo.clear();
-    }
-    if(i)GlobalInfo.clear();
-    f.close();
-}
-
 [[noreturn]] void SecurityLoop(){
-    static std::string t;
-    static std::string t1;
-    static std::string t2;
-    t.clear();
-    t1.clear();
-    t2.clear();
+    std::string t,t1,t2;
     while(true){
-        if(!GlobalInfo.empty() && GlobalInfo.size() == 4){
+        if(DiscordInfo != nullptr){
             if(t.empty()){
-                t = GlobalInfo.at(0);
-                t1 = GlobalInfo.at(1);
-                t2 = GlobalInfo.at(2);
-            }else if(t2 != ATH(GlobalInfo.at(3)) || t != GlobalInfo.at(0) ||
-            t1 != GlobalInfo.at(1) || t2 != GlobalInfo.at(2))exit(0);
-        }
-        SecurityCheck2();
-        if(IsDebuggerPresent())GlobalInfo.clear();
+                t = LocalDec(DiscordInfo->Name);
+                t1 = LocalDec(DiscordInfo->Tag);
+                t2 = LocalDec(DiscordInfo->DID);
+            }else if(t2 != LocalDec(DiscordInfo->DID) ||
+            t != LocalDec(DiscordInfo->Name) || t1 != LocalDec(DiscordInfo->Tag))DiscordInfo = nullptr;
+        }else if(!t.empty())DiscordInfo->DID.clear();
+        DASM();
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 }
-
-
-void Discord_Main(){
+void DMain(){
     auto*S = new std::thread(SecurityLoop);
     S->detach();
     delete S;
     discordInit();
     Loop();
-    Discord_Shutdown();
 }
-
+std::string GetDName(){
+    return LocalDec(DiscordInfo->Name);
+}
+std::string GetDTag(){
+    return LocalDec(DiscordInfo->Tag);
+}
+std::string GetDID(){
+    return LocalDec(DiscordInfo->DID);
+}
+void DAboard(){
+    DiscordInfo = nullptr;
+}
+void ErrorAboard(){
+    error(Sec("Discord timeout! please start the discord app and try again after 30 secs"));
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+    exit(6);
+}
+void Discord_Main(){
+    std::thread t1(DMain);
+    t1.detach();
+    info(Sec("Connecting to discord client..."));
+    int C = 0;
+    while(DiscordInfo == nullptr && C < 80){
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+        C++;
+    }
+    if(DiscordInfo == nullptr)ErrorAboard();
+}
