@@ -58,7 +58,7 @@ void ContinuousCheck(fs::file_time_type last){
             }
         }else i = 0;
         CheckDirs();
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        std::this_thread::sleep_for(std::chrono::milliseconds(800));
     }
     exit(0);
 }

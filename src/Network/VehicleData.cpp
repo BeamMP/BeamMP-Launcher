@@ -6,6 +6,7 @@
 #include "Security/Enc.h"
 #include <WS2tcpip.h>
 #include "Logger.h"
+#include <sstream>
 #include <thread>
 #include <string>
 #include <array>
@@ -25,24 +26,36 @@ struct SplitData{
 };
 std::set<SplitData*> SplitPackets;
 std::set<PacketData*> BigDataAcks;
+int FC(const std::string& s,const std::string& p,int n) {
+    auto i = s.find(p);
+    int j;
+    for (j = 1; j < n && i != std::string::npos; ++j){
+        i = s.find(p, i+1);
+    }
+    if (j == n)return int(i);
+    else return -1;
+}
 void ClearAll(){
-    for(SplitData*S : SplitPackets){
-        if(S != nullptr){
-            delete S;
-            S = nullptr;
+    __try{
+        for (SplitData*S : SplitPackets){
+            if (S != nullptr) {
+                delete S;
+                S = nullptr;
+            }
         }
-    }
-    for(PacketData*S : BigDataAcks){
-        if(S != nullptr){
-            delete S;
-            S = nullptr;
+        for (PacketData*S : BigDataAcks){
+            if (S != nullptr) {
+                delete S;
+                S = nullptr;
+            }
         }
-    }
+    }__except(1){}
     SplitPackets.clear();
     BigDataAcks.clear();
 }
 void UDPSend(std::string Data){
     if(ClientID == -1 || UDPSock == -1)return;
+    Data = Data.substr(0,Data.find(char(0)));
     if(Data.length() > 400){
         std::string CMP(Comp(Data));
         Data = "ABG:" + CMP;
@@ -55,7 +68,7 @@ void UDPSend(std::string Data){
 void LOOP(){
     while(UDPSock != -1) {
         for (PacketData* p : BigDataAcks) {
-            if(p != nullptr && p->Tries < 20){
+            if(p != nullptr && p->Tries < 15){
                 p->Tries++;
                 UDPSend(p->Data);
             }else{
@@ -67,14 +80,14 @@ void LOOP(){
                 break;
             }
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
     }
 }
 
 void AckID(int ID){
     for(PacketData* p : BigDataAcks){
         if(p != nullptr && p->ID == ID){
-            p->Tries = 25;
+            p->Tries = 100;
             break;
         }
     }
@@ -91,7 +104,8 @@ int SplitID(){
     else SID++;
     return SID;
 }
-void SendLarge(const std::string&Data){
+void SendLarge(std::string Data){
+    Data = Data.substr(0,Data.find(char(0)));
     int ID = PackID();
     std::string Packet;
     if(Data.length() > 1000){
@@ -99,16 +113,16 @@ void SendLarge(const std::string&Data){
         int S = 1,Split = int(ceil(float(pckt.length()) / 1000));
         int SID = SplitID();
         while(pckt.length() > 1000){
-            Packet = "SC"+std::to_string(S)+"/"+std::to_string(Split)+":"+std::to_string(ID)+"|"+
-                    std::to_string(SID)+":"+pckt.substr(0,1000);
+            Packet = "SC|"+std::to_string(S)+"|"+std::to_string(Split)+"|"+std::to_string(ID)+"|"+
+                     std::to_string(SID)+"|"+pckt.substr(0,1000);
             BigDataAcks.insert(new PacketData{ID,Packet,1});
             UDPSend(Packet);
             pckt = pckt.substr(1000);
             S++;
             ID = PackID();
         }
-        Packet = "SC"+std::to_string(S)+"/"+std::to_string(Split)+":"+
-                std::to_string(ID)+"|"+std::to_string(SID)+":"+pckt;
+        Packet = "SC|"+std::to_string(S)+"|"+std::to_string(Split)+"|"+
+                 std::to_string(ID)+"|"+std::to_string(SID)+"|"+pckt;
         BigDataAcks.insert(new PacketData{ID,Packet,1});
         UDPSend(Packet);
     }else{
@@ -117,20 +131,20 @@ void SendLarge(const std::string&Data){
         UDPSend(Packet);
     }
 }
-std::array<int, 50> HandledIDs;
+std::array<int, 100> HandledIDs = {-1};
+int APos = 0;
 void IDReset(){
-    for(int C = 0;C < 50;C++){
+    for(int C = 0;C < 100;C++){
         HandledIDs.at(C) = -1;
     }
 }
 bool Handled(int ID){
-    static int Pos = 0;
     for(int id : HandledIDs){
         if(id == ID)return true;
     }
-    if(Pos > 49)Pos = 0;
-    HandledIDs.at(Pos) = ID;
-    Pos++;
+    if(APos > 99)APos = 0;
+    HandledIDs.at(APos) = ID;
+    APos++;
     return false;
 }
 SplitData*GetSplit(int SplitID){
@@ -142,22 +156,29 @@ SplitData*GetSplit(int SplitID){
     return a;
 }
 
-void ServerParser(const std::string& Data);
+
 void HandleChunk(const std::string&Data){
-    int pos1 = int(Data.find(':'))+1,pos2 = int(Data.find(':',pos1)),pos3 = int(Data.find('/'));
-    int pos4 = int(Data.find('|'));
-    int Max = stoi(Data.substr(pos3+1,pos1-pos3-2));
-    int Current = stoi(Data.substr(2,pos3-2));
-    int ID = stoi(Data.substr(pos1,pos4-pos1));
-    int SplitID = stoi(Data.substr(pos4+1,pos2-pos4-1));
-    std::string ack = "TRG:" + Data.substr(pos1,pos4-pos1);
+    int pos = FC(Data,"|",5);
+    if(pos == -1)return;
+    std::stringstream ss(Data.substr(0,pos++));
+    std::string t;
+    int I = -1;
+    //Current Max ID SID
+    std::vector<int> Num(4,0);
+    while (std::getline(ss, t, '|')) {
+        if(I != -1)Num.at(I) = std::stoi(t);
+        I++;
+    }
+    std::string ack = "TRG:" + std::to_string(Num.at(2));
     UDPSend(ack);
-    if(Handled(ID))return;
-    warn("Handeling Packet ID : " + std::to_string(ID));
-    SplitData* SData = GetSplit(SplitID);
-    SData->Total = Max;
-    SData->ID = SplitID;
-    SData->Fragments.insert(std::make_pair(Current,Data.substr(pos2+1)));
+    if(Handled(Num.at(2))){
+        return;
+    }
+    std::string Packet = Data.substr(pos);
+    SplitData* SData = GetSplit(Num.at(3));
+    SData->Total = Num.at(1);
+    SData->ID = Num.at(3);
+    SData->Fragments.insert(std::make_pair(Num.at(0),Packet));
     if(SData->Fragments.size() == SData->Total){
         std::string ToHandle;
         for(const std::pair<int,std::string>& a : SData->Fragments){
@@ -173,9 +194,9 @@ void UDPParser(std::string Packet){
     if(Packet.substr(0,4) == "ABG:"){
         Packet = DeComp(Packet.substr(4));
     }
+    Packet = Packet.substr(0,Packet.find(char(0)));
     if(Packet.substr(0,4) == "TRG:"){
         AckID(stoi(Packet.substr(4)));
-        debug(Sec("Got Ack for data"));
         return;
     }else if(Packet.substr(0,3) == "BD:"){
         auto pos = Packet.find(':',4);
@@ -194,17 +215,14 @@ void UDPParser(std::string Packet){
     ServerParser(Packet);
 }
 void UDPRcv(){
-    char buf[10240];
-    int len = 10240;
     sockaddr_in FromServer{};
     int clientLength = sizeof(FromServer);
     ZeroMemory(&FromServer, clientLength);
-    ZeroMemory(buf, len);
+    std::string Ret(10240,0);
     if(UDPSock == -1)return;
-    int Rcv = recvfrom(UDPSock, buf, len, 0, (sockaddr*)&FromServer, &clientLength);
+    int Rcv = recvfrom(UDPSock, &Ret[0], 10240, 0, (sockaddr*)&FromServer, &clientLength);
     if (Rcv == SOCKET_ERROR)return;
-    std::string Ret(Rcv,0);
-    memcpy_s(&Ret[0],Rcv,buf,Rcv);
+    Ret.resize(Rcv);
     UDPParser(Ret);
 }
 void UDPClientMain(const std::string& IP,int Port){

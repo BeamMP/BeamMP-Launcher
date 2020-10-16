@@ -6,10 +6,12 @@
 #include "Curl/http.h"
 #include <WinSock2.h>
 #include <WS2tcpip.h>
+#include "Startup.h"
 #include "Memory.h"
 #include "Logger.h"
 #include <thread>
 #include <set>
+
 std::set<std::string>* ConfList = nullptr;
 bool TCPTerminate = false;
 int DEFAULT_PORT = 4444;
@@ -19,14 +21,25 @@ std::string MStatus;
 bool once = false;
 bool ModLoaded;
 long long ping = -1;
+Buffer Handler;
 void StartSync(const std::string &Data){
+    std::string IP = GetAddr(Data.substr(1,Data.find(':')-1));
+    if(IP.find('.') == -1){
+        if(IP == "DNS")UlStatus = Sec("UlConnection Failed! (DNS Lookup Failed)");
+        else UlStatus = Sec("UlConnection Failed! (WSA failed to start)");
+        ListOfMods = "-";
+        Terminate = true;
+        return;
+    }
     UlStatus = Sec("UlLoading...");
     TCPTerminate = false;
     Terminate = false;
     ConfList->clear();
+    Handler.clear();
     ping = -1;
-    std::thread GS(TCPGameServer,Data.substr(1,Data.find(':')-1),std::stoi(Data.substr(Data.find(':')+1)));
+    std::thread GS(TCPGameServer,IP,std::stoi(Data.substr(Data.find(':')+1)));
     GS.detach();
+    info(Sec("Connecting to server"));
 }
 void Parse(std::string Data,SOCKET CSocket){
     char Code = Data.at(0), SubCode = 0;
@@ -39,14 +52,11 @@ void Parse(std::string Data,SOCKET CSocket){
             NetReset();
             Terminate = true;
             TCPTerminate = true;
-            //if(!Dev){
-                Data = Code + HTTP_REQUEST(Sec("s1.yourthought.co.uk/servers-info"),3599);
-            //}else Data.clear();
+            Data = Code + HTTP_REQUEST(Sec("https://beammp.com/servers-info"),443);
             break;
         case 'C':
             ListOfMods.clear();
             StartSync(Data);
-            info(Sec("Connecting to server"));
             while(ListOfMods.empty() && !Terminate){
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             }
@@ -77,6 +87,9 @@ void Parse(std::string Data,SOCKET CSocket){
                 ModLoaded = true;
             }
             Data.clear();
+            break;
+        case 'Z':
+            Data = "Z" + GetVer();
             break;
         default:
             Data.clear();

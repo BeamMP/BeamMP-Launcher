@@ -11,16 +11,20 @@
 #include "Logger.h"
 #include <urlmon.h>
 #include <thread>
+
 bool Dev = false;
 namespace fs = std::experimental::filesystem;
 std::string GetEN(){
-    return Sec("BeamMP-Launcher.exe");
+    static std::string r = Sec("BeamMP-Launcher.exe");
+    return r;
 }
 std::string GetVer(){
-    return Sec("1.60");
+    static std::string r = Sec("1.63");
+    return r;
 }
 std::string GetPatch(){
-    return Sec("");
+    static std::string r = Sec(".5");
+    return r;
 }
 void ReLaunch(int argc,char*args[]){
     std::string Arg;
@@ -57,25 +61,40 @@ void CheckName(int argc,char* args[]){
 }
 void RequestRole(){
     auto NPos = std::string::npos;
-    std::string HTTP_Result=HTTP_REQUEST(Sec("https://beammp.com/entitlement?did=")+GetDID()+Sec("&t=l"),443);
+    std::string HTTP_Result = HTTP_REQUEST(Sec("https://beammp.com/entitlement?did=")+GetDID()+Sec("&t=l"),443);
     if(HTTP_Result == "-1"){
-        error(Sec("Sorry Backend System Outage! Don't worry it will back on soon!"));
-        std::this_thread::sleep_for(std::chrono::seconds(3));
-        exit(-1);
+        HTTP_Result = HTTP_REQUEST(Sec("https://backup1.beammp.com/entitlement?did=")+GetDID()+Sec("&t=l"),443);
+        if(HTTP_Result == "-1") {
+            error(Sec("Sorry Backend System Outage! Don't worry it will back on soon!"));
+            std::this_thread::sleep_for(std::chrono::seconds(3));
+            exit(-1);
+        }
     }
-    if(HTTP_Result.find(Sec("\"MDEV\"")) != NPos)Dev = true;
+    if(HTTP_Result.find(Sec("\"MDEV\"")) != NPos || HTTP_Result.find(Sec("\"CON\"")) != NPos){
+        if(GetDID() != "125792589621231616"){
+            Dev = true;
+        }
+    }
     info(Sec("Client Connected!"));
 }
 
 void CheckForUpdates(int argc,char*args[],const std::string& CV){
     std::string link = Sec("https://beammp.com/builds/launcher?version=true");
     std::string HTTP = HTTP_REQUEST(link,443);
+    bool fallback = false;
     if(HTTP.find_first_of("0123456789") == std::string::npos){
-        error(Sec("Primary Servers Offline! sorry for the inconvenience!"));
-        std::this_thread::sleep_for(std::chrono::seconds(4));
-        exit(-1);
+        link = Sec("https://backup1.beammp.com/builds/launcher?version=true");
+        HTTP = HTTP_REQUEST(link,443);
+        fallback = true;
+        if(HTTP.find_first_of("0123456789") == std::string::npos) {
+            error(Sec("Primary Servers Offline! sorry for the inconvenience!"));
+            std::this_thread::sleep_for(std::chrono::seconds(4));
+            exit(-1);
+        }
     }
-    link = Sec("https://beammp.com/builds/launcher?download=true");
+    if(fallback){
+        link = Sec("https://backup1.beammp.com/builds/launcher?download=true");
+    }else link = Sec("https://beammp.com/builds/launcher?download=true");
 
     struct stat buffer{};
     std::string Back = Sec("BeamMP-Launcher.back");
@@ -169,27 +188,35 @@ void PreGame(int argc, char* argv[],const std::string& GamePath){
     std::string DUI = Sec(R"(BeamNG\settings\uiapps-layouts.json)");
     std::string GS = Sec(R"(BeamNG\settings\game-settings.ini)");
     std::string link = Sec("https://beammp.com/client-ui-data");
+    bool fallback = false;
     int i;
     if(!fs::exists(DUI)){
         info(Sec("Downloading default ui data..."));
         i = Download(link,DUI,true);
         if(i != -1){
+            fallback = true;
             remove(DUI.c_str());
-            error(Sec("Failed to download code : ") + std::to_string(i));
-            std::this_thread::sleep_for(std::chrono::seconds(3));
-            ReLaunch(argc,argv);
+            link = Sec("https://backup1.beammp.com/client-ui-data");
+            i = Download(link,DUI,true);
+            if(i != -1) {
+                error(Sec("Failed to download code : ") + std::to_string(i));
+                std::this_thread::sleep_for(std::chrono::seconds(3));
+                ReLaunch(argc, argv);
+            }
         }
         info(Sec("Download Complete!"));
     }
     if(!fs::exists(GS)) {
         info(Sec("Downloading default game settings..."));
-        link = Sec("https://beammp.com/client-settings-data");
+        if(fallback)link = Sec("https://backup1.beammp.com/client-settings-data");
+        else link = Sec("https://beammp.com/client-settings-data");
         Download(link, GS,true);
         info(Sec("Download Complete!"));
     }
     if(!Dev) {
         info(Sec("Downloading mod..."));
-        link = Sec("https://beammp.com/builds/client?did=") + GetDID();
+        if(fallback)link = Sec("https://backup1.beammp.com/builds/client?did=") + GetDID();
+        else link = Sec("https://beammp.com/builds/client?did=") + GetDID();
         Download(link, Sec(R"(BeamNG\mods\BeamMP.zip)"), false);
         info(Sec("Download Complete!"));
     }

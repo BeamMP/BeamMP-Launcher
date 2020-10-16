@@ -15,22 +15,20 @@ void TCPSend(const std::string&Data){
        Terminate = true;
        return;
    }
-   int BytesSent = send(TCPSock, Data.c_str(), int(Data.length())+1, 0);
-   if (BytesSent == 0){
+   std::string Send = "\n" + Data.substr(0,Data.find(char(0))) + "\n";
+   size_t Sent = send(TCPSock, Send.c_str(), int(Send.size()), 0);
+   if (Sent == 0){
        debug(Sec("(TCP) Connection closing..."));
        Terminate = true;
        return;
    }
-   else if (BytesSent < 0) {
+   else if (Sent < 0) {
        debug(Sec("(TCP) send failed with error: ") + std::to_string(WSAGetLastError()));
        closesocket(TCPSock);
        Terminate = true;
        return;
    }
 }
-
-
-void ServerParser(const std::string& Data);
 void TCPRcv(){
     char buf[4096];
     int len = 4096;
@@ -51,7 +49,7 @@ void TCPRcv(){
         Terminate = true;
         return;
     }
-    ServerParser(std::string(buf));
+    Handler.Handle(std::string(buf));
 }
 
 void SyncResources(SOCKET TCPSock);

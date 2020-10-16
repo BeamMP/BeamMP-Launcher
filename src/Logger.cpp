@@ -45,7 +45,7 @@ void InitLog(){
 }
 void addToLog(const std::string& Line){
     std::ofstream LFS;
-    LFS.open (Sec("Launcher.log"), std::ios_base::app);
+    LFS.open(Sec("Launcher.log"), std::ios_base::app);
     LFS << Line.c_str();
     LFS.close();
 }

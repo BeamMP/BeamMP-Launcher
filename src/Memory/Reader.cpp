@@ -23,7 +23,12 @@ std::string LoadedMap(HANDLE processHandle, long long Address){
     std::vector<int> Off = {0x140,0x0};
     return Game.ReadPointerText(processHandle,Address,Off);
 }
-
+std::string Tolower(std::string data){
+    for(char&c : data){
+        c = char(tolower(c));
+    }
+    return data;
+}
 void MemoryInit(){
     if(Dev)return;
     Game.PID = GamePID;
@@ -38,8 +43,10 @@ void MemoryInit(){
     std::string Map,Temp;
     while(true){
         Map = LoadedMap(processHandle,Lib1);
-        if(!Map.empty() && Map != "-1" && Map.find("/info.json") != std::string::npos && Map != Temp){
-            if(MStatus.find(Map) == std::string::npos)exit(5);
+        if(!Map.empty() && Map != "-1" && Map.find("/info.json") != -1 && Map != Temp){
+            if(Tolower(MStatus).find(Tolower(Map)) == -1){
+                exit(5);
+            }
             Temp = Map;
         }
         Map.clear();

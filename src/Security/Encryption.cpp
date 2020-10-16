@@ -1,6 +1,7 @@
 #include "Security/Enc.h"
 #include <iostream>
 #include <sstream>
+#include <random>
 
 int LocalKeys[] = {7406809,6967,4810803}; //n e d
 
@@ -13,6 +14,64 @@ int log_power(int n,unsigned int p, int mod){
     return result;
 }
 
+int Rand(){
+    std::random_device r;
+    std::default_random_engine e1(r());
+    std::uniform_int_distribution<int> uniform_dist(1, 5000);
+    return uniform_dist(e1);
+}
+
+bool rabin_miller(int n){
+    bool ok = true;
+    for (int i = 1; i <= 5 && ok; i++) {
+        int a = Rand() + 1;
+        int result = log_power(a, n - 1, n);
+        ok &= (result == 1);
+    }
+    return ok;
+}
+int generate_prime(){
+    int generated = Rand();
+    while (!rabin_miller(generated))generated = Rand();
+    return generated;
+}
+int gcd(int a, int b){
+    while (b){
+        int r = a % b;
+        a = b;
+        b = r;
+    }
+    return a;
+}
+
+int generate_coprime(int n){
+    int generated = Rand();
+    while (gcd(n, generated) != 1)generated = Rand();
+    return generated;
+}
+
+std::pair<int, int> euclid_extended(int a, int b) {
+    if(!b)return {1, 0};
+    auto result = euclid_extended(b, a % b);
+    return {result.second, result.first - (a / b) * result.second};
+}
+
+int modular_inverse(int n, int mod){
+    int inverse = euclid_extended(n, mod).first;
+    while(inverse < 0)inverse += mod;
+    return inverse;
+}
+
+RSA* GenKey(){
+    int p, q;
+    p = generate_prime();
+    q = generate_prime();
+    int n = p * q;
+    int phi = (p -1) * (q - 1);
+    int e = generate_coprime(phi);
+    int d = modular_inverse(e, phi);
+    return new RSA{n,e,d};
+}
 int Enc(int value,int e,int n){
     return log_power(value, e, n);
 }
@@ -37,35 +96,8 @@ std::string LocalDec(const std::string& Data){
     }
     return ret;
 }
-#include <random>
-int Rand(){
-    std::random_device r;
-    std::default_random_engine e1(r());
-    std::uniform_int_distribution<int> uniform_dist(1, 200);
-    return uniform_dist(e1);
-}
-std::string Encrypt(std::string msg){
-    if(msg.size() < 2)return msg;
-    int R = (Rand()+Rand())/2,T = R;
-    for(char&c : msg){
-        if(R > 30)c = char(int(c) + (R-=3));
-        else c = char(int(c) - (R+=4));
-    }
-    return char(T) + msg;
-}
-std::string Decrypt(std::string msg){
-    if(msg.size() < 2)return "";
-    int R = uint8_t(msg.at(0));
-    if(R > 200 || R < 1)return "";
-    msg = msg.substr(1);
-    for(char&c : msg){
-        if(R > 30)c = char(int(c) - (R-=3));
-        else c = char(int(c) + (R+=4));
-    }
-    return msg;
-}
+
 std::string RSA_E(const std::string& Data,int e, int n){
-    if(e < 10 || n < 10)return "";
     std::stringstream stream;
     for(const char&c : Data){
         stream << std::hex << Enc(uint8_t(c),e,n) << "g";

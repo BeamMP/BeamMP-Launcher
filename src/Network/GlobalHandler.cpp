@@ -31,6 +31,7 @@ void ServerSend(std::string Data, bool Rel){
     int DLen = int(Data.length());
     if(DLen > 3)C = Data.at(0);
     if (C == 'O' || C == 'T')Ack = true;
+    if(C == 'W' || C == 'Y' || C == 'V' || C == 'E')Rel = true;
     if(Ack || Rel){
         if(Ack || DLen > 1000)SendLarge(Data);
         else TCPSend(Data);
@@ -187,7 +188,6 @@ void TCPGameServer(const std::string& IP, int Port){
                 ServerSend(t,false);
                 S++;
             }
-            if(S > 3)std::cout << S << std::endl;
         }while(Res > 0);
         if(Res == 0)debug(Sec("(Proxy) Connection closing"));
         else debug(Sec("(Proxy) recv failed error : ") + std::to_string(WSAGetLastError()));

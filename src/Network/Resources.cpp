@@ -95,21 +95,54 @@ void Parse(const std::string& msg){
         }else return;
     }
 }
-
-std::string HandShake(SOCKET Sock){
+std::string GenerateM(RSA*key){
+    std::stringstream stream;
+    stream << std::hex << key->n << "g" << key->e << "g" << RSA_E(Sec("IDC"),key->e,key->n);
+    return stream.str();
+}
+struct Hold{
+    SOCKET TCPSock{};
+    bool Done = false;
+};
+void Check(Hold* S){
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+    if(S != nullptr){
+        if(!S->Done && S->TCPSock != -1){
+            closesocket(S->TCPSock);
+        }
+    }
+}
+std::string HandShake(SOCKET Sock,Hold*S,RSA*LKey){
+    S->TCPSock = Sock;
+    std::thread Timeout(Check,S);
+    Timeout.detach();
     N = 0;E = 0;
     auto Res = STCPRecv(Sock);
     std::string msg(Res.first,Res.second);
     Parse(msg);
     if(N != 0 && E != 0) {
-        msg = RSA_E("NR" + GetDName() + ":" + GetDID(),E,N);
-        if(!msg.empty()) {
-            STCPSend(Sock,msg);
-            STCPSend(Sock, RSA_E("VC" + GetVer(),E,N));
-            Res = STCPRecv(Sock);
-            msg = Res.first;
+        STCPSend(Sock,GenerateM(LKey));
+        Res = STCPRecv(Sock);
+        msg = std::string(Res.first,Res.second);
+        if(RSA_D(msg,LKey->d,LKey->n) != "HC"){
+            Terminate = true;
         }
+    }else Terminate = true;
+    S->Done = true;
+    if(Terminate){
+        TCPTerminate = true;
+        UlStatus = Sec("UlDisconnected: full or outdated server");
+        info(Sec("Terminated!"));
+        return "";
     }
+    msg = RSA_E("NR" + GetDName() + ":" + GetDID(),E,N);
+    if(!msg.empty()) {
+        STCPSend(Sock,msg);
+        STCPSend(Sock, RSA_E("VC" + GetVer(),E,N));
+        Res = STCPRecv(Sock);
+        msg = Res.first;
+    }
+
     if(N == 0 || E == 0 || msg.size() < 2 || msg.substr(0,2) != "WS"){
         Terminate = true;
         TCPTerminate = true;
@@ -130,7 +163,11 @@ std::string HandShake(SOCKET Sock){
 }
 
 void SyncResources(SOCKET Sock){
-    std::string Ret = HandShake(Sock);
+    RSA*LKey = GenKey();
+    auto* S = new Hold;
+    std::string Ret = HandShake(Sock,S,LKey);
+    delete LKey;
+    delete S;
     if(Ret.empty())return;
 
     info(Sec("Checking Resources..."));

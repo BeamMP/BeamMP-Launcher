@@ -10,7 +10,7 @@
 #include <fstream>
 #include <Psapi.h>
 void DAS(){
-    int i = 0;
+    /*int i = 0;
     std::ifstream f(GetEN(), std::ios::binary);
     f.seekg(0, std::ios_base::end);
     std::streampos fileSize = f.tellg();
@@ -19,10 +19,10 @@ void DAS(){
         DAboard();
     }
     if(i)DAboard();
-    f.close();
+    f.close();*/
 }
 void DASM(){ //A mirror to have 2 independent checks
-    int i = 0;
+    /*int i = 0;
     std::ifstream f(GetEN(), std::ios::binary);
     f.seekg(0, std::ios_base::end);
     std::streampos fileSize = f.tellg();
@@ -31,7 +31,7 @@ void DASM(){ //A mirror to have 2 independent checks
         DAboard();
     }
     if(i)DAboard();
-    f.close();
+    f.close();*/
 }
 DWORD getParentPID(DWORD pid){
     HANDLE h = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
@@ -58,6 +58,7 @@ HANDLE getProcess(DWORD pid, LPSTR fname, DWORD sz) {
     }
     return nullptr;
 }
+
 void UnderSimulation(char* argv[]){
     DWORD ppid;
     std::string Parent(MAX_PATH,0);
@@ -68,23 +69,22 @@ void UnderSimulation(char* argv[]){
         error(Code+std::to_string(2));
         exit(1);
     }
+
     auto P = Parent.find(Sec(".exe"));
     if(P != std::string::npos)Parent.resize(P + 4);
-    else{
-        error(Code+std::to_string(3));
-        exit(1);
-    }
+    else return;
     std::string S1 = Sec("\\Windows\\explorer.exe");
     std::string S2 = Sec("JetBrains\\CLion");
     std::string S3 = Sec("\\Windows\\System32\\cmd.exe");
+    std::string S4 = Sec("steam.exe");
     if(Parent == std::string(argv[0]))return;
     if(Parent.find(S1) == 2)return;
     if(Parent.find(S2) != std::string::npos)return;
     if(Parent.find(S3) == 2)return;
-    TerminateProcess(Process, 1);
-    error(Code + std::to_string(4));
-    exit(1);
-
+    if(Parent.find(S3) != -1)return;
+    //TerminateProcess(Process, 1);
+    //error(Code + std::to_string(4));
+    //exit(1); //TODO look into that later
 }
 void SecurityCheck(char* argv[]){
     UnderSimulation(argv);

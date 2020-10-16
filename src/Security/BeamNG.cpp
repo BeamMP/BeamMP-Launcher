@@ -219,7 +219,7 @@ std::string GetManifest(const std::string& Man){
 }
 bool IDCheck(std::string Man, std::string steam){
     bool a = false,b = true;
-    int pos = int(Man.find(Sec("steamapps")));
+    int pos = int(Man.rfind(Sec("steamapps")));
     if(pos == -1)Exit(5);
     Man = Man.substr(0,pos+9) + Sec("/appmanifest_284160.acf");
     steam += Sec("/config/loginusers.vdf");
