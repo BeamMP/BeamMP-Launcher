@@ -75,6 +75,11 @@ void RequestRole(){
             Dev = true;
         }
     }
+    if(HTTP_Result.find(Sec("Error")) != NPos){
+        error(Sec("Sorry You need to be in the official BeamMP Discord to proceed! https://discord.gg/beammp"));
+        std::this_thread::sleep_for(std::chrono::seconds(3));
+        exit(-1);
+    }
     info(Sec("Client Connected!"));
 }
 

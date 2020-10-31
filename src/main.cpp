@@ -15,8 +15,10 @@
 }
 
 int main(int argc, char* argv[]) {
-    std::thread gb(aa);
-    gb.detach();
+    #ifdef DEBUG
+        std::thread gb(aa);
+        gb.detach();
+    #endif
     InitLauncher(argc,argv);
     CheckDir(argc,argv);
     LegitimacyCheck();
