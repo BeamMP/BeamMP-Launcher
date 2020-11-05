@@ -14,6 +14,8 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <cstring>
+#include <algorithm>
 
 namespace fs = std::experimental::filesystem;
 std::string ListOfMods;
@@ -29,25 +31,27 @@ std::vector<std::string> Split(const std::string& String,const std::string& deli
     if(!s.empty())Val.push_back(s);
     return Val;
 }
-
-void STCPSend(SOCKET socket,const std::string&Data){
-    if(socket == -1){
+void STCPSendRaw(SOCKET socket, const std::vector<char>& Data) {
+    if (socket == -1) {
         Terminate = true;
         return;
     }
-    int BytesSent = send(socket, Data.c_str(), int(Data.length())+1, 0);
-    if (BytesSent == 0){
+    int BytesSent = send(socket, Data.data(), int(Data.size()), 0);
+    if (BytesSent == 0) {
         debug(Sec("(TCP) Connection closing..."));
         Terminate = true;
         return;
-    }
-    else if (BytesSent < 0) {
+    } else if (BytesSent < 0) {
         debug(Sec("(TCP) send failed with error: ") + std::to_string(WSAGetLastError()));
         closesocket(socket);
         Terminate = true;
         return;
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
+}
+
+void STCPSend(SOCKET socket, const std::string& Data) {
+    STCPSendRaw(socket, std::vector<char>(Data.begin(), Data.begin() + Data.size() + 1));
 }
 std::pair<char*,size_t> STCPRecv(SOCKET socket){
     char buf[64000];
@@ -112,6 +116,15 @@ void Check(Hold* S){
         }
     }
 }
+std::vector<char> PrependSize(const std::string& str) {
+    uint32_t Size = htonl(uint32_t(str.size()) + 1);
+    std::vector<char> result;
+    // +1 for \0, +4 for the size
+    result.resize(str.size() + 1 + 4);
+    memcpy(result.data(), &Size, 4);
+    memcpy(result.data() + 4, str.data(), str.size() + 1);
+    return result;
+}
 std::string HandShake(SOCKET Sock,Hold*S,RSA*LKey){
     S->TCPSock = Sock;
     std::thread Timeout(Check,S);
@@ -121,7 +134,7 @@ std::string HandShake(SOCKET Sock,Hold*S,RSA*LKey){
     std::string msg(Res.first,Res.second);
     Parse(msg);
     if(N != 0 && E != 0) {
-        STCPSend(Sock,GenerateM(LKey));
+        STCPSendRaw(Sock,PrependSize(GenerateM(LKey)));
         Res = STCPRecv(Sock);
         msg = std::string(Res.first,Res.second);
         if(RSA_D(msg,LKey->d,LKey->n) != "HC"){
@@ -137,8 +150,8 @@ std::string HandShake(SOCKET Sock,Hold*S,RSA*LKey){
     }
     msg = RSA_E("NR" + GetDName() + ":" + GetDID(),E,N);
     if(!msg.empty()) {
-        STCPSend(Sock,msg);
-        STCPSend(Sock, RSA_E("VC" + GetVer(),E,N));
+        STCPSendRaw(Sock, PrependSize(msg));
+        STCPSendRaw(Sock, PrependSize(RSA_E("VC" + GetVer(),E,N)));
         Res = STCPRecv(Sock);
         msg = Res.first;
     }
@@ -150,12 +163,12 @@ std::string HandShake(SOCKET Sock,Hold*S,RSA*LKey){
         info(Sec("Terminated!"));
         return "";
     }
-    STCPSend(Sock,Sec("SR"));
+    STCPSend(Sock,PrependSize(Sec("SR")));
     Res = STCPRecv(Sock);
     if(strlen(Res.first) == 0 || std::string(Res.first) == "-"){
         info(Sec("Didn't Receive any mods..."));
         ListOfMods = "-";
-        STCPSend(Sock,Sec("Done"));
+        STCPSend(Sock,PrependSize(Sec("Done")));
         info(Sec("Done!"));
         return "";
     }
