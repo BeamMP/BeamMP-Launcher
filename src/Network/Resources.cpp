@@ -163,12 +163,12 @@ std::string HandShake(SOCKET Sock,Hold*S,RSA*LKey){
         info(Sec("Terminated!"));
         return "";
     }
-    STCPSend(Sock,PrependSize(Sec("SR")));
+    STCPSendRaw(Sock,PrependSize(Sec("SR")));
     Res = STCPRecv(Sock);
     if(strlen(Res.first) == 0 || std::string(Res.first) == "-"){
         info(Sec("Didn't Receive any mods..."));
         ListOfMods = "-";
-        STCPSend(Sock,PrependSize(Sec("Done")));
+        STCPSendRaw(Sock,PrependSize(Sec("Done")));
         info(Sec("Done!"));
         return "";
     }
