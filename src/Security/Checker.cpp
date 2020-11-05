@@ -10,6 +10,7 @@
 #include <fstream>
 #include <Psapi.h>
 void DAS(){
+#ifndef DEBUG
     int i = 0;
     std::ifstream f(GetEN(), std::ios::binary);
     f.seekg(0, std::ios_base::end);
@@ -20,8 +21,10 @@ void DAS(){
     }
     if(i)DAboard();
     f.close();
+#endif
 }
 void DASM(){ //A mirror to have 2 independent checks
+#ifndef DEBUG
     int i = 0;
     std::ifstream f(GetEN(), std::ios::binary);
     f.seekg(0, std::ios_base::end);
@@ -32,6 +35,7 @@ void DASM(){ //A mirror to have 2 independent checks
     }
     if(i)DAboard();
     f.close();
+#endif
 }
 DWORD getParentPID(DWORD pid){
     HANDLE h = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);

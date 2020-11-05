@@ -23,7 +23,7 @@ std::string GetVer(){
     return r;
 }
 std::string GetPatch(){
-    static std::string r = Sec(".5");
+    static std::string r = Sec(".7");
     return r;
 }
 void ReLaunch(int argc,char*args[]){
