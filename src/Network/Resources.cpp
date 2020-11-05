@@ -129,6 +129,7 @@ std::string HandShake(SOCKET Sock,Hold*S,RSA*LKey){
         }
     }else Terminate = true;
     S->Done = true;
+
     if(Terminate){
         TCPTerminate = true;
         UlStatus = Sec("UlDisconnected: full or outdated server");
@@ -144,6 +145,7 @@ std::string HandShake(SOCKET Sock,Hold*S,RSA*LKey){
     }
 
     if(N == 0 || E == 0 || msg.size() < 2 || msg.substr(0,2) != "WS"){
+
         Terminate = true;
         TCPTerminate = true;
         UlStatus = Sec("UlDisconnected: full or outdated server");

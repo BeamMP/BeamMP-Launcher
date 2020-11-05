@@ -10,6 +10,7 @@
 #include <fstream>
 #include <Psapi.h>
 void DAS(){
+#ifndef DEBUG
     int i = 0;
     std::ifstream f(GetEN(), std::ios::binary);
     f.seekg(0, std::ios_base::end);
@@ -20,18 +21,7 @@ void DAS(){
     }
     if(i)DAboard();
     f.close();
-}
-void DASM(){ //A mirror to have 2 independent checks
-    int i = 0;
-    std::ifstream f(GetEN(), std::ios::binary);
-    f.seekg(0, std::ios_base::end);
-    std::streampos fileSize = f.tellg();
-    if(IsDebuggerPresent() || fileSize > 0x3D0900){
-        i++;
-        DAboard();
-    }
-    if(i)DAboard();
-    f.close();
+#endif
 }
 DWORD getParentPID(DWORD pid){
     HANDLE h = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
@@ -87,6 +77,6 @@ void UnderSimulation(char* argv[]){
     //exit(1); //TODO look into that later
 }
 void SecurityCheck(char* argv[]){
-    UnderSimulation(argv);
+    //UnderSimulation(argv);
     DAS();
 }

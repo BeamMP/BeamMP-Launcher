@@ -6,12 +6,14 @@
 #include "Security/Init.h"
 #include "Security/Enc.h"
 #include "Curl/http.h"
+#include <curl/curl.h>
 #include <filesystem>
 #include <iostream>
 #include "Logger.h"
 #include <urlmon.h>
 #include <thread>
 
+extern int TraceBack;
 bool Dev = false;
 namespace fs = std::experimental::filesystem;
 std::string GetEN(){
@@ -23,7 +25,7 @@ std::string GetVer(){
     return r;
 }
 std::string GetPatch(){
-    static std::string r = Sec(".5");
+    static std::string r = Sec(".6");
     return r;
 }
 void ReLaunch(int argc,char*args[]){
@@ -124,6 +126,7 @@ void CheckForUpdates(int argc,char*args[],const std::string& CV){
     }else{
         info(Sec("Version is up to date"));
     }
+    TraceBack++;
 }
 void CheckDir(int argc,char*args[]){
     std::string CDir = args[0];
@@ -178,6 +181,7 @@ void CustomPort(int argc, char* argv[]){
 }
 void InitLauncher(int argc, char* argv[]) {
     system(Sec("cls"));
+    curl_global_init(CURL_GLOBAL_DEFAULT);
     SetConsoleTitleA((Sec("BeamMP Launcher v") + std::string(GetVer()) + GetPatch()).c_str());
     InitLog();
     CheckName(argc, argv);

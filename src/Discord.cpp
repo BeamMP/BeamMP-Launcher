@@ -7,13 +7,13 @@
 #include <iostream>
 #include <thread>
 #include <ctime>
+
 struct DInfo{
     std::string Name;
     std::string Tag;
     std::string DID;
 };
 DInfo* DiscordInfo = nullptr;
-void DASM();
 int64_t StartTime;
 void updateDiscordPresence(){
     //if (SendPresence) {
@@ -74,6 +74,7 @@ void discordInit(){
         }else std::this_thread::sleep_for(std::chrono::seconds(2));
     }
 }
+void DAS();
 [[noreturn]] void SecurityLoop(){
     std::string t,t1,t2;
     while(true){
@@ -85,7 +86,7 @@ void discordInit(){
             }else if(t2 != LocalDec(DiscordInfo->DID) ||
             t != LocalDec(DiscordInfo->Name) || t1 != LocalDec(DiscordInfo->Tag))DiscordInfo = nullptr;
         }else if(!t.empty())DiscordInfo->DID.clear();
-        DASM();
+        DAS();
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 }

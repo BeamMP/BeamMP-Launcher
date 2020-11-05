@@ -41,7 +41,7 @@ void SteamExit(int code){
     exit(4);
 }
 std::string GetGameDir(){
-    if(TraceBack != 3)Exit(0);
+    if(TraceBack != 4)Exit(0);
     return GameDir.substr(0,GameDir.find_last_of('\\'));
 }
 LONG OpenKey(HKEY root,const char* path,PHKEY hKey){

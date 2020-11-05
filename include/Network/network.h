@@ -18,7 +18,7 @@ extern std::string MStatus;
 extern std::string UlStatus;
 extern std::string ListOfMods;
 void UDPSend(std::string Data);
-[[noreturn]] void CoreNetwork();
+void CoreNetwork();
 void SendLarge(std::string Data);
 void TCPSend(const std::string&Data);
 void GameSend(const std::string&Data);
