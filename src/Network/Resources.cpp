@@ -51,7 +51,7 @@ void STCPSendRaw(SOCKET socket, const std::vector<char>& Data) {
 }
 
 void STCPSend(SOCKET socket, const std::string& Data) {
-    STCPSendRaw(socket, std::vector<char>(Data.begin(), Data.begin() + Data.size() + 1));
+    STCPSendRaw(socket, std::vector<char>(Data.begin(), Data.end()));
 }
 std::pair<char*,size_t> STCPRecv(SOCKET socket){
     char buf[64000];
