@@ -64,7 +64,6 @@ int Download(const std::string& URL,const std::string& Path,bool close){
     CURL *curl;
     CURLcode res;
     struct File file = {Path.c_str(),nullptr};
-    //curl_global_init(CURL_GLOBAL_DEFAULT);
     curl = curl_easy_init();
     if(curl){
         curl_easy_setopt(curl, CURLOPT_URL,URL.c_str());

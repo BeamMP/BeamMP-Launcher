@@ -6,10 +6,10 @@
 #include "Security/Init.h"
 #include "Security/Enc.h"
 #include "Curl/http.h"
+#include "Curl/curl.h"
 #include <filesystem>
 #include <iostream>
 #include "Logger.h"
-#include <urlmon.h>
 #include <thread>
 
 bool Dev = false;
@@ -178,6 +178,7 @@ void CustomPort(int argc, char* argv[]){
 }
 void InitLauncher(int argc, char* argv[]) {
     system(Sec("cls"));
+    curl_global_init(CURL_GLOBAL_DEFAULT);
     SetConsoleTitleA((Sec("BeamMP Launcher v") + std::string(GetVer()) + GetPatch()).c_str());
     InitLog();
     CheckName(argc, argv);
