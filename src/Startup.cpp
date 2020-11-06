@@ -10,7 +10,6 @@
 #include <filesystem>
 #include <iostream>
 #include "Logger.h"
-#include <urlmon.h>
 #include <thread>
 
 extern int TraceBack;
@@ -25,7 +24,7 @@ std::string GetVer(){
     return r;
 }
 std::string GetPatch(){
-    static std::string r = Sec(".6");
+    static std::string r = Sec(".7");
     return r;
 }
 void ReLaunch(int argc,char*args[]){
