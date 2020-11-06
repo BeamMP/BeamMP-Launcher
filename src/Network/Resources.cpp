@@ -7,15 +7,17 @@
 #include <WS2tcpip.h>
 #include <filesystem>
 #include "Startup.h"
+#include <algorithm>
 #include "Logger.h"
 #include <iostream>
 #include <sstream>
+#include <cstring>
 #include <fstream>
 #include <string>
 #include <thread>
 #include <vector>
-#include <cstring>
-#include <algorithm>
+
+
 
 namespace fs = std::experimental::filesystem;
 std::string ListOfMods;
@@ -31,17 +33,19 @@ std::vector<std::string> Split(const std::string& String,const std::string& deli
     if(!s.empty())Val.push_back(s);
     return Val;
 }
-void STCPSendRaw(SOCKET socket, const std::vector<char>& Data) {
-    if (socket == -1) {
+
+void STCPSendRaw(SOCKET socket,const std::vector<char>& Data){
+    if(socket == -1){
         Terminate = true;
         return;
     }
     int BytesSent = send(socket, Data.data(), int(Data.size()), 0);
-    if (BytesSent == 0) {
+    if (BytesSent == 0){
         debug(Sec("(TCP) Connection closing..."));
         Terminate = true;
         return;
-    } else if (BytesSent < 0) {
+    }
+    else if (BytesSent < 0) {
         debug(Sec("(TCP) send failed with error: ") + std::to_string(WSAGetLastError()));
         closesocket(socket);
         Terminate = true;
@@ -49,9 +53,8 @@ void STCPSendRaw(SOCKET socket, const std::vector<char>& Data) {
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
 }
-
-void STCPSend(SOCKET socket, const std::string& Data) {
-    STCPSendRaw(socket, std::vector<char>(Data.begin(), Data.end()));
+void STCPSend(SOCKET socket,const std::string&Data){
+    STCPSendRaw(socket,std::vector<char>(Data.begin(),Data.end()));
 }
 std::pair<char*,size_t> STCPRecv(SOCKET socket){
     char buf[64000];
@@ -142,6 +145,7 @@ std::string HandShake(SOCKET Sock,Hold*S,RSA*LKey){
         }
     }else Terminate = true;
     S->Done = true;
+
     if(Terminate){
         TCPTerminate = true;
         UlStatus = Sec("UlDisconnected: full or outdated server");
@@ -157,6 +161,7 @@ std::string HandShake(SOCKET Sock,Hold*S,RSA*LKey){
     }
 
     if(N == 0 || E == 0 || msg.size() < 2 || msg.substr(0,2) != "WS"){
+
         Terminate = true;
         TCPTerminate = true;
         UlStatus = Sec("UlDisconnected: full or outdated server");

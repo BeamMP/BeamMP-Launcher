@@ -1,8 +1,9 @@
 ///
 /// Created by Anonymous275 on 7/15/2020
 ///
-#include "Zlib/zlib.h"
+
 #include <iostream>
+#include <zlib.h>
 
 #define Biggest 30000
 std::string Comp(std::string Data){

@@ -6,12 +6,13 @@
 #include "Security/Init.h"
 #include "Security/Enc.h"
 #include "Curl/http.h"
-#include "Curl/curl.h"
+#include <curl/curl.h>
 #include <filesystem>
 #include <iostream>
 #include "Logger.h"
 #include <thread>
 
+extern int TraceBack;
 bool Dev = false;
 namespace fs = std::experimental::filesystem;
 std::string GetEN(){
@@ -124,6 +125,7 @@ void CheckForUpdates(int argc,char*args[],const std::string& CV){
     }else{
         info(Sec("Version is up to date"));
     }
+    TraceBack++;
 }
 void CheckDir(int argc,char*args[]){
     std::string CDir = args[0];

@@ -1,10 +1,10 @@
 ///
 /// Created by Anonymous275 on 7/18/2020
 ///
-#define CURL_STATICLIB
+
 #include "Security/Game.h"
 #include "Security/Enc.h"
-#include "Curl/curl.h"
+#include <curl/curl.h>
 #include <iostream>
 static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp){
     ((std::string*)userp)->append((char*)contents, size * nmemb);
@@ -76,6 +76,7 @@ int Download(const std::string& URL,const std::string& Path,bool close){
         curl_easy_setopt(curl, CURLOPT_USE_SSL, CURLUSESSL_ALL);
         res = curl_easy_perform(curl);
         curl_easy_cleanup(curl);
+
         if(res != CURLE_OK)return res;
     }
     if(file.stream)fclose(file.stream);
