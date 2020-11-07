@@ -3,13 +3,11 @@
 ///
 #pragma once
 #include <string>
-#include "Buffer.h"
 void NetReset();
 extern long long ping;
 extern bool Dev;
 void ClearAll();
 extern int ClientID;
-extern Buffer Handler;
 extern bool ModLoaded;
 extern bool Terminate;
 extern int DEFAULT_PORT;

@@ -6,11 +6,16 @@
 #include "Security/Enc.h"
 #include <curl/curl.h>
 #include <iostream>
+#include "Logger.h"
+#include <mutex>
 static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp){
     ((std::string*)userp)->append((char*)contents, size * nmemb);
     return size * nmemb;
 }
+
 std::string HTTP_REQUEST(const std::string& IP,int port){
+    static std::mutex Lock;
+    Lock.lock();
     CURL *curl;
     CURLcode res;
     std::string readBuffer;
@@ -27,6 +32,7 @@ std::string HTTP_REQUEST(const std::string& IP,int port){
         if(res != CURLE_OK)return "-1";
     }
     curl_global_cleanup();
+    Lock.unlock();
     return readBuffer;
 }
 

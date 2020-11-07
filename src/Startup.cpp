@@ -20,11 +20,11 @@ std::string GetEN(){
     return r;
 }
 std::string GetVer(){
-    static std::string r = Sec("1.63");
+    static std::string r = Sec("1.70");
     return r;
 }
 std::string GetPatch(){
-    static std::string r = Sec(".7");
+    static std::string r = Sec("");
     return r;
 }
 void ReLaunch(int argc,char*args[]){

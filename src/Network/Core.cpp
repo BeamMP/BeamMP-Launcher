@@ -21,7 +21,7 @@ std::string MStatus;
 bool once = false;
 bool ModLoaded;
 long long ping = -1;
-Buffer Handler;
+
 void StartSync(const std::string &Data){
     std::string IP = GetAddr(Data.substr(1,Data.find(':')-1));
     if(IP.find('.') == -1){
@@ -35,7 +35,6 @@ void StartSync(const std::string &Data){
     TCPTerminate = false;
     Terminate = false;
     ConfList->clear();
-    Handler.clear();
     ping = -1;
     std::thread GS(TCPGameServer,IP,std::stoi(Data.substr(Data.find(':')+1)));
     GS.detach();

@@ -6,51 +6,70 @@
 #include "Logger.h"
 #include <iostream>
 #include <WS2tcpip.h>
+#include <Zlib/Compressor.h>
 #include "Security/Enc.h"
 #include "Network/network.h"
 
 SOCKET TCPSock;
+bool CheckBytes(int32_t Bytes){
+    if (Bytes == 0){
+        debug(Sec("(TCP) Connection closing..."));
+        Terminate = true;
+        return false;
+    }else if (Bytes < 0) {
+        debug(Sec("(TCP) recv failed with error: ") + std::to_string(WSAGetLastError()));
+        closesocket(TCPSock);
+        Terminate = true;
+        return false;
+    }
+    return true;
+}
 void TCPSend(const std::string&Data){
    if(TCPSock == -1){
        Terminate = true;
        return;
    }
-   std::string Send = "\n" + Data.substr(0,Data.find(char(0))) + "\n";
-   size_t Sent = send(TCPSock, Send.c_str(), int(Send.size()), 0);
-   if (Sent == 0){
-       debug(Sec("(TCP) Connection closing..."));
-       Terminate = true;
-       return;
-   }
-   else if (Sent < 0) {
-       debug(Sec("(TCP) send failed with error: ") + std::to_string(WSAGetLastError()));
-       closesocket(TCPSock);
-       Terminate = true;
-       return;
-   }
+   auto Size = int32_t(Data.size());
+   std::string Send(4,0);
+   memcpy(&Send[0],&Size,sizeof(Size));
+   Send += Data;
+   Size = int32_t(Send.size());
+   int32_t Sent = 0,Temp;
+   do{
+       Temp = send(TCPSock, &Send[Sent], Size - Sent, 0);
+       if(!CheckBytes(Temp))return;
+       Sent += Temp;
+   }while(Sent < Size);
+
 }
+
 void TCPRcv(){
-    char buf[4096];
-    int len = 4096;
-    ZeroMemory(buf, len);
     if(TCPSock == -1){
         Terminate = true;
         return;
     }
-    int BytesRcv = recv(TCPSock, buf, len,0);
-    if (BytesRcv == 0){
-        debug(Sec("(TCP) Connection closing..."));
-        Terminate = true;
-        return;
+    static int32_t Header,BytesRcv,Temp;
+    BytesRcv = recv(TCPSock, reinterpret_cast<char*>(&Header), sizeof(Header),0);
+
+    if(!CheckBytes(BytesRcv))return;
+    char* Data = new char[Header];
+    BytesRcv = 0;
+    do{
+        Temp = recv(TCPSock,Data+BytesRcv,Header-BytesRcv,0);
+        if(!CheckBytes(Temp)){
+            delete[] Data;
+            return;
+        }
+        BytesRcv += Temp;
+    }while(BytesRcv < Header);
+    std::string Ret = std::string(Data,Header);
+    delete[] Data;
+    if (Ret.substr(0, 4) == "ABG:") {
+        Ret = DeComp(Ret.substr(4));
     }
-    else if (BytesRcv < 0) {
-        debug(Sec("(TCP) recv failed with error: ") + std::to_string(WSAGetLastError()));
-        closesocket(TCPSock);
-        Terminate = true;
-        return;
-    }
-    Handler.Handle(std::string(buf));
+    ServerParser(Ret);
 }
+
 
 void SyncResources(SOCKET TCPSock);
 void TCPClientMain(const std::string& IP,int Port){

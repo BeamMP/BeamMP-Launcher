@@ -261,7 +261,6 @@ void SyncResources(SOCKET Sock){
                 LFS.write(File, Recv);
                 LFS.close();
             }
-            ZeroMemory(File,Size);
             delete[] File;
         }while(fs::file_size(a) != std::stoi(*FS) && !Terminate);
         if(!Terminate)fs::copy_file(a,Sec("BeamNG/mods")+a.substr(a.find_last_of('/')), fs::copy_options::overwrite_existing);
