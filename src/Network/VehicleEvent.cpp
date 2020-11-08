@@ -50,7 +50,7 @@ void TCPRcv(){
         Terminate = true;
         return;
     }
-    static int32_t Header,BytesRcv,Temp;
+    static thread_local int32_t Header,BytesRcv,Temp;
     BytesRcv = recv(TCPSock, reinterpret_cast<char*>(&Header), sizeof(Header),0);
     // convert back to LITTLE ENDIAN
     Header = ntohl(Header);
