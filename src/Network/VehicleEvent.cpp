@@ -29,10 +29,12 @@ void TCPSend(const std::string&Data){
        Terminate = true;
        return;
    }
-   auto Size = int32_t(Data.size());
+   // Size is BIG-ENDIAN!
+   auto Size = htonl(int32_t(Data.size()));
    std::string Send(4,0);
    memcpy(&Send[0],&Size,sizeof(Size));
    Send += Data;
+   // Do not use Size before this point for anything but the header
    Size = int32_t(Send.size());
    int32_t Sent = 0,Temp;
    do{
@@ -50,7 +52,8 @@ void TCPRcv(){
     }
     static int32_t Header,BytesRcv,Temp;
     BytesRcv = recv(TCPSock, reinterpret_cast<char*>(&Header), sizeof(Header),0);
-
+    // convert back to LITTLE ENDIAN
+    Header = ntohl(Header);
     if(!CheckBytes(BytesRcv))return;
     char* Data = new char[Header];
     BytesRcv = 0;
