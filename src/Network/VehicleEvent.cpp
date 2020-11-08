@@ -55,12 +55,17 @@ void TCPRcv(){
         Terminate = true;
         return;
     }
-    int32_t Header,BytesRcv,Temp;
-    BytesRcv = recv(TCPSock, reinterpret_cast<char*>(&Header), sizeof(Header),0);
-    // convert back to LITTLE ENDIAN
-    //Header = ntohl(Header);
+    int32_t Header,BytesRcv = 0,Temp;
+    std::vector<char> Data(sizeof(Header));
+    do{
+        Temp = recv(TCPSock,&Data[BytesRcv],4-BytesRcv,0);
+        if(!CheckBytes(Temp))return;
+        BytesRcv += Temp;
+    }while(BytesRcv < 4);
+    memcpy(&Header,&Data[0],sizeof(Header));
+
     if(!CheckBytes(BytesRcv))return;
-    std::vector<char> Data(Header);
+    Data.resize(Header);
     BytesRcv = 0;
     do{
         Temp = recv(TCPSock,&Data[BytesRcv],Header-BytesRcv,0);
