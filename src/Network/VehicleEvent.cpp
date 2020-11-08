@@ -3,6 +3,7 @@
 ///
 
 #include <chrono>
+#include <vector>
 #include "Logger.h"
 #include <iostream>
 #include <WS2tcpip.h>
@@ -13,7 +14,8 @@
 SOCKET TCPSock;
 bool CheckBytes(int32_t Bytes){
     if (Bytes == 0){
-        debug(Sec("(TCP) Connection closing..."));
+        debug(Sec("(TCP) Connection closing... CheckBytes(16)"));
+
         Terminate = true;
         return false;
     }else if (Bytes < 0) {
@@ -29,20 +31,23 @@ void TCPSend(const std::string&Data){
        Terminate = true;
        return;
    }
+
    // Size is BIG-ENDIAN!
-   auto Size = htonl(int32_t(Data.size()));
+   //auto Size = htonl(int32_t(Data.size()));
+   ///TODO
+   int32_t Size,Sent,Temp;
    std::string Send(4,0);
+   Size = int32_t(Data.size());
    memcpy(&Send[0],&Size,sizeof(Size));
    Send += Data;
    // Do not use Size before this point for anything but the header
-   Size = int32_t(Send.size());
-   int32_t Sent = 0,Temp;
+   Sent = 0;
+   Size += 4;
    do{
        Temp = send(TCPSock, &Send[Sent], Size - Sent, 0);
        if(!CheckBytes(Temp))return;
        Sent += Temp;
    }while(Sent < Size);
-
 }
 
 void TCPRcv(){
@@ -50,26 +55,26 @@ void TCPRcv(){
         Terminate = true;
         return;
     }
-    static thread_local int32_t Header,BytesRcv,Temp;
+    int32_t Header,BytesRcv,Temp;
     BytesRcv = recv(TCPSock, reinterpret_cast<char*>(&Header), sizeof(Header),0);
     // convert back to LITTLE ENDIAN
-    Header = ntohl(Header);
+    //Header = ntohl(Header);
     if(!CheckBytes(BytesRcv))return;
-    char* Data = new char[Header];
+    std::vector<char> Data(Header);
     BytesRcv = 0;
     do{
-        Temp = recv(TCPSock,Data+BytesRcv,Header-BytesRcv,0);
-        if(!CheckBytes(Temp)){
-            delete[] Data;
-            return;
-        }
+        Temp = recv(TCPSock,&Data[BytesRcv],Header-BytesRcv,0);
+        if(!CheckBytes(Temp))return;
         BytesRcv += Temp;
     }while(BytesRcv < Header);
-    std::string Ret = std::string(Data,Header);
-    delete[] Data;
+
+    std::string Ret(Data.data(),Header);
     if (Ret.substr(0, 4) == "ABG:") {
         Ret = DeComp(Ret.substr(4));
     }
+#ifdef DEBUG
+    //debug("Parsing from server -> " + std::to_string(Ret.size()));
+#endif
     ServerParser(Ret);
 }
 

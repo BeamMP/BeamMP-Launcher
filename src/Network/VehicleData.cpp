@@ -55,7 +55,6 @@ void ClearAll(){
 }
 void UDPSend(std::string Data){
     if(ClientID == -1 || UDPSock == -1)return;
-    Data = Data.substr(0,Data.find(char(0)));
     if(Data.length() > 400){
         std::string CMP(Comp(Data));
         Data = "ABG:" + CMP;
@@ -105,7 +104,6 @@ int SplitID(){
     return SID;
 }
 void SendLarge(std::string Data){
-    Data = Data.substr(0,Data.find(char(0)));
     if(Data.length() > 400){
         std::string CMP(Comp(Data));
         Data = "ABG:" + CMP;
@@ -175,7 +173,6 @@ void UDPParser(std::string Packet){
     if(Packet.substr(0,4) == "ABG:"){
         Packet = DeComp(Packet.substr(4));
     }
-    Packet = Packet.substr(0,Packet.find(char(0)));
     if(Packet.substr(0,4) == "TRG:"){
         AckID(stoi(Packet.substr(4)));
         return;
@@ -201,10 +198,9 @@ void UDPRcv(){
     ZeroMemory(&FromServer, clientLength);
     std::string Ret(10240,0);
     if(UDPSock == -1)return;
-    int Rcv = recvfrom(UDPSock, &Ret[0], 10240, 0, (sockaddr*)&FromServer, &clientLength);
+    int32_t Rcv = recvfrom(UDPSock, &Ret[0], 10240, 0, (sockaddr*)&FromServer, &clientLength);
     if (Rcv == SOCKET_ERROR)return;
-    Ret.resize(Rcv);
-    UDPParser(Ret);
+    UDPParser(Ret.substr(0,Rcv));
 }
 void UDPClientMain(const std::string& IP,int Port){
     WSADATA data;

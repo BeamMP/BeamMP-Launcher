@@ -15,8 +15,11 @@ bool CServer = true;
 extern SOCKET UDPSock;
 extern SOCKET TCPSock;
 SOCKET CSocket;
-void GameSend(const std::string&Data){
+void GameSend(std::string Data){
     if(TCPTerminate || !GConnected || CSocket == -1)return;
+    #ifdef DEBUG
+        //debug("Launcher game send -> " + std::to_string(Data.size()));
+    #endif
     int iSRes = send(CSocket, (Data + "\n").c_str(), int(Data.size()) + 1, 0);
     if (iSRes == SOCKET_ERROR) {
        debug(Sec("(Proxy) send failed with error: ") + std::to_string(WSAGetLastError()));
