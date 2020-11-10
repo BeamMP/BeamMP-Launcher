@@ -9,13 +9,14 @@
 #include <sstream>
 #include <string>
 #include <thread>
+
 std::chrono::time_point<std::chrono::steady_clock> PingStart,PingEnd;
 bool GConnected = false;
 bool CServer = true;
 extern SOCKET UDPSock;
 extern SOCKET TCPSock;
 SOCKET CSocket;
-void GameSend(std::string Data){
+void GameSend(const std::string& Data){
     if(TCPTerminate || !GConnected || CSocket == -1)return;
     #ifdef DEBUG
         //debug("Launcher game send -> " + std::to_string(Data.size()));
@@ -138,8 +139,7 @@ void ParserAsync(const std::string& Data){
     GameSend(Data);
 }
 void ServerParser(const std::string& Data){
-    std::thread Async(ParserAsync,Data);
-    Async.detach();
+    ParserAsync(Data);
 }
 void NetMain(const std::string& IP, int Port){
     std::thread Ping(AutoPing);

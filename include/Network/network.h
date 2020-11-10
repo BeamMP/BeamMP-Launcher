@@ -19,7 +19,7 @@ void UDPSend(std::string Data);
 void CoreNetwork();
 void SendLarge(std::string Data);
 void TCPSend(const std::string&Data);
-void GameSend(std::string Data);
+void GameSend(const std::string& Data);
 std::string GetAddr(const std::string&IP);
 void ServerParser(const std::string& Data);
 void TCPClientMain(const std::string& IP,int Port);
