@@ -31,7 +31,7 @@ bool CheckBytes(uint32_t Bytes){
 
 void GameSend(std::string Data){
     static std::mutex Lock;
-    Lock.lock();
+    std::scoped_lock Guard(Lock);
     if(TCPTerminate || !GConnected || CSocket == -1)return;
     static thread_local int32_t Size,Temp,Sent;
     Data += '\n';
@@ -47,7 +47,6 @@ void GameSend(std::string Data){
         if(!CheckBytes(Temp))return;
         Sent += Temp;
     }while(Sent < Size);
-    Lock.unlock();
 }
 void ServerSend(std::string Data, bool Rel){
     if(Terminate || Data.empty())return;
