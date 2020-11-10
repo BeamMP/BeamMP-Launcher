@@ -6,9 +6,10 @@
 #include <WinSock2.h>
 #include <WS2tcpip.h>
 #include "Logger.h"
-#include <sstream>
+#include <charconv>
 #include <string>
 #include <thread>
+#include <mutex>
 
 std::chrono::time_point<std::chrono::steady_clock> PingStart,PingEnd;
 bool GConnected = false;
@@ -16,20 +17,43 @@ bool CServer = true;
 extern SOCKET UDPSock;
 extern SOCKET TCPSock;
 SOCKET CSocket;
-void GameSend(const std::string& Data){
-    if(TCPTerminate || !GConnected || CSocket == -1)return;
-    #ifdef DEBUG
-        //debug("Launcher game send -> " + std::to_string(Data.size()));
-    #endif
-    int iSRes = send(CSocket, (Data + "\n").c_str(), int(Data.size()) + 1, 0);
-    if (iSRes == SOCKET_ERROR) {
-       debug(Sec("(Proxy) send failed with error: ") + std::to_string(WSAGetLastError()));
-    } else if (Data.length() > 1000){
-        debug(Sec("(Launcher->Game) Bytes sent: ") + std::to_string(iSRes));
+
+bool CheckBytes(uint32_t Bytes){
+    if(Bytes == 0){
+        debug(Sec("(Proxy) Connection closing"));
+        return false;
+    }else if(Bytes < 0){
+        debug(Sec("(Proxy) send failed with error: ") + std::to_string(WSAGetLastError()));
+        return false;
     }
+    return true;
+}
+
+void GameSend(std::string Data){
+    static std::mutex Lock;
+    Lock.lock();
+    if(TCPTerminate || !GConnected || CSocket == -1)return;
+    static thread_local int32_t Size,Temp,Sent;
+    Data += '\n';
+    Size = int32_t(Data.size());
+    Sent = 0;
+    #ifdef DEBUG
+        if(Size > 1000){
+            debug("Launcher -> game (" +std::to_string(Size)+")");
+        }
+    #endif
+    do{
+        Temp = send(CSocket, &Data[Sent], Size - Sent, 0);
+        if(!CheckBytes(Temp))return;
+        Sent += Temp;
+    }while(Sent < Size);
+    Lock.unlock();
 }
 void ServerSend(std::string Data, bool Rel){
     if(Terminate || Data.empty())return;
+    if(Data.find("Zp") != std::string::npos && Data.size() > 500){
+        abort();
+    }
     char C = 0;
     bool Ack = false;
     int DLen = int(Data.length());
@@ -176,23 +200,35 @@ void TCPGameServer(const std::string& IP, int Port){
             t1.detach();
             CServer = false;
         }
-        char buf[10000];
-        int Res,len = 10000;
-        ZeroMemory(buf, len);
+        int32_t Size,Temp,Rcv;
+        char Header[10] = {0};
+
+        //Read byte by byte until '>' is rcved then get the size and read based on it
         do{
-            Res = recv(CSocket,buf,len,0);
-            if(Res < 1)break;
-            std::string t;
-            std::string buff(Res,0);
-            memcpy_s(&buff[0],Res,buf,Res);
-            std::stringstream ss(buff);
-            int S = 0;
-            while (std::getline(ss, t, '\n')) {
-                ServerSend(t,false);
-                S++;
+            Rcv = 0;
+
+            do{
+                Temp = recv(CSocket,&Header[Rcv],1,0);
+                if(Temp < 1)break;
+            }while(Header[Rcv++] != '>');
+            if(Temp < 1)break;
+            if(std::from_chars(Header,&Header[Rcv],Size).ptr[0] != '>'){
+                debug(Sec("(Game) Invalid lua Header -> ") + std::string(Header,Rcv));
+                break;
             }
-        }while(Res > 0);
-        if(Res == 0)debug(Sec("(Proxy) Connection closing"));
+            std::string Ret(Size,0);
+            Rcv = 0;
+            do{
+                Temp = recv(CSocket,&Ret[Rcv],Size-Rcv,0);
+                if(Temp < 1)break;
+                Rcv += Temp;
+            }while(Rcv < Size);
+            if(Temp < 1)break;
+
+            ServerSend(Ret,false);
+
+        }while(Temp > 0);
+        if(Temp == 0)debug(Sec("(Proxy) Connection closing"));
         else debug(Sec("(Proxy) recv failed error : ") + std::to_string(WSAGetLastError()));
     }
     TCPTerminate = true;

@@ -11,6 +11,8 @@
 #include "Logger.h"
 #include <thread>
 #include <set>
+#include <charconv>
+
 extern int TraceBack;
 std::set<std::string>* ConfList = nullptr;
 bool TCPTerminate = false;
@@ -116,16 +118,34 @@ void GameHandler(SOCKET Client){
         Memory.detach();
         once = true;
     }
-    char buf[64000];
-    int res,len = 64000;
+    //Read byte by byte until '>' is rcved then get the size and read based on it
+    int32_t Size,Temp,Rcv;
+    char Header[10] = {0};
     do{
-        res = recv(Client, buf, len, 0);
-        if(res < 1)break;
-        std::string data(buf, res);
-        std::thread Respond(Parse, data, Client);
+        Rcv = 0;
+        do{
+            Temp = recv(Client,&Header[Rcv],1,0);
+            if(Temp < 1)break;
+        }while(Header[Rcv++] != '>');
+        if(Temp < 1)break;
+        if(std::from_chars(Header,&Header[Rcv],Size).ptr[0] != '>'){
+            debug(Sec("(Core) Invalid lua Header -> ") + std::string(Header,Rcv));
+            break;
+        }
+        std::string Ret(Size,0);
+        Rcv = 0;
+
+        do{
+            Temp = recv(Client,&Ret[Rcv],Size-Rcv,0);
+            if(Temp < 1)break;
+            Rcv += Temp;
+        }while(Rcv < Size);
+        if(Temp < 1)break;
+
+        std::thread Respond(Parse, Ret, Client);
         Respond.detach();
-    }while(res > 0);
-    if (res == 0) {
+    }while(Temp > 0);
+    if (Temp == 0) {
         debug(Sec("(Core) Connection closing"));
     } else {
         debug(Sec("(Core) recv failed with error: ") + std::to_string(WSAGetLastError()));
