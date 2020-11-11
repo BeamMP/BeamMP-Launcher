@@ -126,6 +126,11 @@ void GameHandler(SOCKET Client){
         do{
             Temp = recv(Client,&Header[Rcv],1,0);
             if(Temp < 1)break;
+            if(!isdigit(Header[Rcv]) && Header[Rcv] != '>') {
+                error(Sec("(Core) Invalid lua communication"));
+                closesocket(Client);
+                return;
+            }
         }while(Header[Rcv++] != '>');
         if(Temp < 1)break;
         if(std::from_chars(Header,&Header[Rcv],Size).ptr[0] != '>'){
