@@ -44,6 +44,10 @@ void TCPSend(const std::string&Data){
    Sent = 0;
    Size += 4;
    do{
+       if (size_t(Sent) >= Send.size()) {
+           error(Sec("string OOB in ") + std::string(__func__));
+           return;
+       }
        Temp = send(TCPSock, &Send[Sent], Size - Sent, 0);
        if(!CheckBytes(Temp))return;
        Sent += Temp;
