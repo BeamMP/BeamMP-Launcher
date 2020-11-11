@@ -67,13 +67,13 @@ void Parse(std::string Data,SOCKET CSocket){
         case 'U':
             if(SubCode == 'l')Data = UlStatus;
             if(SubCode == 'p'){
-                if(ping == -1 && Terminate){
+                if(ping > 800){
                     Data = "Up-2";
                 }else Data = "Up" + std::to_string(ping);
             }
             if(!SubCode){
                 std::string Ping;
-                if(ping == -1 && Terminate)Ping = "-2";
+                if(ping > 800)Ping = "-2";
                 else Ping = std::to_string(ping);
                 Data = std::string(UlStatus) + "\n" + "Up" + Ping;
             }

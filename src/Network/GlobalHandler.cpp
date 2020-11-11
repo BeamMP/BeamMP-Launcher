@@ -33,7 +33,7 @@ void GameSend(std::string Data){
     static std::mutex Lock;
     std::scoped_lock Guard(Lock);
     if(TCPTerminate || !GConnected || CSocket == -1)return;
-    static thread_local int32_t Size,Temp,Sent;
+    int32_t Size,Temp,Sent;
     Data += '\n';
     Size = int32_t(Data.size());
     Sent = 0;
