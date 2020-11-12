@@ -20,7 +20,7 @@ bool CheckBytes(int32_t Bytes){
         return false;
     }else if (Bytes < 0) {
         debug(Sec("(TCP) recv failed with error: ") + std::to_string(WSAGetLastError()));
-        closesocket(TCPSock);
+        KillSocket(TCPSock);
         Terminate = true;
         return false;
     }
@@ -107,7 +107,7 @@ void TCPClientMain(const std::string& IP,int Port){
     if(RetCode != 0){
         UlStatus = Sec("UlConnection Failed!");
         std::cout << Sec("Client: connect failed! Error code: ") << WSAGetLastError() << std::endl;
-        closesocket(TCPSock);
+        KillSocket(TCPSock);
         WSACleanup();
         Terminate = true;
         return;
@@ -118,7 +118,7 @@ void TCPClientMain(const std::string& IP,int Port){
     while(!Terminate)TCPRcv();
     GameSend(Sec("T"));
     ////Game Send Terminate
-    if(closesocket(TCPSock) != 0)
+    if(KillSocket(TCPSock) != 0)
         debug(Sec("(TCP) Cannot close socket. Error code: ") + std::to_string(WSAGetLastError()));
 
     if(WSACleanup() != 0)

@@ -128,7 +128,7 @@ void GameHandler(SOCKET Client){
             if(Temp < 1)break;
             if(!isdigit(Header[Rcv]) && Header[Rcv] != '>') {
                 error(Sec("(Core) Invalid lua communication"));
-                closesocket(Client);
+                KillSocket(Client);
                 return;
             }
         }while(Header[Rcv++] != '>');
@@ -155,7 +155,7 @@ void GameHandler(SOCKET Client){
     } else {
         debug(Sec("(Core) recv failed with error: ") + std::to_string(WSAGetLastError()));
     }
-    closesocket(Client);
+    KillSocket(Client);
 }
 void localRes(){
     MStatus = " ";
@@ -197,7 +197,7 @@ void CoreMain() {
     if (iRes == SOCKET_ERROR) {
         error(Sec("(Core) bind failed with error: ") + std::to_string(WSAGetLastError()));
         freeaddrinfo(res);
-        closesocket(LSocket);
+        KillSocket(LSocket);
         WSACleanup();
         return;
     }
@@ -205,7 +205,7 @@ void CoreMain() {
     if (iRes == SOCKET_ERROR) {
         debug(Sec("(Core) listen failed with error: ") + std::to_string(WSAGetLastError()));
         freeaddrinfo(res);
-        closesocket(LSocket);
+        KillSocket(LSocket);
         WSACleanup();
         return;
     }
@@ -220,7 +220,7 @@ void CoreMain() {
         GameHandler(CSocket);
         warn(Sec("Game Reconnecting..."));
     }while(CSocket);
-    closesocket(LSocket);
+    KillSocket(LSocket);
     WSACleanup();
 }
 int Handle(EXCEPTION_POINTERS *ep){

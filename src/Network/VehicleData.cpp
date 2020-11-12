@@ -218,6 +218,6 @@ void UDPClientMain(const std::string& IP,int Port){
     TCPSend(Sec("P"));
     UDPSend(Sec("p"));
     while(!Terminate)UDPRcv();
-    closesocket(UDPSock);
+    KillSocket(UDPSock);
     WSACleanup();
 }

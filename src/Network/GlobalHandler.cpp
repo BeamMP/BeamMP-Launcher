@@ -18,6 +18,11 @@ extern SOCKET UDPSock;
 extern SOCKET TCPSock;
 SOCKET CSocket;
 
+int KillSocket(uint64_t Dead){
+    shutdown(Dead,SD_BOTH);
+    return closesocket(Dead);
+}
+
 bool CheckBytes(uint32_t Bytes){
     if(Bytes == 0){
         debug(Sec("(Proxy) Connection closing"));
@@ -72,15 +77,20 @@ void ServerSend(std::string Data, bool Rel){
         //debug("(Game->Launcher) : " + Data);
     }
 }
+
 void NetReset(){
     TCPTerminate = false;
     GConnected = false;
     Terminate = false;
     UlStatus = Sec("Ulstart");
     MStatus = " ";
-    if(UDPSock != SOCKET_ERROR)closesocket(UDPSock);
+    if(UDPSock != SOCKET_ERROR){
+        KillSocket(UDPSock);
+    }
     UDPSock = -1;
-    if(TCPSock != SOCKET_ERROR)closesocket(TCPSock);
+    if(TCPSock != SOCKET_ERROR){
+        KillSocket(TCPSock);
+    }
     TCPSock = -1;
     ClearAll();
 }
@@ -117,7 +127,7 @@ SOCKET SetupListener(){
     if (iRes == SOCKET_ERROR) {
         error(Sec("(Proxy) bind failed with error: ") + std::to_string(WSAGetLastError()));
         freeaddrinfo(result);
-        closesocket(LSocket);
+        KillSocket(LSocket);
         WSACleanup();
         return -1;
     }
@@ -125,7 +135,7 @@ SOCKET SetupListener(){
     iRes = listen(LSocket, SOMAXCONN);
     if (iRes == SOCKET_ERROR) {
         error(Sec("(Proxy) listen failed with error: ") + std::to_string(WSAGetLastError()));
-        closesocket(LSocket);
+        KillSocket(LSocket);
         WSACleanup();
         return -1;
     }
@@ -236,5 +246,5 @@ void TCPGameServer(const std::string& IP, int Port){
     if(LSocket == -1){
         UlStatus = Sec("Critical error! check the launcher logs");
     }
-    if(CSocket != SOCKET_ERROR)closesocket(CSocket);
+    if(CSocket != SOCKET_ERROR)KillSocket(CSocket);
 }

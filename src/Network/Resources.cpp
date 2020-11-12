@@ -47,7 +47,7 @@ void STCPSendRaw(SOCKET socket,const std::vector<char>& Data){
     }
     else if (BytesSent < 0) {
         debug(Sec("(TCP) send failed with error: ") + std::to_string(WSAGetLastError()));
-        closesocket(socket);
+        KillSocket(socket);
         Terminate = true;
         return;
     }
@@ -67,7 +67,7 @@ std::pair<char*,size_t> STCPRecv(SOCKET socket){
         return std::make_pair((char*)"",0);
     }else if (BytesRcv < 0) {
         info(Sec("(TCP) recv failed with error: ") + std::to_string(WSAGetLastError()));
-        closesocket(socket);
+        KillSocket(socket);
         Terminate = true;
         return std::make_pair((char*)"",0);
     }
@@ -115,7 +115,7 @@ void Check(Hold* S){
     std::this_thread::sleep_for(std::chrono::seconds(5));
     if(S != nullptr){
         if(!S->Done && S->TCPSock != -1){
-            closesocket(S->TCPSock);
+            KillSocket(S->TCPSock);
         }
     }
 }
