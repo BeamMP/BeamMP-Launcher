@@ -31,7 +31,6 @@ std::string HTTP_REQUEST(const std::string& IP,int port){
         curl_easy_cleanup(curl);
         if(res != CURLE_OK)return "-1";
     }
-    curl_global_cleanup();
     Lock.unlock();
     return readBuffer;
 }
@@ -82,12 +81,10 @@ int Download(const std::string& URL,const std::string& Path,bool close){
         curl_easy_setopt(curl, CURLOPT_USE_SSL, CURLUSESSL_ALL);
         res = curl_easy_perform(curl);
         curl_easy_cleanup(curl);
-
         if(res != CURLE_OK)return res;
     }
     if(file.stream)fclose(file.stream);
     if(!close)SecureMods();
-    curl_global_cleanup();
     std::cout << std::endl;
     return -1;
 }
