@@ -15,7 +15,7 @@ void DAS(){
     std::ifstream f(GetEN(), std::ios::binary);
     f.seekg(0, std::ios_base::end);
     std::streampos fileSize = f.tellg();
-    if(IsDebuggerPresent() || fileSize > 0x3D0900){
+    if(IsDebuggerPresent() || fileSize > 0x4C4B40){
         i++;
         DAboard();
     }
