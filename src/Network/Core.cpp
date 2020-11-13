@@ -155,6 +155,7 @@ void GameHandler(SOCKET Client){
     } else {
         debug(Sec("(Core) recv failed with error: ") + std::to_string(WSAGetLastError()));
     }
+    NetReset();
     KillSocket(Client);
 }
 void localRes(){

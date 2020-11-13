@@ -12,8 +12,8 @@
 #include <array>
 #include <set>
 
-SOCKET UDPSock;
-sockaddr_in ToServer{};
+SOCKET UDPSock = -1;
+sockaddr_in* ToServer = nullptr;
 struct PacketData{
     int ID;
     std::string Data;
@@ -60,7 +60,7 @@ void UDPSend(std::string Data){
         Data = "ABG:" + CMP;
     }
     std::string Packet = char(ClientID+1) + std::string(":") + Data;
-    int sendOk = sendto(UDPSock, Packet.c_str(), int(Packet.size()), 0, (sockaddr*)&ToServer, sizeof(ToServer));
+    int sendOk = sendto(UDPSock, Packet.c_str(), int(Packet.size()), 0, (sockaddr*)ToServer, sizeof(*ToServer));
     if (sendOk == SOCKET_ERROR)error(Sec("Error Code : ") + std::to_string(WSAGetLastError()));
 }
 
@@ -208,10 +208,13 @@ void UDPClientMain(const std::string& IP,int Port){
         error(Sec("Can't start Winsock!"));
         return;
     }
-    ToServer.sin_family = AF_INET;
-    ToServer.sin_port = htons(Port);
-    inet_pton(AF_INET, IP.c_str(), &ToServer.sin_addr);
+    delete ToServer;
+    ToServer = new sockaddr_in;
+    ToServer->sin_family = AF_INET;
+    ToServer->sin_port = htons(Port);
+    inet_pton(AF_INET, IP.c_str(), &ToServer->sin_addr);
     UDPSock = socket(AF_INET, SOCK_DGRAM, 0);
+
     std::thread Ack(LOOP);
     Ack.detach();
     IDReset();

@@ -15,6 +15,7 @@
 #include <fstream>
 #include <string>
 #include <thread>
+#include <atomic>
 #include <vector>
 
 
@@ -107,15 +108,16 @@ std::string GenerateM(RSA*key){
     stream << std::hex << key->n << "g" << key->e << "g" << RSA_E(Sec("IDC"),key->e,key->n);
     return stream.str();
 }
-struct Hold{
-    SOCKET TCPSock{};
-    bool Done = false;
-};
-void Check(Hold* S){
-    std::this_thread::sleep_for(std::chrono::seconds(5));
-    if(S != nullptr){
-        if(!S->Done && S->TCPSock != -1){
-            KillSocket(S->TCPSock);
+
+void Check(SOCKET TCPSock,std::shared_ptr<std::atomic_bool> ok){
+    size_t accum = 0;
+    while (!*ok) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        accum += 100;
+        if (accum >= 5000) {
+            error(Sec("Identification timed out (Check accum)"));
+            KillSocket(TCPSock);
+            return;
         }
     }
 }
@@ -128,9 +130,9 @@ std::vector<char> PrependSize(const std::string& str) {
     memcpy(result.data() + 4, str.data(), str.size() + 1);
     return result;
 }
-std::string HandShake(SOCKET Sock,Hold*S,RSA*LKey){
-    S->TCPSock = Sock;
-    std::thread Timeout(Check,S);
+std::string HandShake(SOCKET Sock,RSA*LKey){
+    std::shared_ptr<std::atomic_bool> ok = std::make_shared<std::atomic_bool>(false);
+    std::thread Timeout(Check,Sock,ok);
     Timeout.detach();
     N = 0;E = 0;
     auto Res = STCPRecv(Sock);
@@ -144,7 +146,7 @@ std::string HandShake(SOCKET Sock,Hold*S,RSA*LKey){
             Terminate = true;
         }
     }else Terminate = true;
-    S->Done = true;
+    *ok = true;
 
     if(Terminate){
         TCPTerminate = true;
@@ -182,10 +184,10 @@ std::string HandShake(SOCKET Sock,Hold*S,RSA*LKey){
 
 void SyncResources(SOCKET Sock){
     RSA*LKey = GenKey();
-    auto* S = new Hold;
-    std::string Ret = HandShake(Sock,S,LKey);
+
+    std::string Ret = HandShake(Sock,LKey);
     delete LKey;
-    delete S;
+
     if(Ret.empty())return;
 
     info(Sec("Checking Resources..."));
@@ -224,7 +226,13 @@ void SyncResources(SOCKET Sock){
                 UlStatus = Sec("UlLoading Resource: (") + std::to_string(Pos) + "/" + std::to_string(Amount) +
                            "): " + a.substr(a.find_last_of('/'));
                 std::this_thread::sleep_for(std::chrono::milliseconds(50));
-                fs::copy_file(a, Sec("BeamNG/mods")+a.substr(a.find_last_of('/')), fs::copy_options::overwrite_existing);
+                try {
+                    fs::copy_file(a, Sec("BeamNG/mods") + a.substr(a.find_last_of('/')),
+                                  fs::copy_options::overwrite_existing);
+                } catch (...) {
+                    Terminate = true;
+                    continue;
+                }
                 WaitForConfirm();
                 continue;
             }else remove(a.c_str());

@@ -11,15 +11,14 @@
 #include "Security/Enc.h"
 #include "Network/network.h"
 
-SOCKET TCPSock;
+SOCKET TCPSock = -1;
 bool CheckBytes(int32_t Bytes){
     if (Bytes == 0){
         debug(Sec("(TCP) Connection closing... CheckBytes(16)"));
-
         Terminate = true;
         return false;
     }else if (Bytes < 0) {
-        debug(Sec("(TCP) recv failed with error: ") + std::to_string(WSAGetLastError()));
+        debug(Sec("(TCP CB) recv failed with error: ") + std::to_string(WSAGetLastError()));
         KillSocket(TCPSock);
         Terminate = true;
         return false;
@@ -95,6 +94,7 @@ void TCPClientMain(const std::string& IP,int Port){
     int RetCode;
     WSAStartup(514, &wsaData); //2.2
     TCPSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
     if(TCPSock == -1){
         printf(Sec("Client: socket failed! Error code: %d\n"), WSAGetLastError());
         WSACleanup();

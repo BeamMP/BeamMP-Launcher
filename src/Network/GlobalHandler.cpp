@@ -16,11 +16,20 @@ bool GConnected = false;
 bool CServer = true;
 extern SOCKET UDPSock;
 extern SOCKET TCPSock;
-SOCKET CSocket;
+SOCKET CSocket = -1;
+SOCKET GSocket = -1;
 
 int KillSocket(uint64_t Dead){
+    if(Dead == (SOCKET)-1){
+        debug(Sec("Kill socket got -1 returning..."));
+        return 0;
+    }
     shutdown(Dead,SD_BOTH);
-    return closesocket(Dead);
+    int a = closesocket(Dead);
+    if(a != 0){
+        warn(Sec("Failed to close socket!"));
+    }
+    return a;
 }
 
 bool CheckBytes(uint32_t Bytes){
@@ -48,7 +57,9 @@ void GameSend(std::string Data){
         }
     #endif
     do{
-        Temp = send(CSocket, &Data[Sent], Size - Sent, 0);
+         if(Sent > -1){
+            Temp = send(CSocket, &Data[Sent], Size - Sent, 0);
+         }
         if(!CheckBytes(Temp))return;
         Sent += Temp;
     }while(Sent < Size);
@@ -84,20 +95,26 @@ void NetReset(){
     Terminate = false;
     UlStatus = Sec("Ulstart");
     MStatus = " ";
-    if(UDPSock != SOCKET_ERROR){
+    if(UDPSock != (SOCKET)(-1)){
+        debug("Terminating UDP Socket : " + std::to_string(TCPSock));
         KillSocket(UDPSock);
     }
     UDPSock = -1;
-    if(TCPSock != SOCKET_ERROR){
+    if(TCPSock != (SOCKET)(-1)){
+        debug("Terminating TCP Socket : " + std::to_string(TCPSock));
         KillSocket(TCPSock);
     }
     TCPSock = -1;
+    if(GSocket != (SOCKET)(-1)){
+        debug("Terminating GTCP Socket : " + std::to_string(GSocket));
+        KillSocket(GSocket);
+    }
+    GSocket = -1;
     ClearAll();
 }
 
 SOCKET SetupListener(){
-    static SOCKET LSocket = -1;
-    if(LSocket != -1)return LSocket;
+    if(GSocket != -1)return GSocket;
     struct addrinfo *result = nullptr;
     struct addrinfo hints{};
     WSADATA wsaData;
@@ -116,30 +133,30 @@ SOCKET SetupListener(){
         error(Sec("(Proxy) info failed with error: ") + std::to_string(iRes));
         WSACleanup();
     }
-    LSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
-    if (LSocket == -1) {
+    GSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+    if (GSocket == -1) {
         error(Sec("(Proxy) socket failed with error: ") + std::to_string(WSAGetLastError()));
         freeaddrinfo(result);
         WSACleanup();
         return -1;
     }
-    iRes = bind(LSocket, result->ai_addr, (int) result->ai_addrlen);
+    iRes = bind(GSocket, result->ai_addr, (int) result->ai_addrlen);
     if (iRes == SOCKET_ERROR) {
         error(Sec("(Proxy) bind failed with error: ") + std::to_string(WSAGetLastError()));
         freeaddrinfo(result);
-        KillSocket(LSocket);
+        KillSocket(GSocket);
         WSACleanup();
         return -1;
     }
     freeaddrinfo(result);
-    iRes = listen(LSocket, SOMAXCONN);
+    iRes = listen(GSocket, SOMAXCONN);
     if (iRes == SOCKET_ERROR) {
         error(Sec("(Proxy) listen failed with error: ") + std::to_string(WSAGetLastError()));
-        KillSocket(LSocket);
+        KillSocket(GSocket);
         WSACleanup();
         return -1;
     }
-    return LSocket;
+    return GSocket;
 }
 void AutoPing(){
     while(!Terminate){
@@ -183,8 +200,9 @@ void NetMain(const std::string& IP, int Port){
     info(Sec("Connection Terminated!"));
 }
 void TCPGameServer(const std::string& IP, int Port){
-    SOCKET LSocket = SetupListener();
-    while (!TCPTerminate && LSocket != -1){
+    GSocket = SetupListener();
+    while (!TCPTerminate && GSocket != -1){
+        debug("MAIN LOOP OF GAME SERVER");
         GConnected = false;
         if(!CServer){
             warn(Sec("Connection still alive terminating"));
@@ -197,9 +215,9 @@ void TCPGameServer(const std::string& IP, int Port){
             std::thread Client(TCPClientMain, IP, Port);
             Client.detach();
         }
-        CSocket = accept(LSocket, nullptr, nullptr);
+        CSocket = accept(GSocket, nullptr, nullptr);
         if (CSocket == -1) {
-            error(Sec("(Proxy) accept failed with error: ") + std::to_string(WSAGetLastError()));
+            debug(Sec("(Proxy) accept failed with error: ") + std::to_string(WSAGetLastError()));
             break;
         }
         debug(Sec("(Proxy) Game Connected!"));
@@ -218,9 +236,9 @@ void TCPGameServer(const std::string& IP, int Port){
 
             do{
                 Temp = recv(CSocket,&Header[Rcv],1,0);
-                if(Temp < 1)break;
+                if(Temp < 1 || TCPTerminate)break;
             }while(Header[Rcv++] != '>');
-            if(Temp < 1)break;
+            if(Temp < 1 || TCPTerminate)break;
             if(std::from_chars(Header,&Header[Rcv],Size).ptr[0] != '>'){
                 debug(Sec("(Game) Invalid lua Header -> ") + std::string(Header,Rcv));
                 break;
@@ -231,20 +249,18 @@ void TCPGameServer(const std::string& IP, int Port){
                 Temp = recv(CSocket,&Ret[Rcv],Size-Rcv,0);
                 if(Temp < 1)break;
                 Rcv += Temp;
-            }while(Rcv < Size);
-            if(Temp < 1)break;
+            }while(Rcv < Size && !TCPTerminate);
+            if(Temp < 1 || TCPTerminate)break;
 
             ServerSend(Ret,false);
 
-        }while(Temp > 0);
+        }while(Temp > 0 && !TCPTerminate);
         if(Temp == 0)debug(Sec("(Proxy) Connection closing"));
         else debug(Sec("(Proxy) recv failed error : ") + std::to_string(WSAGetLastError()));
     }
     TCPTerminate = true;
     GConnected = false;
     Terminate = true;
-    if(LSocket == -1){
-        UlStatus = Sec("Critical error! check the launcher logs");
-    }
     if(CSocket != SOCKET_ERROR)KillSocket(CSocket);
+    debug("END OF GAME SERVER");
 }
