@@ -2,6 +2,7 @@
 /// Created by Anonymous275 on 7/25/2020
 ///
 #include "Network/network.h"
+#include "Security/Init.h"
 #include "Security/Enc.h"
 #include <WinSock2.h>
 #include <WS2tcpip.h>
@@ -201,6 +202,7 @@ void NetMain(const std::string& IP, int Port){
 }
 void TCPGameServer(const std::string& IP, int Port){
     GSocket = SetupListener();
+    FindDLL(nullptr);
     while (!TCPTerminate && GSocket != -1){
         debug(Sec("MAIN LOOP OF GAME SERVER"));
         GConnected = false;
