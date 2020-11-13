@@ -5,18 +5,19 @@
 #include <string>
 #include <winsock.h>
 #include "Logger.h"
+#include "Security/Enc.h"
 std::string GetAddr(const std::string&IP){
     if(IP.find_first_not_of("0123456789.") == -1)return IP;
     WSADATA wsaData;
     hostent *host;
     if(WSAStartup(514, &wsaData) != 0){
-        error("WSA Startup Failed!");
+        error(Sec("WSA Startup Failed!"));
         WSACleanup();
         return "";
     }
     host = gethostbyname(IP.c_str());
     if(!host){
-        error("DNS lookup failed! on " + IP);
+        error(Sec("DNS lookup failed! on ") + IP);
         WSACleanup();
         return "DNS";
     }

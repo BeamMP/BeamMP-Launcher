@@ -96,17 +96,17 @@ void NetReset(){
     UlStatus = Sec("Ulstart");
     MStatus = " ";
     if(UDPSock != (SOCKET)(-1)){
-        debug("Terminating UDP Socket : " + std::to_string(TCPSock));
+        debug(Sec("Terminating UDP Socket : ") + std::to_string(TCPSock));
         KillSocket(UDPSock);
     }
     UDPSock = -1;
     if(TCPSock != (SOCKET)(-1)){
-        debug("Terminating TCP Socket : " + std::to_string(TCPSock));
+        debug(Sec("Terminating TCP Socket : ") + std::to_string(TCPSock));
         KillSocket(TCPSock);
     }
     TCPSock = -1;
     if(GSocket != (SOCKET)(-1)){
-        debug("Terminating GTCP Socket : " + std::to_string(GSocket));
+        debug(Sec("Terminating GTCP Socket : ") + std::to_string(GSocket));
         KillSocket(GSocket);
     }
     GSocket = -1;
@@ -202,7 +202,7 @@ void NetMain(const std::string& IP, int Port){
 void TCPGameServer(const std::string& IP, int Port){
     GSocket = SetupListener();
     while (!TCPTerminate && GSocket != -1){
-        debug("MAIN LOOP OF GAME SERVER");
+        debug(Sec("MAIN LOOP OF GAME SERVER"));
         GConnected = false;
         if(!CServer){
             warn(Sec("Connection still alive terminating"));
@@ -262,5 +262,5 @@ void TCPGameServer(const std::string& IP, int Port){
     GConnected = false;
     Terminate = true;
     if(CSocket != SOCKET_ERROR)KillSocket(CSocket);
-    debug("END OF GAME SERVER");
+    debug(Sec("END OF GAME SERVER"));
 }

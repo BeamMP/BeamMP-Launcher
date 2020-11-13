@@ -2,6 +2,7 @@
 /// Created by Anonymous275 on 7/20/2020
 ///
 #include "Network/network.h"
+#include "Security/Init.h"
 #include "Security/Enc.h"
 #include "Curl/http.h"
 #include <WinSock2.h>
@@ -9,9 +10,9 @@
 #include "Startup.h"
 #include "Memory.h"
 #include "Logger.h"
+#include <charconv>
 #include <thread>
 #include <set>
-#include <charconv>
 
 extern int TraceBack;
 std::set<std::string>* ConfList = nullptr;
@@ -25,6 +26,7 @@ bool ModLoaded;
 long long ping = -1;
 
 void StartSync(const std::string &Data){
+    FindDLL(nullptr);
     std::string IP = GetAddr(Data.substr(1,Data.find(':')-1));
     if(IP.find('.') == -1){
         if(IP == "DNS")UlStatus = Sec("UlConnection Failed! (DNS Lookup Failed)");

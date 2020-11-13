@@ -16,16 +16,13 @@ extern int TraceBack;
 bool Dev = false;
 namespace fs = std::experimental::filesystem;
 std::string GetEN(){
-    static std::string r = Sec("BeamMP-Launcher.exe");
-    return r;
+    return std::string(Sec("BeamMP-Launcher.exe"));
 }
 std::string GetVer(){
-    static std::string r = Sec("1.70");
-    return r;
+    return std::string(Sec("1.70"));
 }
 std::string GetPatch(){
-    static std::string r = Sec("");
-    return r;
+    return std::string(Sec(""));
 }
 void ReLaunch(int argc,char*args[]){
     std::string Arg;
@@ -184,6 +181,7 @@ void InitLauncher(int argc, char* argv[]) {
     SetConsoleTitleA((Sec("BeamMP Launcher v") + std::string(GetVer()) + GetPatch()).c_str());
     InitLog();
     CheckName(argc, argv);
+    FindDLL(argv);
     SecurityCheck(argv);
     Discord_Main();
     RequestRole();
