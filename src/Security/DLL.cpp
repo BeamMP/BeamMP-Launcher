@@ -48,6 +48,7 @@ void FindDLL(char* args[]){
                         t1.detach();
                     }
                 }
+                ZeroMemory(szModName,MAX_PATH);
             }
         }
     }
