@@ -181,7 +181,7 @@ void InitLauncher(int argc, char* argv[]) {
     SetConsoleTitleA((Sec("BeamMP Launcher v") + std::string(GetVer()) + GetPatch()).c_str());
     InitLog();
     CheckName(argc, argv);
-    FindDLL(argv);
+    FindDLL(argv[0]);
     SecurityCheck(argv);
     Discord_Main();
     RequestRole();

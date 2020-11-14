@@ -4,52 +4,44 @@
 #include "Network/network.h"
 #include "Security/Enc.h"
 #include <windows.h>
-#include "Logger.h"
+#include <Logger.h>
 #include <psapi.h>
-#include <string>
 #include <thread>
-
-
-DWORD getParentPID(DWORD pid);
-HANDLE getProcess(DWORD pid, LPSTR fname, DWORD sz);
 
 void Kill(){
     static bool Run = false;
     if(!Run)Run = true;
     else return;
     while(Run){
-        std::this_thread::sleep_for(std::chrono::seconds(2));
-        NetReset();
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        ClosePublic();
         #ifdef DEBUG
-            debug(Sec("Attention! NetReset Check!"));
+            debug("NetReset Check!");
         #endif
     }
 }
 
-void FindDLL(char* args[]){
-    static auto argv = args;
+void FindDLL(const std::string& Name) {
+    static std::string PName = LocalEnc(Name.substr(0,Name.rfind(Sec("\\"))));
+    static bool Running = false;
+    if(Running)return;
     HANDLE hProcess = GetCurrentProcess();
-    std::string Parent(MAX_PATH,0);
-    DWORD ppid = getParentPID(GetCurrentProcessId());
-    HANDLE Process = getProcess(ppid, &Parent[0], MAX_PATH);
-    if(Process == nullptr){
-        HMODULE hMods[1024];
-        DWORD cbNeeded;
-        unsigned int i;
-        if(K32EnumProcessModules(hProcess, hMods, sizeof(hMods), &cbNeeded)){
-            for ( i = 1; i < (cbNeeded / sizeof(HMODULE)); i++ ){
-                TCHAR szModName[MAX_PATH];
-                if (K32GetModuleFileNameExA(hProcess, hMods[i], szModName, sizeof(szModName) / sizeof(TCHAR))){
-                    std::string Name(szModName),PName(argv[0]);
-                    Name = Name.substr(0,Name.rfind(Sec("\\")));
-                    PName = PName.substr(0,PName.rfind(Sec("\\")));
-                    if(Name == PName){
-                        std::thread t1(Kill);
-                        t1.detach();
-                    }
+    HMODULE hMods[1024];
+    DWORD cbNeeded;
+    unsigned int i;
+    TCHAR szModName[MAX_PATH];
+    if (K32EnumProcessModules(hProcess, hMods, sizeof(hMods), &cbNeeded)) {
+        for (i = 1; i < (cbNeeded / sizeof(HMODULE)); i++) {
+            if (K32GetModuleFileNameExA(hProcess, hMods[i], szModName, sizeof(szModName) / sizeof(TCHAR))) {
+                std::string MName(szModName);
+                MName = MName.substr(0, MName.rfind(Sec("\\")));
+                if (MName == LocalDec(PName)) {
+                    Running = true;
+                    std::thread t1(Kill);
+                    t1.detach();
                 }
-                ZeroMemory(szModName,MAX_PATH);
             }
+            ZeroMemory(szModName, MAX_PATH);
         }
     }
     CloseHandle(hProcess);

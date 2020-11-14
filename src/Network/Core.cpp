@@ -227,7 +227,7 @@ void CoreMain() {
 int Handle(EXCEPTION_POINTERS *ep){
     char* hex = new char[100];
     sprintf_s(hex,100, "%lX", ep->ExceptionRecord->ExceptionCode);
-    except(Sec("(Core) Code : ") + std::string(hex));
+    except(Sec("(Core) ") + std::string(hex));
     delete [] hex;
     return 1;
 }

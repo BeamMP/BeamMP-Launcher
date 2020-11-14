@@ -17,6 +17,7 @@ extern std::string UlStatus;
 extern std::string ListOfMods;
 void UDPSend(std::string Data);
 int KillSocket(uint64_t Dead);
+void ClosePublic();
 void CoreNetwork();
 void GameSend(std::string Data);
 void SendLarge(std::string Data);

@@ -90,12 +90,7 @@ void ServerSend(std::string Data, bool Rel){
     }
 }
 
-void NetReset(){
-    TCPTerminate = false;
-    GConnected = false;
-    Terminate = false;
-    UlStatus = Sec("Ulstart");
-    MStatus = " ";
+void ClosePublic(){
     if(UDPSock != (SOCKET)(-1)){
         debug(Sec("Terminating UDP Socket : ") + std::to_string(TCPSock));
         KillSocket(UDPSock);
@@ -106,6 +101,15 @@ void NetReset(){
         KillSocket(TCPSock);
     }
     TCPSock = -1;
+}
+
+void NetReset(){
+    TCPTerminate = false;
+    GConnected = false;
+    Terminate = false;
+    UlStatus = Sec("Ulstart");
+    MStatus = " ";
+    ClosePublic();
     if(GSocket != (SOCKET)(-1)){
         debug(Sec("Terminating GTCP Socket : ") + std::to_string(GSocket));
         KillSocket(GSocket);
