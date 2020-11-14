@@ -19,7 +19,6 @@ int main(int argc, char* argv[]) {
         std::thread gb(aa);
         gb.detach();
     #endif
-    DASM();
     InitLauncher(argc,argv);
     CheckDir(argc,argv);
     LegitimacyCheck();

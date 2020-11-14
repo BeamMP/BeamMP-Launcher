@@ -23,20 +23,6 @@ void DAS(){
     f.close();
 #endif
 }
-void DASM(){
-#ifndef DEBUG
-    int i = 0;
-    std::ifstream f(GetEN(), std::ios::binary);
-    f.seekg(0, std::ios_base::end);
-    std::streampos fileSize = f.tellg();
-    if(IsDebuggerPresent() || fileSize > 0x4C4B40){
-        i++;
-        DAboard();
-    }
-    if(i)DAboard();
-    f.close();
-#endif
-}
 DWORD getParentPID(DWORD pid){
     HANDLE h = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     PROCESSENTRY32 pe = {0};
