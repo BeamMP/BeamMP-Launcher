@@ -10,3 +10,4 @@ void FindDLL(const std::string& Name);
 void SecurityCheck(char* argv[]);
 std::string GetGameDir();
 void LegitimacyCheck();
+void DASM();
