@@ -22,7 +22,7 @@ std::string GetVer(){
     return std::string(Sec("1.70"));
 }
 std::string GetPatch(){
-    return std::string(Sec(".1"));
+    return std::string(Sec(".2"));
 }
 void ReLaunch(int argc,char*args[]){
     std::string Arg;

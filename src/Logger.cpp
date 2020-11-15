@@ -66,12 +66,9 @@ void warn(const std::string& toPrint){
     addToLog(Print);
 }
 void error(const std::string& toPrint) {
-    static int ECounter = 0;
     std::string Print = getDate() + Sec("[ERROR] ") + toPrint + "\n";
     std::cout << Print;
     addToLog(Print);
-    if(ECounter > 10)exit(7);
-    ECounter++;
 }
 void except(const std::string& toPrint) {
     std::string Print = getDate() + Sec("[EXCEP] ") + toPrint + "\n";
