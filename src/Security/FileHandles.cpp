@@ -50,7 +50,7 @@ void ContinuousCheck(fs::file_time_type last){
     int i = 0;
     while(fs::exists(path) && last == fs::last_write_time(path)){
         if(!BeamLoad(SecW(L"BeamNG\\mods\\BeamMP.zip"))) {
-            if (i < 60)i++;
+            if (i < 120)i++;
             else {
                 error(Sec("Mod did not load! launcher closing soon"));
                 std::this_thread::sleep_for(std::chrono::seconds(5));
