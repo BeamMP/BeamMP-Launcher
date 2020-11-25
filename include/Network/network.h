@@ -6,7 +6,6 @@
 void NetReset();
 extern long long ping;
 extern bool Dev;
-void ClearAll();
 extern int ClientID;
 extern bool ModLoaded;
 extern bool Terminate;

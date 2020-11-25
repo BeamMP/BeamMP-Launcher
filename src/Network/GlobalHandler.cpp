@@ -111,7 +111,6 @@ void NetReset(){
         KillSocket(GSocket);
     }
     GSocket = -1;
-    ClearAll();
 }
 
 SOCKET SetupListener(){
