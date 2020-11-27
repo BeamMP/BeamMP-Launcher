@@ -7,6 +7,8 @@
 #include <fstream>
 #include <sstream>
 #include <chrono>
+#include <thread>
+
 std::string getDate() {
     typedef std::chrono::duration<int, std::ratio_multiply<std::chrono::hours::period, std::ratio<24>>::type> days;
     std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
@@ -69,6 +71,13 @@ void error(const std::string& toPrint) {
     std::string Print = getDate() + Sec("[ERROR] ") + toPrint + "\n";
     std::cout << Print;
     addToLog(Print);
+}
+void fatal(const std::string& toPrint) {
+    std::string Print = getDate() + Sec("[FATAL] ") + toPrint + "\n";
+    std::cout << Print;
+    addToLog(Print);
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+    _Exit(-1);
 }
 void except(const std::string& toPrint) {
     std::string Print = getDate() + Sec("[EXCEP] ") + toPrint + "\n";

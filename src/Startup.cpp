@@ -63,9 +63,7 @@ void RequestRole(){
     if(HTTP_Result == "-1"){
         HTTP_Result = HTTP_REQUEST(Sec("https://backup1.beammp.com/entitlement?did=")+GetDID()+Sec("&t=l"),443);
         if(HTTP_Result == "-1") {
-            error(Sec("Sorry Backend System Outage! Don't worry it will back on soon!"));
-            std::this_thread::sleep_for(std::chrono::seconds(3));
-            exit(-1);
+            fatal(Sec("Sorry Backend System Outage! Don't worry it will back on soon!"));
         }
     }
     if(HTTP_Result.find(Sec("\"MDEV\"")) != NPos || HTTP_Result.find(Sec("\"CON\"")) != NPos){
@@ -74,9 +72,7 @@ void RequestRole(){
         }
     }
     if(HTTP_Result.find(Sec("Error")) != NPos){
-        error(Sec("Sorry You need to be in the official BeamMP Discord to proceed! https://discord.gg/beammp"));
-        std::this_thread::sleep_for(std::chrono::seconds(3));
-        exit(-1);
+        fatal(Sec("Sorry You need to be in the official BeamMP Discord to proceed! https://discord.gg/beammp"));
     }
     info(Sec("Client Connected!"));
 }
@@ -90,9 +86,7 @@ void CheckForUpdates(int argc,char*args[],const std::string& CV){
         HTTP = HTTP_REQUEST(link,443);
         fallback = true;
         if(HTTP.find_first_of("0123456789") == std::string::npos) {
-            error(Sec("Primary Servers Offline! sorry for the inconvenience!"));
-            std::this_thread::sleep_for(std::chrono::seconds(4));
-            exit(-1);
+            fatal(Sec("Primary Servers Offline! sorry for the inconvenience!"));
         }
     }
     if(fallback){

@@ -20,16 +20,12 @@ std::string Write(const std::string&Path){
     LPCTSTR sk = Sec("Software\\BeamNG\\BeamNG.drive");
     LONG openRes = RegOpenKeyEx(HKEY_CURRENT_USER, sk, 0, KEY_ALL_ACCESS, &hKey);
     if (openRes != ERROR_SUCCESS){
-        error(Sec("Please launch the game at least once"));
-        std::this_thread::sleep_for(std::chrono::seconds(5));
-        exit(5);
+        fatal(Sec("Please launch the game at least once"));
     }
     std::string Query = QueryKey(hKey,4);
     LONG setRes = RegSetValueEx(hKey, Sec("userpath_override"), 0, REG_SZ, (LPBYTE)Path.c_str(), DWORD(Path.size()));
     if(setRes != ERROR_SUCCESS){
-        error(Sec("Failed to launch the game"));
-        std::this_thread::sleep_for(std::chrono::seconds(5));
-        exit(5);
+        fatal(Sec("Failed to launch the game")); //not fatal later
     }
     RegCloseKey(hKey);
     return Query;

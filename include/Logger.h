@@ -6,6 +6,7 @@
 #include <iostream>
 void InitLog();
 void except(const std::string& toPrint);
+void fatal(const std::string& toPrint);
 void debug(const std::string& toPrint);
 void error(const std::string& toPrint);
 void info(const std::string& toPrint);
