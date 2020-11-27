@@ -74,7 +74,7 @@ void discordInit(){
         }else std::this_thread::sleep_for(std::chrono::seconds(2));
     }
 }
-void DAS();
+
 [[noreturn]] void SecurityLoop(){
     std::string t,t1,t2;
     while(true){
@@ -86,7 +86,6 @@ void DAS();
             }else if(t2 != LocalDec(DiscordInfo->DID) ||
             t != LocalDec(DiscordInfo->Name) || t1 != LocalDec(DiscordInfo->Tag))DiscordInfo = nullptr;
         }else if(!t.empty())DiscordInfo->DID.clear();
-        DAS();
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 }

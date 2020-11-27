@@ -181,8 +181,7 @@ void InitLauncher(int argc, char* argv[]) {
     SetConsoleTitleA((Sec("BeamMP Launcher v") + std::string(GetVer()) + GetPatch()).c_str());
     InitLog();
     CheckName(argc, argv);
-    //FindDLL(argv);
-    SecurityCheck(argv);
+    CheckLocalKey(); //will replace DiscordMain
     Discord_Main();
     RequestRole();
     CustomPort(argc, argv);

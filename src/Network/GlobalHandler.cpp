@@ -201,7 +201,6 @@ void NetMain(const std::string& IP, int Port){
 }
 void TCPGameServer(const std::string& IP, int Port){
     GSocket = SetupListener();
-    FindDLL(nullptr);
     while (!TCPTerminate && GSocket != -1){
         debug(Sec("MAIN LOOP OF GAME SERVER"));
         GConnected = false;
