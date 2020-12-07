@@ -8,6 +8,6 @@ cmake-build-debug/*.*
 cmake-build-release/*.*
 cmake-build-debug/Makefile
 cmake-build-release/Makefile
-!cmake-build-debug/*.lib
-!cmake-build-release/*.lib
 /.idea/
+*.log
+cmake-build-release/key

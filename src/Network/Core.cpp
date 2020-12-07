@@ -118,7 +118,7 @@ void GameHandler(SOCKET Client){
         Memory.detach();
         once = true;
     }
-    //Read byte by byte until '>' is rcved then get the size and read based on it
+
     int32_t Size,Temp,Rcv;
     char Header[10] = {0};
     do{

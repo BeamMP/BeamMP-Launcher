@@ -4,19 +4,20 @@
 #pragma once
 #include <string>
 void NetReset();
-extern long long ping;
 extern bool Dev;
+void CoreNetwork();
 extern int ClientID;
 extern bool ModLoaded;
+extern long long ping;
 extern bool Terminate;
 extern int DEFAULT_PORT;
 extern bool TCPTerminate;
 extern std::string MStatus;
 extern std::string UlStatus;
+extern std::string PublicKey;
 extern std::string ListOfMods;
 void UDPSend(std::string Data);
 int KillSocket(uint64_t Dead);
-void CoreNetwork();
 void GameSend(std::string Data);
 void SendLarge(std::string Data);
 void TCPSend(const std::string&Data);

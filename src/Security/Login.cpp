@@ -3,10 +3,11 @@
 ///
 
 #include "Curl/http.h"
+#include <filesystem>
 #include "Logger.h"
 #include <fstream>
-#include <thread>
-#include <filesystem>
+#include "Json.h"
+
 
 //check file if not present flag for login to the core network
 //to then get user and pass
@@ -14,6 +15,7 @@
 //public keys are one time use for a random server
 
 using namespace std::filesystem;
+std::string PublicKey;
 
 void UpdateKey(const char* newKey){
     if(newKey){
@@ -31,10 +33,14 @@ void AskUser(){
     //Flag Core Network Update to have a login screen
 }
 
-/// "username":"password"
+/// "username":"value","password":"value"
 /// "Guest":"Name"
 /// "pk":"private_key"
 
+void QueryKey(){
+    /*std::string Buffer = PostHTTP("https://auth.beammp.com/pkToUser", R"({"key":")"+PublicKey+"\"}");
+    std::cout << Buffer << std::endl;*/
+}
 
 void CheckLocalKey(){
     if(exists("key") && file_size("key") < 100){
@@ -44,12 +50,21 @@ void CheckLocalKey(){
             std::string Buffer(Size, 0);
             Key.read(&Buffer[0], Size);
             Key.close();
-
-            std::cout << "Key : " << Buffer << std::endl;
-            Buffer = PostHTTP("https://auth.beammp.com/userlogin", R"({"username":"Anonymous275", "password":""})");
-            std::cout << "Ret : " << Buffer << std::endl;
-            if (Buffer == "-1" || Buffer.find('{') == -1) {
-                fatal("Cannot connect to authentication servers please try again later!");
+            Buffer = PostHTTP("https://auth.beammp.com/userlogin", R"({"pk":")"+Buffer+"\"}");
+            json::Document d;
+            std::cout << Buffer << std::endl;
+            d.Parse(Buffer.c_str());
+            if (Buffer == "-1" || Buffer.find('{') == -1 || d.HasParseError()) {
+                fatal("Invalid answer from authentication servers, please try again later!");
+            }
+            if(d["success"].GetBool()){
+                UpdateKey(d["private_key"].GetString());
+                PublicKey = d["public_key"].GetString();
+                QueryKey();
+            }else{
+                std::cout << "Well..... re-login" << std::endl;
+                std::cout << Buffer << std::endl;
+                //send it all to the game
             }
         }else{
             warn("Could not open saved key!");
@@ -59,8 +74,6 @@ void CheckLocalKey(){
     }else{
         UpdateKey(nullptr);
         AskUser();
-        std::cout << "No valid Key i am sad now" << std::endl;
     }
     system("pause");
-
 }
