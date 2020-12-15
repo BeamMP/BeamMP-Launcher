@@ -1,24 +1,21 @@
 ///
 /// Created by Anonymous275 on 4/11/2020
 ///
-#include "Discord/discord_info.h"
+
 #include "Network/network.h"
+#include "Security/Init.h"
 #include "Security/Enc.h"
 #include <WS2tcpip.h>
 #include <filesystem>
 #include "Startup.h"
-#include <algorithm>
 #include "Logger.h"
 #include <iostream>
-#include <sstream>
 #include <cstring>
 #include <fstream>
 #include <string>
 #include <thread>
 #include <atomic>
 #include <vector>
-
-
 
 namespace fs = std::experimental::filesystem;
 std::string ListOfMods;
@@ -35,48 +32,6 @@ std::vector<std::string> Split(const std::string& String,const std::string& deli
     return Val;
 }
 
-void STCPSendRaw(SOCKET socket,const std::vector<char>& Data){
-    if(socket == -1){
-        Terminate = true;
-        return;
-    }
-    int BytesSent = send(socket, Data.data(), int(Data.size()), 0);
-    if (BytesSent == 0){
-        debug(Sec("(TCP) Connection closing..."));
-        Terminate = true;
-        return;
-    }
-    else if (BytesSent < 0) {
-        debug(Sec("(TCP) send failed with error: ") + std::to_string(WSAGetLastError()));
-        KillSocket(socket);
-        Terminate = true;
-        return;
-    }
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
-}
-void STCPSend(SOCKET socket,const std::string&Data){
-    STCPSendRaw(socket,std::vector<char>(Data.begin(),Data.end()));
-}
-std::pair<char*,size_t> STCPRecv(SOCKET socket){
-    char buf[64000];
-    int len = 64000;
-    ZeroMemory(buf, len);
-    int BytesRcv = recv(socket, buf, len,0);
-    if (BytesRcv == 0){
-        info(Sec("(TCP) Connection closing..."));
-        Terminate = true;
-        return std::make_pair((char*)"",0);
-    }else if (BytesRcv < 0) {
-        info(Sec("(TCP) recv failed with error: ") + std::to_string(WSAGetLastError()));
-        KillSocket(socket);
-        Terminate = true;
-        return std::make_pair((char*)"",0);
-    }
-    char* Ret = new char[BytesRcv];
-    memcpy_s(Ret,BytesRcv,buf,BytesRcv);
-    ZeroMemory(buf, len);
-    return std::make_pair(Ret,BytesRcv);
-}
 void CheckForDir(){
     struct stat info{};
     if(stat( Sec("Resources"), &info) != 0){
@@ -90,104 +45,54 @@ void WaitForConfirm(){
     ModLoaded = false;
 }
 
-int N,E;
-void Parse(const std::string& msg){
-    std::stringstream ss(msg);
-    std::string t;
-    while (std::getline(ss, t, 'g')) {
-        if(t.find_first_not_of(Sec("0123456789abcdef")) != std::string::npos)return;
-        if(N == 0){
-            N = std::stoi(t, nullptr, 16);
-        }else if(E == 0){
-            E = std::stoi(t, nullptr, 16);
-        }else return;
-    }
-}
-std::string GenerateM(RSA*key){
-    std::stringstream stream;
-    stream << std::hex << key->n << "g" << key->e << "g" << RSA_E(Sec("IDC"),key->e,key->n);
-    return stream.str();
+
+void Abord(){
+    Terminate = true;
+    TCPTerminate = true;
+    info("Terminated!");
 }
 
-void Check(SOCKET TCPSock,std::shared_ptr<std::atomic_bool> ok){
-    size_t accum = 0;
-    while (!*ok) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        accum += 100;
-        if (accum >= 5000) {
-            error(Sec("Identification timed out (Check accum)"));
-            KillSocket(TCPSock);
-            return;
-        }
-    }
-}
-std::vector<char> PrependSize(const std::string& str) {
-    uint32_t Size = htonl(uint32_t(str.size()) + 1);
-    std::vector<char> result;
-    // +1 for \0, +4 for the size
-    result.resize(str.size() + 1 + 4);
-    memcpy(result.data(), &Size, 4);
-    memcpy(result.data() + 4, str.data(), str.size() + 1);
-    return result;
-}
-std::string HandShake(SOCKET Sock,RSA*LKey){
-    std::shared_ptr<std::atomic_bool> ok = std::make_shared<std::atomic_bool>(false);
-    std::thread Timeout(Check,Sock,ok);
-    Timeout.detach();
-    N = 0;E = 0;
-    auto Res = STCPRecv(Sock);
-    std::string msg(Res.first,Res.second);
-    Parse(msg);
-    if(N != 0 && E != 0) {
-        STCPSendRaw(Sock,PrependSize(GenerateM(LKey)));
-        Res = STCPRecv(Sock);
-        msg = std::string(Res.first,Res.second);
-        if(RSA_D(msg,LKey->d,LKey->n) != "HC"){
-            Terminate = true;
-        }
-    }else Terminate = true;
-    *ok = true;
+std::string Auth(SOCKET Sock){
+    TCPSend("VC" + GetVer(),Sock);
 
-    if(Terminate){
-        TCPTerminate = true;
-        UlStatus = Sec("UlDisconnected: full or outdated server");
-        info(Sec("Terminated!"));
+    auto Res = TCPRcv(Sock);
+
+    if(Res.empty() || Res[0] == 'E'){
+        Abord();
         return "";
     }
-    msg = RSA_E("NR" + GetDName() + ":" + GetDID(),E,N);
-    if(!msg.empty()) {
-        STCPSendRaw(Sock, PrependSize(msg));
-        STCPSendRaw(Sock, PrependSize(RSA_E("VC" + GetVer(),E,N)));
-        Res = STCPRecv(Sock);
-        msg = Res.first;
-    }
 
-    if(N == 0 || E == 0 || msg.size() < 2 || msg.substr(0,2) != "WS"){
+    TCPSend(PublicKey,Sock);
+    if(Terminate)return "";
 
-        Terminate = true;
-        TCPTerminate = true;
-        UlStatus = Sec("UlDisconnected: full or outdated server");
-        info(Sec("Terminated!"));
+    Res = TCPRcv(Sock);
+    if(Res.empty() || Res[0] == 'E' || Res != "WS"){
+        Abord();
         return "";
     }
-    STCPSend(Sock,Sec("SR"));
-    Res = STCPRecv(Sock);
-    if(strlen(Res.first) == 0 || std::string(Res.first) == "-"){
-        info(Sec("Didn't Receive any mods..."));
+
+    TCPSend("SR",Sock);
+    if(Terminate)return "";
+
+    Res = TCPRcv(Sock);
+
+    if(Res[0] == 'E'){
+        Abord();
+        return "";
+    }
+
+    if(Res.empty() || Res == "-"){
+        info("Didn't Receive any mods...");
         ListOfMods = "-";
-        STCPSend(Sock,Sec("Done"));
-        info(Sec("Done!"));
+        TCPSend("Done",Sock);
+        info("Done!");
         return "";
     }
-    return Res.first;
+    return Res;
 }
 
 void SyncResources(SOCKET Sock){
-    RSA*LKey = GenKey();
-
-    std::string Ret = HandShake(Sock,LKey);
-    delete LKey;
-
+    std::string Ret = Auth(Sock);
     if(Ret.empty())return;
 
     info(Sec("Checking Resources..."));
@@ -239,26 +144,21 @@ void SyncResources(SOCKET Sock){
         }
         CheckForDir();
         do {
-            STCPSend(Sock, "f" + *FN);
+            TCPSend("f" + *FN,Sock);
             int Recv = 0,Size = std::stoi(*FS);
             char*File = new char[Size];
             ZeroMemory(File,Size);
             do {
-                auto Pair = STCPRecv(Sock);
-                char* Data = Pair.first;
-                size_t BytesRcv = Pair.second;
-                if (strcmp(Data, Sec("Cannot Open")) == 0 || Terminate){
-                    if(BytesRcv != 0)delete[] Data;
-                    break;
-                }
-                memcpy_s(File+Recv,BytesRcv,Data,BytesRcv);
+                auto Data = TCPRcv(Sock);
+                size_t BytesRcv = Data.size();
+                if (Data == "Cannot Open" || Terminate)break;
+                memcpy_s(File+Recv,BytesRcv,&Data[0],BytesRcv);
                 Recv += int(BytesRcv);
                 float per = float(Recv)/std::stof(*FS) * 100;
                 std::string Percent = std::to_string(truncf(per * 10) / 10);
                 UlStatus = Sec("UlDownloading Resource: (") + std::to_string(Pos) + "/" + std::to_string(Amount) +
                            "): " + a.substr(a.find_last_of('/')) + " (" +
                            Percent.substr(0, Percent.find('.') + 2) + "%)";
-                delete[] Data;
             } while (Recv != Size && Recv < Size && !Terminate);
             if(Terminate)break;
             UlStatus = Sec("UlLoading Resource: (") + std::to_string(Pos) + "/" + std::to_string(Amount) +
@@ -278,10 +178,10 @@ void SyncResources(SOCKET Sock){
     FSizes.clear();
     a.clear();
     if(!Terminate){
-        STCPSend(Sock,Sec("Done"));
-        info(Sec("Done!"));
+        TCPSend("Done",Sock);
+        info("Done!");
     }else{
-        UlStatus = Sec("Ulstart");
-        info(Sec("Connection Terminated!"));
+        UlStatus = "Ulstart";
+        info("Connection Terminated!");
     }
 }

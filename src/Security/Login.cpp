@@ -8,14 +8,9 @@
 #include <fstream>
 #include "Json.h"
 
-
-//check file if not present flag for login to the core network
-//to then get user and pass
-//if present use to contact the backend to refresh and get a public key for servers
-//public keys are one time use for a random server
-
 using namespace std::filesystem;
 std::string PublicKey;
+extern bool LoginAuth;
 
 void UpdateKey(const char* newKey){
     if(newKey){
@@ -29,17 +24,39 @@ void UpdateKey(const char* newKey){
     }
 }
 
-void AskUser(){
-    //Flag Core Network Update to have a login screen
-}
-
 /// "username":"value","password":"value"
 /// "Guest":"Name"
 /// "pk":"private_key"
 
-void QueryKey(){
-    /*std::string Buffer = PostHTTP("https://auth.beammp.com/pkToUser", R"({"key":")"+PublicKey+"\"}");
-    std::cout << Buffer << std::endl;*/
+std::string Login(const std::string& fields){
+    info("Attempting to authenticate...");
+    std::string Buffer = PostHTTP("https://auth.beammp.com/userlogin", fields);
+    json::Document d;
+    d.Parse(Buffer.c_str());
+    if(Buffer == "-1"){
+        fatal("Failed to communicate with the auth system!");
+    }
+    if (Buffer.find('{') == -1 || d.HasParseError()) {
+        fatal("Invalid answer from authentication servers, please try again later!");
+    }
+    if(!d["success"].IsNull() && d["success"].GetBool()){
+        LoginAuth = true;
+        if(!d["private_key"].IsNull()){
+            UpdateKey(d["private_key"].GetString());
+        }
+        if(!d["public_key"].IsNull()){
+            PublicKey = d["public_key"].GetString();
+        }
+    }
+    if(!d["message"].IsNull()){
+        d.RemoveMember("private_key");
+        d.RemoveMember("public_key");
+        rapidjson::StringBuffer buffer;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+        d.Accept(writer);
+        return buffer.GetString();
+    }
+    return "{\"success\":false}";
 }
 
 void CheckLocalKey(){
@@ -52,28 +69,21 @@ void CheckLocalKey(){
             Key.close();
             Buffer = PostHTTP("https://auth.beammp.com/userlogin", R"({"pk":")"+Buffer+"\"}");
             json::Document d;
-            std::cout << Buffer << std::endl;
             d.Parse(Buffer.c_str());
             if (Buffer == "-1" || Buffer.find('{') == -1 || d.HasParseError()) {
                 fatal("Invalid answer from authentication servers, please try again later!");
             }
             if(d["success"].GetBool()){
+                LoginAuth = true;
                 UpdateKey(d["private_key"].GetString());
                 PublicKey = d["public_key"].GetString();
-                QueryKey();
             }else{
-                std::cout << "Well..... re-login" << std::endl;
-                std::cout << Buffer << std::endl;
-                //send it all to the game
+                info("Auto-Authentication unsuccessful please re-login!");
+                UpdateKey(nullptr);
             }
         }else{
             warn("Could not open saved key!");
             UpdateKey(nullptr);
-            AskUser();
         }
-    }else{
-        UpdateKey(nullptr);
-        AskUser();
-    }
-    system("pause");
+    }else UpdateKey(nullptr);
 }

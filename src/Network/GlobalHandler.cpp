@@ -15,8 +15,6 @@
 std::chrono::time_point<std::chrono::steady_clock> PingStart,PingEnd;
 bool GConnected = false;
 bool CServer = true;
-extern SOCKET UDPSock;
-extern SOCKET TCPSock;
 SOCKET CSocket = -1;
 SOCKET GSocket = -1;
 
@@ -78,7 +76,7 @@ void ServerSend(std::string Data, bool Rel){
     if(C == 'W' || C == 'Y' || C == 'V' || C == 'E')Rel = true;
     if(Ack || Rel){
         if(Ack || DLen > 1000)SendLarge(Data);
-        else TCPSend(Data);
+        else TCPSend(Data,TCPSock);
     }else UDPSend(Data);
 
     if (DLen > 1000) {
@@ -177,11 +175,11 @@ void ParserAsync(const std::string& Data){
         case 'p':
             PingEnd = std::chrono::high_resolution_clock::now();
             if(PingStart > PingEnd)ping = 0;
-            else ping = std::chrono::duration_cast<std::chrono::milliseconds>(PingEnd-PingStart).count();
+            else ping = int(std::chrono::duration_cast<std::chrono::milliseconds>(PingEnd-PingStart).count());
             return;
         case 'M':
             MStatus = Data;
-            UlStatus = Sec("Uldone");
+            UlStatus = "Uldone";
             return;
         default:
             break;
@@ -197,7 +195,7 @@ void NetMain(const std::string& IP, int Port){
     UDPClientMain(IP,Port);
     CServer = true;
     Terminate = true;
-    info(Sec("Connection Terminated!"));
+    info("Connection Terminated!");
 }
 void TCPGameServer(const std::string& IP, int Port){
     GSocket = SetupListener();

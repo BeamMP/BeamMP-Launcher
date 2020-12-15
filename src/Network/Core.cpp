@@ -2,6 +2,7 @@
 /// Created by Anonymous275 on 7/20/2020
 ///
 #include "Network/network.h"
+#include "Security/Init.h"
 #include "Security/Enc.h"
 #include "Curl/http.h"
 #include <WinSock2.h>
@@ -22,7 +23,8 @@ std::string UlStatus;
 std::string MStatus;
 bool once = false;
 bool ModLoaded;
-long long ping = -1;
+bool LoginAuth = false;
+int ping = -1;
 
 void StartSync(const std::string &Data){
     std::string IP = GetAddr(Data.substr(1,Data.find(':')-1));
@@ -33,6 +35,7 @@ void StartSync(const std::string &Data){
         Terminate = true;
         return;
     }
+    CheckLocalKey();
     UlStatus = Sec("UlLoading...");
     TCPTerminate = false;
     Terminate = false;
@@ -100,6 +103,13 @@ void Parse(std::string Data,SOCKET CSocket){
             break;
         case 'Z':
             Data = "Z" + GetVer();
+            break;
+        case 'N':
+            if (SubCode == 'c'){
+                Data = "N{\"Auth\":"+std::to_string(LoginAuth)+"}";
+            }else{
+                Data = "N" + Login(Data.substr(Data.find(':') + 1));
+            }
             break;
         default:
             Data.clear();

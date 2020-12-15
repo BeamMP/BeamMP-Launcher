@@ -29,7 +29,7 @@ void SendLarge(std::string Data){
         std::string CMP(Comp(Data));
         Data = "ABG:" + CMP;
     }
-    TCPSend(Data);
+    TCPSend(Data,TCPSock);
 }
 
 void UDPParser(std::string Packet){
@@ -61,7 +61,7 @@ void UDPClientMain(const std::string& IP,int Port){
     inet_pton(AF_INET, IP.c_str(), &ToServer->sin_addr);
     UDPSock = socket(AF_INET, SOCK_DGRAM, 0);
 
-    TCPSend(Sec("P"));
+    TCPSend("P",TCPSock);
     UDPSend(Sec("p"));
     while(!Terminate)UDPRcv();
     KillSocket(UDPSock);

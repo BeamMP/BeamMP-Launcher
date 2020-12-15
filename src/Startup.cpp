@@ -16,13 +16,13 @@ extern int TraceBack;
 bool Dev = false;
 namespace fs = std::experimental::filesystem;
 std::string GetEN(){
-    return std::string(Sec("BeamMP-Launcher.exe"));
+    return "BeamMP-Launcher.exe";
 }
 std::string GetVer(){
-    return std::string(Sec("1.70"));
+    return "1.71";
 }
 std::string GetPatch(){
-    return std::string(Sec(".3"));
+    return "";
 }
 void ReLaunch(int argc,char*args[]){
     std::string Arg;

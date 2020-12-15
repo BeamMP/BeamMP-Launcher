@@ -14,26 +14,28 @@
 SOCKET TCPSock = -1;
 bool CheckBytes(int32_t Bytes){
     if (Bytes == 0){
-        debug(Sec("(TCP) Connection closing... CheckBytes(16)"));
+        debug("(TCP) Connection closing... CheckBytes(16)");
         Terminate = true;
         return false;
     }else if (Bytes < 0) {
-        debug(Sec("(TCP CB) recv failed with error: ") + std::to_string(WSAGetLastError()));
+        debug("(TCP CB) recv failed with error: " + std::to_string(WSAGetLastError()));
         KillSocket(TCPSock);
         Terminate = true;
         return false;
     }
     return true;
 }
-void TCPSend(const std::string&Data){
-   if(TCPSock == -1){
+void UpdateUl(const std::string& R){
+    UlStatus = "UlDisconnected: " + R;
+}
+
+void TCPSend(const std::string&Data,uint64_t Sock){
+   if(Sock == -1){
        Terminate = true;
+       UpdateUl("Invalid Socket");
        return;
    }
 
-   // Size is BIG-ENDIAN!
-   //auto Size = htonl(int32_t(Data.size()));
-   ///TODO
    int32_t Size,Sent,Temp;
    std::string Send(4,0);
    Size = int32_t(Data.size());
@@ -44,46 +46,63 @@ void TCPSend(const std::string&Data){
    Size += 4;
    do{
        if (size_t(Sent) >= Send.size()) {
-           error(Sec("string OOB in ") + std::string(__func__));
+           error("string OOB in " + std::string(__func__));
+           UpdateUl("TCP Send OOB");
            return;
        }
-       Temp = send(TCPSock, &Send[Sent], Size - Sent, 0);
-       if(!CheckBytes(Temp))return;
+       Temp = send(Sock, &Send[Sent], Size - Sent, 0);
+       if(!CheckBytes(Temp)){
+           UpdateUl("Socket Closed");
+           return;
+       }
        Sent += Temp;
    }while(Sent < Size);
 }
 
-void TCPRcv(){
-    if(TCPSock == -1){
+std::string TCPRcv(SOCKET Sock){
+    if(Sock == -1){
         Terminate = true;
-        return;
+        UpdateUl("Invalid Socket");
+        return "";
     }
     int32_t Header,BytesRcv = 0,Temp;
     std::vector<char> Data(sizeof(Header));
     do{
-        Temp = recv(TCPSock,&Data[BytesRcv],4-BytesRcv,0);
-        if(!CheckBytes(Temp))return;
+        Temp = recv(Sock,&Data[BytesRcv],4-BytesRcv,0);
+        if(!CheckBytes(Temp)){
+            UpdateUl("Socket Closed");
+            return "";
+        }
         BytesRcv += Temp;
     }while(BytesRcv < 4);
     memcpy(&Header,&Data[0],sizeof(Header));
 
-    if(!CheckBytes(BytesRcv))return;
+    if(!CheckBytes(BytesRcv)){
+        UpdateUl("Socket Closed");
+        return "";
+    }
     Data.resize(Header);
     BytesRcv = 0;
     do{
-        Temp = recv(TCPSock,&Data[BytesRcv],Header-BytesRcv,0);
-        if(!CheckBytes(Temp))return;
+        Temp = recv(Sock,&Data[BytesRcv],Header-BytesRcv,0);
+        if(!CheckBytes(Temp)){
+            UpdateUl("Socket Closed");
+            return "";
+        }
         BytesRcv += Temp;
     }while(BytesRcv < Header);
 
     std::string Ret(Data.data(),Header);
+
     if (Ret.substr(0, 4) == "ABG:") {
         Ret = DeComp(Ret.substr(4));
     }
+
 #ifdef DEBUG
     //debug("Parsing from server -> " + std::to_string(Ret.size()));
 #endif
-    ServerParser(Ret);
+    if(Ret[0] == 'E')UpdateUl(Ret.substr(1));
+    return Ret;
 }
 
 
@@ -115,7 +134,9 @@ void TCPClientMain(const std::string& IP,int Port){
     getsockname(TCPSock, (SOCKADDR *)&ServerAddr, (int *)sizeof(ServerAddr));
 
     SyncResources(TCPSock);
-    while(!Terminate)TCPRcv();
+    while(!Terminate){
+        ServerParser(TCPRcv(TCPSock));
+    }
     GameSend(Sec("T"));
     ////Game Send Terminate
     if(KillSocket(TCPSock) != 0)
