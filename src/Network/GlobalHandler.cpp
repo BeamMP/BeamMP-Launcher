@@ -169,9 +169,6 @@ void ParserAsync(const std::string& Data){
     char Code = Data.at(0),SubCode = 0;
     if(Data.length() > 1)SubCode = Data.at(1);
     switch (Code) {
-        case 'P':
-            ClientID = std::stoi(Data.substr(1));
-            break;
         case 'p':
             PingEnd = std::chrono::high_resolution_clock::now();
             if(PingStart > PingEnd)ping = 0;

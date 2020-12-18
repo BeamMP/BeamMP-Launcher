@@ -60,9 +60,8 @@ void UDPClientMain(const std::string& IP,int Port){
     ToServer->sin_port = htons(Port);
     inet_pton(AF_INET, IP.c_str(), &ToServer->sin_addr);
     UDPSock = socket(AF_INET, SOCK_DGRAM, 0);
-
-    TCPSend("P",TCPSock);
-    UDPSend(Sec("p"));
+    TCPSend("H",TCPSock);
+    UDPSend("p");
     while(!Terminate)UDPRcv();
     KillSocket(UDPSock);
     WSACleanup();

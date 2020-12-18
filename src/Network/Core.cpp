@@ -29,14 +29,14 @@ int ping = -1;
 void StartSync(const std::string &Data){
     std::string IP = GetAddr(Data.substr(1,Data.find(':')-1));
     if(IP.find('.') == -1){
-        if(IP == "DNS")UlStatus = Sec("UlConnection Failed! (DNS Lookup Failed)");
-        else UlStatus = Sec("UlConnection Failed! (WSA failed to start)");
+        if(IP == "DNS")UlStatus ="UlConnection Failed! (DNS Lookup Failed)";
+        else UlStatus = "UlConnection Failed! (WSA failed to start)";
         ListOfMods = "-";
         Terminate = true;
         return;
     }
     CheckLocalKey();
-    UlStatus = Sec("UlLoading...");
+    UlStatus = "UlLoading...";
     TCPTerminate = false;
     Terminate = false;
     ConfList->clear();
@@ -56,7 +56,7 @@ void Parse(std::string Data,SOCKET CSocket){
             NetReset();
             Terminate = true;
             TCPTerminate = true;
-            Data = Code + HTTP_REQUEST(Sec("https://beammp.com/servers-info"),443);
+            Data = Code + HTTP_REQUEST("https://beammp.com/servers-info",443);
             break;
         case 'C':
             ListOfMods.clear();
@@ -137,7 +137,7 @@ void GameHandler(SOCKET Client){
             Temp = recv(Client,&Header[Rcv],1,0);
             if(Temp < 1)break;
             if(!isdigit(Header[Rcv]) && Header[Rcv] != '>') {
-                error(Sec("(Core) Invalid lua communication"));
+                error("(Core) Invalid lua communication");
                 KillSocket(Client);
                 return;
             }

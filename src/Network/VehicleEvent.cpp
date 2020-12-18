@@ -11,7 +11,11 @@
 #include "Security/Enc.h"
 #include "Network/network.h"
 
+
+int LastPort;
+std::string LastIP;
 SOCKET TCPSock = -1;
+
 bool CheckBytes(int32_t Bytes){
     if (Bytes == 0){
         debug("(TCP) Connection closing... CheckBytes(16)");
@@ -25,14 +29,14 @@ bool CheckBytes(int32_t Bytes){
     }
     return true;
 }
-void UpdateUl(const std::string& R){
+void UUl(const std::string& R){
     UlStatus = "UlDisconnected: " + R;
 }
 
 void TCPSend(const std::string&Data,uint64_t Sock){
    if(Sock == -1){
        Terminate = true;
-       UpdateUl("Invalid Socket");
+       UUl("Invalid Socket");
        return;
    }
 
@@ -47,12 +51,12 @@ void TCPSend(const std::string&Data,uint64_t Sock){
    do{
        if (size_t(Sent) >= Send.size()) {
            error("string OOB in " + std::string(__func__));
-           UpdateUl("TCP Send OOB");
+           UUl("TCP Send OOB");
            return;
        }
        Temp = send(Sock, &Send[Sent], Size - Sent, 0);
        if(!CheckBytes(Temp)){
-           UpdateUl("Socket Closed");
+           UUl("Socket Closed Code 2");
            return;
        }
        Sent += Temp;
@@ -62,7 +66,7 @@ void TCPSend(const std::string&Data,uint64_t Sock){
 std::string TCPRcv(SOCKET Sock){
     if(Sock == -1){
         Terminate = true;
-        UpdateUl("Invalid Socket");
+        UUl("Invalid Socket");
         return "";
     }
     int32_t Header,BytesRcv = 0,Temp;
@@ -70,7 +74,7 @@ std::string TCPRcv(SOCKET Sock){
     do{
         Temp = recv(Sock,&Data[BytesRcv],4-BytesRcv,0);
         if(!CheckBytes(Temp)){
-            UpdateUl("Socket Closed");
+            UUl("Socket Closed Code 3");
             return "";
         }
         BytesRcv += Temp;
@@ -78,7 +82,7 @@ std::string TCPRcv(SOCKET Sock){
     memcpy(&Header,&Data[0],sizeof(Header));
 
     if(!CheckBytes(BytesRcv)){
-        UpdateUl("Socket Closed");
+        UUl("Socket Closed Code 4");
         return "";
     }
     Data.resize(Header);
@@ -86,7 +90,7 @@ std::string TCPRcv(SOCKET Sock){
     do{
         Temp = recv(Sock,&Data[BytesRcv],Header-BytesRcv,0);
         if(!CheckBytes(Temp)){
-            UpdateUl("Socket Closed");
+            UUl("Socket Closed Code 5");
             return "";
         }
         BytesRcv += Temp;
@@ -101,13 +105,13 @@ std::string TCPRcv(SOCKET Sock){
 #ifdef DEBUG
     //debug("Parsing from server -> " + std::to_string(Ret.size()));
 #endif
-    if(Ret[0] == 'E')UpdateUl(Ret.substr(1));
+    if(Ret[0] == 'E')UUl(Ret.substr(1));
     return Ret;
 }
 
-
-void SyncResources(SOCKET TCPSock);
 void TCPClientMain(const std::string& IP,int Port){
+    LastIP = IP;
+    LastPort = Port;
     WSADATA wsaData;
     SOCKADDR_IN ServerAddr;
     int RetCode;
@@ -124,24 +128,25 @@ void TCPClientMain(const std::string& IP,int Port){
     inet_pton(AF_INET, IP.c_str(), &ServerAddr.sin_addr);
     RetCode = connect(TCPSock, (SOCKADDR *) &ServerAddr, sizeof(ServerAddr));
     if(RetCode != 0){
-        UlStatus = Sec("UlConnection Failed!");
-        std::cout << Sec("Client: connect failed! Error code: ") << WSAGetLastError() << std::endl;
+        UlStatus = "UlConnection Failed!";
+        std::cout << "Client: connect failed! Error code: " << WSAGetLastError() << std::endl;
         KillSocket(TCPSock);
         WSACleanup();
         Terminate = true;
         return;
     }
     getsockname(TCPSock, (SOCKADDR *)&ServerAddr, (int *)sizeof(ServerAddr));
-
+    char Code = 'C';
+    send(TCPSock,&Code,1,0);
     SyncResources(TCPSock);
     while(!Terminate){
         ServerParser(TCPRcv(TCPSock));
     }
-    GameSend(Sec("T"));
+    GameSend("T");
     ////Game Send Terminate
     if(KillSocket(TCPSock) != 0)
-        debug(Sec("(TCP) Cannot close socket. Error code: ") + std::to_string(WSAGetLastError()));
+        debug("(TCP) Cannot close socket. Error code: " + std::to_string(WSAGetLastError()));
 
     if(WSACleanup() != 0)
-        debug(Sec("(TCP) Client: WSACleanup() failed!..."));
+        debug("(TCP) Client: WSACleanup() failed!...");
 }
