@@ -1,10 +1,13 @@
+// Copyright (c) 2020 Anonymous275.
+// BeamMP Launcher code is not in the public domain and is not free software.
+// One must be granted explicit permission by the copyright holder in order to modify or distribute any part of the source or binaries.
+// Anything else is prohibited. Modified works may not be published and have be upstreamed to the official repository.
 ///
 /// Created by Anonymous275 on 4/11/2020
 ///
 
 #include "Network/network.h"
-#include "Security/Init.h"
-#include "Security/Enc.h"
+
 #include <WS2tcpip.h>
 #include <filesystem>
 #include "Startup.h"
@@ -101,8 +104,8 @@ std::string Auth(SOCKET Sock){
 }
 
 void UpdateUl(bool D,const std::string&msg){
-    if(D)UlStatus = "UlDownloading Resource: " + msg;
-    else UlStatus = "UlLoading Resource: " + msg;
+    if(D)UlStatus = "UlDownloading Resource " + msg;
+    else UlStatus = "UlLoading Resource " + msg;
 }
 
 void AsyncUpdate(uint64_t& Rcv,uint64_t Size,const std::string& Name){
@@ -244,10 +247,13 @@ void SyncResources(SOCKET Sock){
         if (fs::exists(a)) {
             if (FS->find_first_not_of("0123456789") != std::string::npos)continue;
             if (fs::file_size(a) == std::stoi(*FS)){
-                UpdateUl(false,"(" + std::to_string(Pos) + "/" + std::to_string(Amount) + "): " + a.substr(a.find_last_of('/')));
+                UpdateUl(false,std::to_string(Pos) + "/" + std::to_string(Amount) + ": " + a.substr(a.find_last_of('/')));
                 std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 try {
-                    fs::copy_file(a, "BeamNG/mods" + a.substr(a.find_last_of('/')),
+                    if(!fs::exists(GetGamePath() + "mods/multiplayer")){
+                        fs::create_directory(GetGamePath() + "mods/multiplayer");
+                    }
+                    fs::copy_file(a, GetGamePath() + "mods/multiplayer" + a.substr(a.find_last_of('/')),
                                   fs::copy_options::overwrite_existing);
                 } catch (std::exception& e) {
                     error("Failed copy to the mods folder! " + std::string(e.what()));
@@ -271,12 +277,12 @@ void SyncResources(SOCKET Sock){
                 break;
             }
 
-            std::string Name = "(" + std::to_string(Pos) + "/" + std::to_string(Amount) + "): " + FName;
+            std::string Name = std::to_string(Pos) + "/" + std::to_string(Amount) + ": " + FName;
 
             Data = MultiDownload(Sock,DSock,std::stoull(*FS), Name);
 
             if(Terminate)break;
-            UpdateUl(false,"("+std::to_string(Pos)+"/"+std::to_string(Amount)+"): "+FName);
+            UpdateUl(false,std::to_string(Pos)+"/"+std::to_string(Amount)+": "+FName);
             std::ofstream LFS;
             LFS.open(a.c_str(), std::ios_base::app | std::ios::binary);
             if (LFS.is_open()) {
@@ -286,7 +292,12 @@ void SyncResources(SOCKET Sock){
 
         }while(fs::file_size(a) != std::stoi(*FS) && !Terminate);
         KillSocket(DSock);
-        if(!Terminate)fs::copy_file(a,"BeamNG/mods"+FName, fs::copy_options::overwrite_existing);
+        if(!Terminate){
+            if(!fs::exists(GetGamePath() + "mods/multiplayer")){
+                fs::create_directory(GetGamePath() + "mods/multiplayer");
+            }
+            fs::copy_file(a,GetGamePath() + "mods/multiplayer" + FName, fs::copy_options::overwrite_existing);
+        }
         WaitForConfirm();
     }
     if(!Terminate){

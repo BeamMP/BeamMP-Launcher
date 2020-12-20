@@ -1,8 +1,11 @@
+// Copyright (c) 2020 Anonymous275.
+// BeamMP Launcher code is not in the public domain and is not free software.
+// One must be granted explicit permission by the copyright holder in order to modify or distribute any part of the source or binaries.
+// Anything else is prohibited. Modified works may not be published and have be upstreamed to the official repository.
 ///
 /// Created by Anonymous275 on 7/16/2020
 ///
 #include "Discord/discord_rpc.h"
-#include "Security/Enc.h"
 #include "Logger.h"
 #include <iostream>
 #include <thread>
@@ -20,14 +23,14 @@ void updateDiscordPresence(){
     //char buffer[256];
     DiscordRichPresence discordPresence;
     memset(&discordPresence, 0, sizeof(discordPresence));
-    std::string P = Sec("Playing with friends!");
+    std::string P = "Playing with friends!"; ///to be revisited
     discordPresence.state = P.c_str();
     //sprintf(buffer, "Frustration level: %d", FrustrationLevel);
     //discordPresence.details = buffer;
     discordPresence.startTimestamp = StartTime;
     //discordPresence.endTimestamp = time(0) + 5 * 60;
-    std::string L = Sec("mainlogo");
-    discordPresence.largeImageKey = L.c_str();
+
+    discordPresence.largeImageKey = "mainlogo";
     //discordPresence.smallImageKey = "logo";
     //discordPresence.partyId = "party1234";
     //discordPresence.partySize = 1;
@@ -44,9 +47,9 @@ void updateDiscordPresence(){
 }
 void handleDiscordReady(const DiscordUser* User){
     DiscordInfo = new DInfo{
-        LocalEnc(User->username),
-        LocalEnc(User->discriminator),
-        LocalEnc(User->userId)
+        User->username,
+        User->discriminator,
+        User->userId
     };
 }
 void discordInit(){
@@ -58,8 +61,7 @@ void discordInit(){
     handlers.joinGame = handleDiscordJoin;
     handlers.spectateGame = handleDiscordSpectate;
     handlers.joinRequest = handleDiscordJoinRequest;*/
-    std::string a = Sec("629743237988352010");
-    Discord_Initialize(a.c_str(), &handlers, 1,nullptr);
+    Discord_Initialize("629743237988352010", &handlers, 1,nullptr);
 }
 [[noreturn]] void Loop(){
     StartTime = time(nullptr);
@@ -75,52 +77,35 @@ void discordInit(){
     }
 }
 
-[[noreturn]] void SecurityLoop(){
-    std::string t,t1,t2;
-    while(true){
-        if(DiscordInfo != nullptr){
-            if(t.empty()){
-                t = LocalDec(DiscordInfo->Name);
-                t1 = LocalDec(DiscordInfo->Tag);
-                t2 = LocalDec(DiscordInfo->DID);
-            }else if(t2 != LocalDec(DiscordInfo->DID) ||
-            t != LocalDec(DiscordInfo->Name) || t1 != LocalDec(DiscordInfo->Tag))DiscordInfo = nullptr;
-        }else if(!t.empty())DiscordInfo->DID.clear();
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    }
-}
 void DMain(){
-    auto*S = new std::thread(SecurityLoop);
-    S->detach();
-    delete S;
     discordInit();
     Loop();
 }
 std::string GetDName(){
-    return LocalDec(DiscordInfo->Name);
+    return DiscordInfo->Name;
 }
 std::string GetDTag(){
-    return LocalDec(DiscordInfo->Tag);
+    return DiscordInfo->Tag;
 }
 std::string GetDID(){
-    return LocalDec(DiscordInfo->DID);
+    return DiscordInfo->DID;
 }
 void DAboard(){
     DiscordInfo = nullptr;
 }
 void ErrorAboard(){
-    error(Sec("Discord timeout! please start the discord app and try again after 30 secs"));
+    error("Discord timeout! please start the discord app and try again after 30 secs");
     std::this_thread::sleep_for(std::chrono::seconds(5));
     exit(6);
 }
 void Discord_Main(){
     std::thread t1(DMain);
     t1.detach();
-    info(Sec("Connecting to discord client..."));
+    /*info("Connecting to discord client...");
     int C = 0;
     while(DiscordInfo == nullptr && C < 80){
         std::this_thread::sleep_for(std::chrono::milliseconds(300));
         C++;
     }
-    if(DiscordInfo == nullptr)ErrorAboard();
+    if(DiscordInfo == nullptr)ErrorAboard();*/
 }

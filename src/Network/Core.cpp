@@ -1,14 +1,17 @@
+// Copyright (c) 2020 Anonymous275.
+// BeamMP Launcher code is not in the public domain and is not free software.
+// One must be granted explicit permission by the copyright holder in order to modify or distribute any part of the source or binaries.
+// Anything else is prohibited. Modified works may not be published and have be upstreamed to the official repository.
 ///
 /// Created by Anonymous275 on 7/20/2020
 ///
 #include "Network/network.h"
 #include "Security/Init.h"
-#include "Security/Enc.h"
+
 #include "Curl/http.h"
 #include <WinSock2.h>
 #include <WS2tcpip.h>
 #include "Startup.h"
-#include "Memory.h"
 #include "Logger.h"
 #include <charconv>
 #include <thread>
@@ -19,11 +22,10 @@ std::set<std::string>* ConfList = nullptr;
 bool TCPTerminate = false;
 int DEFAULT_PORT = 4444;
 bool Terminate = false;
+bool LoginAuth = false;
 std::string UlStatus;
 std::string MStatus;
-bool once = false;
 bool ModLoaded;
-bool LoginAuth = false;
 int ping = -1;
 
 void StartSync(const std::string &Data){
@@ -43,7 +45,7 @@ void StartSync(const std::string &Data){
     ping = -1;
     std::thread GS(TCPGameServer,IP,std::stoi(Data.substr(Data.find(':')+1)));
     GS.detach();
-    info(Sec("Connecting to server"));
+    info("Connecting to server");
 }
 void Parse(std::string Data,SOCKET CSocket){
     char Code = Data.at(0), SubCode = 0;
@@ -118,16 +120,11 @@ void Parse(std::string Data,SOCKET CSocket){
     if(!Data.empty() && CSocket != -1){
         int res = send(CSocket, (Data+"\n").c_str(), int(Data.size())+1, 0);
         if(res < 0){
-            debug(Sec("(Core) send failed with error: ") + std::to_string(WSAGetLastError()));
+            debug("(Core) send failed with error: " + std::to_string(WSAGetLastError()));
         }
     }
 }
 void GameHandler(SOCKET Client){
-    if (!once){
-        std::thread Memory(MemoryInit);
-        Memory.detach();
-        once = true;
-    }
 
     int32_t Size,Temp,Rcv;
     char Header[10] = {0};
@@ -144,7 +141,7 @@ void GameHandler(SOCKET Client){
         }while(Header[Rcv++] != '>');
         if(Temp < 1)break;
         if(std::from_chars(Header,&Header[Rcv],Size).ptr[0] != '>'){
-            debug(Sec("(Core) Invalid lua Header -> ") + std::string(Header,Rcv));
+            debug("(Core) Invalid lua Header -> " + std::string(Header,Rcv));
             break;
         }
         std::string Ret(Size,0);
@@ -161,16 +158,16 @@ void GameHandler(SOCKET Client){
         Respond.detach();
     }while(Temp > 0);
     if (Temp == 0) {
-        debug(Sec("(Core) Connection closing"));
+        debug("(Core) Connection closing");
     } else {
-        debug(Sec("(Core) recv failed with error: ") + std::to_string(WSAGetLastError()));
+        debug("(Core) recv failed with error: " + std::to_string(WSAGetLastError()));
     }
     NetReset();
     KillSocket(Client);
 }
 void localRes(){
     MStatus = " ";
-    UlStatus = Sec("Ulstart");
+    UlStatus = "Ulstart";
     if(ConfList != nullptr){
         ConfList->clear();
         delete ConfList;
@@ -179,13 +176,13 @@ void localRes(){
     ConfList = new std::set<std::string>;
 }
 void CoreMain() {
-    debug(Sec("Core Network on start!"));
+    debug("Core Network on start!");
     WSADATA wsaData;
     SOCKET LSocket,CSocket;
     struct addrinfo *res = nullptr;
     struct addrinfo hints{};
     int iRes = WSAStartup(514, &wsaData); //2.2
-    if (iRes)debug(Sec("WSAStartup failed with error: ") + std::to_string(iRes));
+    if (iRes)debug("WSAStartup failed with error: " + std::to_string(iRes));
     ZeroMemory(&hints, sizeof(hints));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
@@ -193,20 +190,20 @@ void CoreMain() {
     hints.ai_flags = AI_PASSIVE;
     iRes = getaddrinfo(nullptr, std::to_string(DEFAULT_PORT).c_str(), &hints, &res);
     if (iRes){
-        debug(Sec("(Core) addr info failed with error: ") + std::to_string(iRes));
+        debug("(Core) addr info failed with error: " + std::to_string(iRes));
         WSACleanup();
         return;
     }
     LSocket = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
     if (LSocket == -1){
-        debug(Sec("(Core) socket failed with error: ") + std::to_string(WSAGetLastError()));
+        debug("(Core) socket failed with error: " + std::to_string(WSAGetLastError()));
         freeaddrinfo(res);
         WSACleanup();
         return;
     }
     iRes = bind(LSocket, res->ai_addr, int(res->ai_addrlen));
     if (iRes == SOCKET_ERROR) {
-        error(Sec("(Core) bind failed with error: ") + std::to_string(WSAGetLastError()));
+        error("(Core) bind failed with error: " + std::to_string(WSAGetLastError()));
         freeaddrinfo(res);
         KillSocket(LSocket);
         WSACleanup();
@@ -214,7 +211,7 @@ void CoreMain() {
     }
     iRes = listen(LSocket, SOMAXCONN);
     if (iRes == SOCKET_ERROR) {
-        debug(Sec("(Core) listen failed with error: ") + std::to_string(WSAGetLastError()));
+        debug("(Core) listen failed with error: " + std::to_string(WSAGetLastError()));
         freeaddrinfo(res);
         KillSocket(LSocket);
         WSACleanup();
@@ -223,13 +220,13 @@ void CoreMain() {
     do{
         CSocket = accept(LSocket, nullptr, nullptr);
         if (CSocket == -1) {
-            error(Sec("(Core) accept failed with error: ") + std::to_string(WSAGetLastError()));
+            error("(Core) accept failed with error: " + std::to_string(WSAGetLastError()));
             continue;
         }
         localRes();
-        info(Sec("Game Connected!"));
+        info("Game Connected!");
         GameHandler(CSocket);
-        warn(Sec("Game Reconnecting..."));
+        warn("Game Reconnecting...");
     }while(CSocket);
     KillSocket(LSocket);
     WSACleanup();
@@ -237,7 +234,7 @@ void CoreMain() {
 int Handle(EXCEPTION_POINTERS *ep){
     char* hex = new char[100];
     sprintf_s(hex,100, "%lX", ep->ExceptionRecord->ExceptionCode);
-    except(Sec("(Core) Code : ") + std::string(hex));
+    except("(Core) Code : " + std::string(hex));
     delete [] hex;
     return 1;
 }

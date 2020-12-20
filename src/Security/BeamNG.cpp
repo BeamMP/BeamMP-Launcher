@@ -1,7 +1,11 @@
+// Copyright (c) 2020 Anonymous275.
+// BeamMP Launcher code is not in the public domain and is not free software.
+// One must be granted explicit permission by the copyright holder in order to modify or distribute any part of the source or binaries.
+// Anything else is prohibited. Modified works may not be published and have be upstreamed to the official repository.
 ///
 /// Created by Anonymous275 on 7/18/2020
 ///
-#include "Security/Enc.h"
+
 #include <filesystem>
 #include <Windows.h>
 #include "Logger.h"
@@ -19,7 +23,7 @@ std::string GameDir;
 void lowExit(int code){
     TraceBack = 0;
     std::string msg =
-    Sec("Failed to find the game please launch it. Report this if the issue persists code ");
+   "Failed to find the game please launch it. Report this if the issue persists code ";
     error(msg+std::to_string(code));
     std::this_thread::sleep_for(std::chrono::seconds(10));
     exit(2);
@@ -27,7 +31,7 @@ void lowExit(int code){
 void Exit(int code){
     TraceBack = 0;
     std::string msg =
-    Sec("Sorry. We do not support cracked copies report this if you believe this is a mistake code ");
+    "Sorry. We do not support cracked copies report this if you believe this is a mistake code ";
     error(msg+std::to_string(code));
     std::this_thread::sleep_for(std::chrono::seconds(10));
     exit(3);
@@ -35,7 +39,7 @@ void Exit(int code){
 void SteamExit(int code){
     TraceBack = 0;
     std::string msg =
-    Sec("Illegal steam modifications detected report this if you believe this is a mistake code ");
+    "Illegal steam modifications detected report this if you believe this is a mistake code ";
     error(msg+std::to_string(code));
     std::this_thread::sleep_for(std::chrono::seconds(10));
     exit(4);
@@ -87,7 +91,7 @@ std::string QueryKey(HKEY hKey,int ID){
             cbName = MAX_KEY_LENGTH;
             retCode = RegEnumKeyEx(hKey, i,achKey,&cbName,nullptr,nullptr,nullptr,&ftLastWriteTime);
             if (retCode == ERROR_SUCCESS){
-                if(strcmp(achKey,Sec("Steam App 284160")) == 0){
+                if(strcmp(achKey,"Steam App 284160") == 0){
                     return achKey;
                 }
             }
@@ -105,13 +109,13 @@ std::string QueryKey(HKEY hKey,int ID){
                 std::string data = reinterpret_cast<const char *const>(buffer);
                 std::string key = achValue;
                 switch (ID){
-                    case 1: if(key == Sec("SteamExe")){
+                    case 1: if(key == "SteamExe"){
                             auto p = data.find_last_of('/');
                             if(p != std::string::npos)return data.substr(0,p);
                         }break;
-                    case 2: if(key == Sec("Name") && data == Sec("BeamNG.drive"))return data;break;
-                    case 3: if(key == Sec("rootpath"))return data;break;
-                    case 4: if(key == Sec("userpath_override"))return data;
+                    case 2: if(key == "Name" && data == "BeamNG.drive")return data;break;
+                    case 3: if(key == "rootpath")return data;break;
+                    case 4: if(key == "userpath_override")return data;
                     default: break;
                 }
             }
@@ -131,7 +135,7 @@ void FileList(std::vector<std::string>&a,const std::string& Path){
 }
 bool Find(const std::string& FName,const std::string& Path){
     std::vector<std::string> FS;
-    FileList(FS,Path+Sec("/userdata"));
+    FileList(FS,Path+"/userdata");
     for(std::string&a : FS){
         if(a.find(FName) != std::string::npos){
             FS.clear();
@@ -146,8 +150,8 @@ bool FindHack(const std::string& Path){
     for (const auto &entry : fs::directory_iterator(Path)) {
         std::string Name = entry.path().filename().string();
         for(char&c : Name)c = char(tolower(c));
-        if(Name == Sec("steam.exe"))s = false;
-        if(Name.find(Sec("greenluma")) != -1)return true;
+        if(Name == "steam.exe")s = false;
+        if(Name.find("greenluma") != -1)return true;
         Name.clear();
     }
     return s;
@@ -209,7 +213,7 @@ std::string GetManifest(const std::string& Man){
     f.seekg(0, std::ios_base::beg);
     f.read(&vec[0], fileSize);
     f.close();
-    std::string ToFind = Sec("\"LastOwner\"\t\t\"");
+    std::string ToFind = "\"LastOwner\"\t\t\"";
     int pos = int(vec.find(ToFind));
     if(pos != -1){
         pos += int(ToFind.length());
@@ -219,10 +223,10 @@ std::string GetManifest(const std::string& Man){
 }
 bool IDCheck(std::string Man, std::string steam){
     bool a = false,b = true;
-    int pos = int(Man.rfind(Sec("steamapps")));
+    int pos = int(Man.rfind("steamapps"));
     if(pos == -1)Exit(5);
-    Man = Man.substr(0,pos+9) + Sec("/appmanifest_284160.acf");
-    steam += Sec("/config/loginusers.vdf");
+    Man = Man.substr(0,pos+9) + "/appmanifest_284160.acf";
+    steam += "/config/loginusers.vdf";
     if(fs::exists(Man) && fs::exists(steam)){
         for(const std::string&ID : GetID(steam)){
             if(ID == GetManifest(Man))b = false;
@@ -233,16 +237,16 @@ bool IDCheck(std::string Man, std::string steam){
 }
 void LegitimacyCheck(){
     std::string Result,T;
-    std::string K1 = Sec("Software\\Valve\\Steam");
-    std::string K2 = Sec("Software\\Valve\\Steam\\Apps\\284160");
-    std::string K3 = Sec("Software\\BeamNG\\BeamNG.drive");
+    std::string K1 = R"(Software\Valve\Steam)";
+    std::string K2 = R"(Software\Valve\Steam\Apps\284160)";
+    std::string K3 = R"(Software\BeamNG\BeamNG.drive)";
     HKEY hKey;
     LONG dwRegOPenKey = OpenKey(HKEY_CURRENT_USER, K1.c_str(), &hKey);
     if(dwRegOPenKey == ERROR_SUCCESS) {
         Result = QueryKey(hKey, 1);
         if(Result.empty())Exit(1);
         if(fs::exists(Result)){
-            if(!Find(Sec("284160.json"),Result))Exit(2);
+            if(!Find("284160.json",Result))Exit(2);
             if(FindHack(Result))SteamExit(1);
         }else Exit(3);
         T = Result;
@@ -273,15 +277,14 @@ void LegitimacyCheck(){
     if(TraceBack < 3)exit(-1);
 }
 std::string CheckVer(const std::string &dir){
-    std::string vec,temp,Path = dir + Sec("\\integrity.json");
+    std::string temp,Path = dir + "\\integrity.json";
     std::ifstream f(Path.c_str(), std::ios::binary);
-    f.seekg(0, std::ios_base::end);
-    std::streampos fileSize = f.tellg();
-    vec.resize(size_t(fileSize) + 1);
-    f.seekg(0, std::ios_base::beg);
-    f.read(&vec[0], fileSize);
+    int Size = int(std::filesystem::file_size(Path));
+    std::string vec(Size,0);
+    f.read(&vec[0], Size);
     f.close();
-    vec = vec.substr(vec.find_last_of(Sec("version")),vec.find_last_of('"'));
+
+    vec = vec.substr(vec.find_last_of("version"),vec.find_last_of('"'));
     for(const char &a : vec){
         if(isdigit(a) || a == '.')temp+=a;
     }

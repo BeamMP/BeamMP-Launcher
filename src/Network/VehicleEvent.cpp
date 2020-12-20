@@ -1,3 +1,7 @@
+// Copyright (c) 2020 Anonymous275.
+// BeamMP Launcher code is not in the public domain and is not free software.
+// One must be granted explicit permission by the copyright holder in order to modify or distribute any part of the source or binaries.
+// Anything else is prohibited. Modified works may not be published and have be upstreamed to the official repository.
 ///
 /// Created by Anonymous275 on 5/8/2020
 ///
@@ -8,7 +12,7 @@
 #include <iostream>
 #include <WS2tcpip.h>
 #include <Zlib/Compressor.h>
-#include "Security/Enc.h"
+
 #include "Network/network.h"
 
 
@@ -119,7 +123,7 @@ void TCPClientMain(const std::string& IP,int Port){
     TCPSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
     if(TCPSock == -1){
-        printf(Sec("Client: socket failed! Error code: %d\n"), WSAGetLastError());
+        printf("Client: socket failed! Error code: %d\n", WSAGetLastError());
         WSACleanup();
         return;
     }

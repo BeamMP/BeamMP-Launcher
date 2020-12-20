@@ -1,9 +1,13 @@
+// Copyright (c) 2020 Anonymous275.
+// BeamMP Launcher code is not in the public domain and is not free software.
+// One must be granted explicit permission by the copyright holder in order to modify or distribute any part of the source or binaries.
+// Anything else is prohibited. Modified works may not be published and have be upstreamed to the official repository.
 ///
 /// Created by Anonymous275 on 7/18/2020
 ///
 
 #include "Security/Game.h"
-#include "Security/Enc.h"
+
 #include <curl/curl.h>
 #include <iostream>
 #include <mutex>
@@ -42,7 +46,7 @@ int progress_bar (void *bar, double t, double d){
         nb_bar = 25;
         progress_bar_adv = round(d/t*nb_bar);
         std::cout<<"\r";
-        std::cout<<Sec("Progress : [ ");
+        std::cout<< "Progress : [ ";
         if(t!=0)std::cout<<round(d/t*100);else std::cout<<0;
         std::cout << "% ] [";
         int i;
@@ -60,7 +64,7 @@ struct File {
 static size_t my_fwrite(void *buffer,size_t size,size_t nmemb,void *stream){
     auto *out = (struct File*)stream;
     if(!out->stream) {
-        fopen_s(&out->stream,out->filename,Sec("wb"));
+        fopen_s(&out->stream,out->filename,"wb");
         if(!out->stream)return -1;
     }
     return fwrite(buffer, size, nmemb, out->stream);
@@ -84,7 +88,6 @@ int Download(const std::string& URL,const std::string& Path,bool close){
         if(res != CURLE_OK)return res;
     }
     if(file.stream)fclose(file.stream);
-    if(!close)SecureMods();
     std::cout << std::endl;
     return -1;
 }
