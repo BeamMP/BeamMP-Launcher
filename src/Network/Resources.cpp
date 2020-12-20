@@ -201,6 +201,8 @@ std::string MultiDownload(SOCKET MSock,SOCKET DSock, uint64_t Size, const std::s
     }
     if(Au.joinable())Au.join();
 
+
+    ///omg yes very ugly my god but i was in a rush will revisit
     std::string Ret(Size,0);
     memcpy_s(&Ret[0],MSize,MData,MSize);
     delete[]MData;
