@@ -118,11 +118,11 @@ void AsyncUpdate(uint64_t& Rcv,uint64_t Size,const std::string& Name){
     }while(!Terminate && Rcv < Size);
 }
 
-std::string TCPRcvRaw(SOCKET Sock,uint64_t& GRcv, uint64_t Size){
+char* TCPRcvRaw(SOCKET Sock,uint64_t& GRcv, uint64_t Size){
     if(Sock == -1){
         Terminate = true;
         UUl("Invalid Socket");
-        return "";
+        return nullptr;
     }
     char* File = new char[Size];
     uint64_t Rcv = 0;
@@ -137,14 +137,12 @@ std::string TCPRcvRaw(SOCKET Sock,uint64_t& GRcv, uint64_t Size){
             KillSocket(Sock);
             Terminate = true;
             delete[] File;
-            return "";
+            return nullptr;
         }
         Rcv += Temp;
         GRcv += Temp;
     }while(Rcv < Size && !Terminate);
-    std::string Ret = std::string(File,Size);
-    delete[] File;
-    return Ret;
+    return File;
 }
 void MultiKill(SOCKET Sock,SOCKET Sock1){
     KillSocket(Sock1);
@@ -182,29 +180,34 @@ std::string MultiDownload(SOCKET MSock,SOCKET DSock, uint64_t Size, const std::s
     std::thread Au(AsyncUpdate,std::ref(GRcv),Size,Name);
     Au.detach();
 
-    std::packaged_task<std::string()> task([&] { return TCPRcvRaw(MSock,GRcv,MSize); });
-    std::future<std::string> f1 = task.get_future();
+    std::packaged_task<char*()> task([&] { return TCPRcvRaw(MSock,GRcv,MSize); });
+    std::future<char*> f1 = task.get_future();
     std::thread Dt(std::move(task));
     Dt.detach();
 
-    std::string Ret = TCPRcvRaw(DSock,GRcv,DSize);
+    char* DData = TCPRcvRaw(DSock,GRcv,DSize);
 
-    if(Ret.empty()){
+    if(!DData){
         MultiKill(MSock,DSock);
         return "";
     }
 
     f1.wait();
-    std::string Temp = f1.get();
+    char* MData = f1.get();
 
-    if(Temp.empty()){
+    if(!MData){
         MultiKill(MSock,DSock);
         return "";
     }
     if(Au.joinable())Au.join();
 
+    std::string Ret(Size,0);
+    memcpy_s(&Ret[0],MSize,MData,MSize);
+    delete[]MData;
 
-    Ret += Temp;
+    memcpy_s(&Ret[MSize],DSize,DData,DSize);
+    delete[]DData;
+
     return Ret;
 }
 
@@ -286,7 +289,7 @@ void SyncResources(SOCKET Sock){
             std::ofstream LFS;
             LFS.open(a.c_str(), std::ios_base::app | std::ios::binary);
             if (LFS.is_open()) {
-                LFS.write(Data.c_str(), Data.size());
+                LFS.write(&Data[0], Data.size());
                 LFS.close();
             }
 
