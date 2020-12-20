@@ -1,1 +1,1 @@
-# BeamNG-MP-Launcher
+# BeamMP-Launcher
