@@ -24,7 +24,7 @@ std::string GetEN(){
     return "BeamMP-Launcher.exe";
 }
 std::string GetVer(){
-    return "1.72";
+    return "1.80";
 }
 std::string GetPatch(){
     return "";

@@ -51,7 +51,8 @@ std::string Login(const std::string& fields){
         if(!d["public_key"].IsNull()){
             PublicKey = d["public_key"].GetString();
         }
-    }
+        info("Authentication successful!");
+    }else info("Authentication failed!");
     if(!d["message"].IsNull()){
         d.RemoveMember("private_key");
         d.RemoveMember("public_key");

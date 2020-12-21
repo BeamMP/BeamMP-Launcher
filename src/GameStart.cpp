@@ -46,8 +46,9 @@ void StartGame(std::string Dir){
     PROCESS_INFORMATION pi;
     STARTUPINFO si = {0};
     si.cb = sizeof(si);
-    std::string BaseDir = Dir +"\\Bin64";
-    Dir += R"(\Bin64\BeamNG.drive.x64.exe)";
+    std::string BaseDir = Dir; //+"\\Bin64";
+    //Dir += R"(\Bin64\BeamNG.drive.x64.exe)";
+    Dir += "\\BeamNG.drive.exe";
     bSuccess = CreateProcessA(Dir.c_str(), nullptr, nullptr, nullptr, TRUE, 0, nullptr, BaseDir.c_str(), &si, &pi);
     if (bSuccess){
         info("Game Launched!");
