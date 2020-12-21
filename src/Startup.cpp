@@ -74,9 +74,7 @@ void RequestRole(){
         }
     }
     if(HTTP_Result.find("\"MDEV\"") != NPos || HTTP_Result.find("\"CON\"") != NPos){
-        if(GetDID() != "125792589621231616"){
-            Dev = true;
-        }
+        Dev = true;
     }
     if(HTTP_Result.find("Error") != NPos){
         fatal("Sorry You need to be in the official BeamMP Discord to proceed! https://discord.gg/beammp");
@@ -185,7 +183,6 @@ void InitLauncher(int argc, char* argv[]) {
     CheckLocalKey(); //will replace RequestRole
     Discord_Main();
     //RequestRole();
-    Dev = true;
     CustomPort(argc, argv);
     CheckForUpdates(argc, argv, std::string(GetVer()) + GetPatch());
 }
