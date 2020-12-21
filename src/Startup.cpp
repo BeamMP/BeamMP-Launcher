@@ -222,8 +222,8 @@ void PreGame(int argc, char* argv[],const std::string& GamePath){
     }
     if(!Dev) {
         info("Downloading mod...");
-        if(fallback)link = "https://backup1.beammp.com/builds/client?did=258329053910663168";
-        else link ="https://beammp.com/builds/client?did=258329053910663168";
+        if(fallback)link = "https://backup1.beammp.com/builds/client";
+        else link ="https://beammp.com/builds/client";
         if(!fs::exists(GetGamePath() + "mods")){
             fs::create_directory(GetGamePath() + "mods");
         }
