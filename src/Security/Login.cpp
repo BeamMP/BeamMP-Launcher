@@ -32,16 +32,23 @@ void UpdateKey(const char* newKey){
 /// "Guest":"Name"
 /// "pk":"private_key"
 
+std::string GetFail(const std::string& R){
+    static std::string DRet = R"({"success":false,"message":)";
+    DRet += "\""+R+"\"}";
+    error(R);
+    return DRet;
+}
+
 std::string Login(const std::string& fields){
     info("Attempting to authenticate...");
     std::string Buffer = PostHTTP("https://auth.beammp.com/userlogin", fields);
     json::Document d;
     d.Parse(Buffer.c_str());
     if(Buffer == "-1"){
-        fatal("Failed to communicate with the auth system!");
+        return GetFail("Failed to communicate with the auth system!");
     }
     if (Buffer.find('{') == -1 || d.HasParseError()) {
-        fatal("Invalid answer from authentication servers, please try again later!");
+        return GetFail("Invalid answer from authentication servers, please try again later!");
     }
     if(!d["success"].IsNull() && d["success"].GetBool()){
         LoginAuth = true;
@@ -61,7 +68,7 @@ std::string Login(const std::string& fields){
         d.Accept(writer);
         return buffer.GetString();
     }
-    return "{\"success\":false}";
+    return GetFail("Invalid message parsing!");
 }
 
 void CheckLocalKey(){
