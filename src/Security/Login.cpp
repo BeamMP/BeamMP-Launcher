@@ -33,7 +33,7 @@ void UpdateKey(const char* newKey){
 /// "pk":"private_key"
 
 std::string GetFail(const std::string& R){
-    static std::string DRet = R"({"success":false,"message":)";
+    std::string DRet = R"({"success":false,"message":)";
     DRet += "\""+R+"\"}";
     error(R);
     return DRet;
