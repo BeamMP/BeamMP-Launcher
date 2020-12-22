@@ -243,6 +243,7 @@ void SyncResources(SOCKET Sock){
         Amount++;
     }
     if(!FNames.empty())info("Syncing...");
+    SOCKET DSock = InitDSock();
     for(auto FN = FNames.begin(),FS = FSizes.begin(); FN != FNames.end() && !Terminate; ++FN,++FS) {
         auto pos = FN->find_last_of('/');
         if (pos != std::string::npos) {
@@ -271,7 +272,6 @@ void SyncResources(SOCKET Sock){
         }
         CheckForDir();
         std::string FName = a.substr(a.find_last_of('/'));
-        SOCKET DSock = InitDSock();
         do {
             TCPSend("f" + *FN,Sock);
 
@@ -296,7 +296,6 @@ void SyncResources(SOCKET Sock){
             }
 
         }while(fs::file_size(a) != std::stoi(*FS) && !Terminate);
-        KillSocket(DSock);
         if(!Terminate){
             if(!fs::exists(GetGamePath() + "mods/multiplayer")){
                 fs::create_directory(GetGamePath() + "mods/multiplayer");
@@ -305,6 +304,7 @@ void SyncResources(SOCKET Sock){
         }
         WaitForConfirm();
     }
+    KillSocket(DSock);
     if(!Terminate){
         TCPSend("Done",Sock);
         info("Done!");

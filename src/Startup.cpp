@@ -27,7 +27,7 @@ std::string GetVer(){
     return "1.80";
 }
 std::string GetPatch(){
-    return ".1";
+    return ".2";
 }
 void ReLaunch(int argc,char*args[]){
     std::string Arg;
@@ -182,7 +182,7 @@ void InitLauncher(int argc, char* argv[]) {
     CheckName(argc, argv);
     CheckLocalKey(); //will replace RequestRole
     Discord_Main();
-    //Dev = true;
+    Dev = true;
     //RequestRole();
     CustomPort(argc, argv);
     CheckForUpdates(argc, argv, std::string(GetVer()) + GetPatch());
