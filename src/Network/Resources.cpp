@@ -21,7 +21,7 @@
 #include <vector>
 #include <future>
 
-namespace fs = std::experimental::filesystem;
+namespace fs = std::filesystem;
 std::string ListOfMods;
 std::vector<std::string> Split(const std::string& String,const std::string& delimiter){
     std::vector<std::string> Val;
@@ -126,11 +126,10 @@ char* TCPRcvRaw(SOCKET Sock,uint64_t& GRcv, uint64_t Size){
     }
     char* File = new char[Size];
     uint64_t Rcv = 0;
-    int32_t Temp;
     do{
         int Len = int(Size-Rcv);
         if(Len > 1000000)Len = 1000000;
-        Temp = recv(Sock, &File[Rcv], Len, MSG_WAITALL);
+        int32_t Temp = recv(Sock, &File[Rcv], Len, MSG_WAITALL);
         if(Temp < 1){
             info(std::to_string(Temp));
             UUl("Socket Closed Code 1");
@@ -153,6 +152,7 @@ SOCKET InitDSock(){
     SOCKET DSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     SOCKADDR_IN ServerAddr;
     if(DSock < 1){
+        KillSocket(DSock);
         Terminate = true;
         return 0;
     }
@@ -244,6 +244,7 @@ void SyncResources(SOCKET Sock){
     }
     if(!FNames.empty())info("Syncing...");
     SOCKET DSock = InitDSock();
+    uint64_t ModSize;
     for(auto FN = FNames.begin(),FS = FSizes.begin(); FN != FNames.end() && !Terminate; ++FN,++FS) {
         auto pos = FN->find_last_of('/');
         if (pos != std::string::npos) {
@@ -252,7 +253,8 @@ void SyncResources(SOCKET Sock){
         Pos++;
         if (fs::exists(a)) {
             if (FS->find_first_not_of("0123456789") != std::string::npos)continue;
-            if (fs::file_size(a) == std::stoi(*FS)){
+            ModSize = std::stoull(*FS);
+            if (fs::file_size(a) == ModSize){
                 UpdateUl(false,std::to_string(Pos) + "/" + std::to_string(Amount) + ": " + a.substr(a.find_last_of('/')));
                 std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 try {
@@ -284,7 +286,7 @@ void SyncResources(SOCKET Sock){
 
             std::string Name = std::to_string(Pos) + "/" + std::to_string(Amount) + ": " + FName;
 
-            Data = MultiDownload(Sock,DSock,std::stoull(*FS), Name);
+            Data = MultiDownload(Sock,DSock,ModSize, Name);
 
             if(Terminate)break;
             UpdateUl(false,std::to_string(Pos)+"/"+std::to_string(Amount)+": "+FName);
@@ -295,7 +297,7 @@ void SyncResources(SOCKET Sock){
                 LFS.close();
             }
 
-        }while(fs::file_size(a) != std::stoi(*FS) && !Terminate);
+        }while(fs::file_size(a) != ModSize && !Terminate);
         if(!Terminate){
             if(!fs::exists(GetGamePath() + "mods/multiplayer")){
                 fs::create_directory(GetGamePath() + "mods/multiplayer");

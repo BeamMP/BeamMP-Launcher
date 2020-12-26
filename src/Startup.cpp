@@ -19,7 +19,7 @@
 
 extern int TraceBack;
 bool Dev = false;
-namespace fs = std::experimental::filesystem;
+namespace fs = std::filesystem;
 std::string GetEN(){
     return "BeamMP-Launcher.exe";
 }
@@ -27,7 +27,7 @@ std::string GetVer(){
     return "1.80";
 }
 std::string GetPatch(){
-    return ".2";
+    return ".3";
 }
 void ReLaunch(int argc,char*args[]){
     std::string Arg;
@@ -182,7 +182,7 @@ void InitLauncher(int argc, char* argv[]) {
     CheckName(argc, argv);
     CheckLocalKey(); //will replace RequestRole
     Discord_Main();
-    Dev = true;
+    //Dev = true;
     //RequestRole();
     CustomPort(argc, argv);
     CheckForUpdates(argc, argv, std::string(GetVer()) + GetPatch());
@@ -190,47 +190,25 @@ void InitLauncher(int argc, char* argv[]) {
 
 void PreGame(int argc, char* argv[],const std::string& GamePath){
     info("Game Version : " + CheckVer(GamePath));
-    std::string DUI = R"(BeamNG\settings\uiapps-layouts.json)";
-    std::string GS = R"(BeamNG\settings\game-settings.ini)";
-    std::string link = "https://beammp.com/client-ui-data";
-    bool fallback = false;
-    int i;
-    if(!fs::exists(DUI)){
-        info("Downloading default ui data...");
-        i = Download(link,DUI,true);
-        if(i != -1){
-            fallback = true;
-            remove(DUI.c_str());
-            link = "https://backup1.beammp.com/client-ui-data";
-            i = Download(link,DUI,true);
-            if(i != -1) {
-                error("Failed to download code : " + std::to_string(i));
-                std::this_thread::sleep_for(std::chrono::seconds(3));
-                ReLaunch(argc, argv);
-            }
-        }
-        info("Download Complete!");
-    }
-    if(!fs::exists(GS)) {
-        info("Downloading default game settings...");
-        if(fallback)link = "https://backup1.beammp.com/client-settings-data";
-        else link = "https://beammp.com/client-settings-data";
-        Download(link, GS,true);
-        info("Download Complete!");
-    }
+
     if(!Dev) {
         info("Downloading mod...");
-        if(fallback)link = "https://backup1.beammp.com/builds/client";
-        else link ="https://beammp.com/builds/client";
-        if(!fs::exists(GetGamePath() + "mods")){
-            fs::create_directory(GetGamePath() + "mods");
+        //if(fallback)link = "https://backup1.beammp.com/builds/client";
+        std::string link = "https://beammp.com/builds/client";
+        try {
+            if (!fs::exists(GetGamePath() + "mods")) {
+                fs::create_directory(GetGamePath() + "mods");
+            }
+            if (!fs::exists(GetGamePath() + "mods/multiplayer")) {
+                fs::create_directory(GetGamePath() + "mods/multiplayer");
+            }
+        }catch(std::exception&e){
+            fatal(e.what());
         }
-        if(!fs::exists(GetGamePath() + "mods/multiplayer")){
-            fs::create_directory(GetGamePath() + "mods/multiplayer");
-        }
-        Download(link, GetGamePath() + R"(mods\multiplayer\BeamMP.zip)", true);
+        Download(link, GetGamePath() + R"(mods/multiplayer/BeamMP.zip)", true);
         info("Download Complete!");
     }
+
    /*debug("Name : " + GetDName());
     debug("Discriminator : " + GetDTag());
     debug("Unique ID : " + GetDID());*/

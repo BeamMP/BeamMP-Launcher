@@ -13,6 +13,7 @@
 #include <sstream>
 #include <string>
 #include <thread>
+#include <ShlDisp.h>
 
 #define MAX_KEY_LENGTH 255
 #define MAX_VALUE_NAME 16383
@@ -124,11 +125,10 @@ std::string QueryKey(HKEY hKey,int ID){
     delete [] buffer;
     return "";
 }
-namespace fs = std::experimental::filesystem;
+namespace fs = std::filesystem;
 void FileList(std::vector<std::string>&a,const std::string& Path){
     for (const auto &entry : fs::directory_iterator(Path)) {
-        auto pos = entry.path().filename().string().find('.');
-        if (pos != std::string::npos) {
+        if (!entry.is_directory()) {
             a.emplace_back(entry.path().string());
         }else FileList(a,entry.path().string());
     }
@@ -241,18 +241,22 @@ void LegitimacyCheck(){
     std::string K2 = R"(Software\Valve\Steam\Apps\284160)";
     std::string K3 = R"(Software\BeamNG\BeamNG.drive)";
     HKEY hKey;
+
     LONG dwRegOPenKey = OpenKey(HKEY_CURRENT_USER, K1.c_str(), &hKey);
+
     if(dwRegOPenKey == ERROR_SUCCESS) {
         Result = QueryKey(hKey, 1);
         if(Result.empty())Exit(1);
         if(fs::exists(Result)){
-            if(!Find("284160.json",Result))Exit(2);
+            if(!Find("284160.json", Result))Exit(2);
             if(FindHack(Result))SteamExit(1);
         }else Exit(3);
+
         T = Result;
         Result.clear();
         TraceBack++;
     }else Exit(4);
+
     K1.clear();
     RegCloseKey(hKey);
     dwRegOPenKey = OpenKey(HKEY_CURRENT_USER, K2.c_str(), &hKey);
