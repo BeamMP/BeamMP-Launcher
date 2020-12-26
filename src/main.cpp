@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
     InitLauncher(argc,argv);
     //CheckDir(argc,argv);
     LegitimacyCheck();
-    PreGame(argc,argv,GetGameDir());
+    PreGame(GetGameDir());
     InitGame(GetGameDir());
     CoreNetwork();
 }

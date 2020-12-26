@@ -11,12 +11,14 @@
 #include <ShlObj.h>
 #include "Logger.h"
 #include <iostream>
+#include <codecvt>
 #include <thread>
+#include <locale>
 
 unsigned long GamePID = 0;
 std::string QueryKey(HKEY hKey,int ID);
-std::string GetGamePath(){
-    static std::string Path;
+std::wstring GetGamePath(){
+    static std::wstring Path;
     if(!Path.empty())return Path;
 
     HKEY hKey;
@@ -25,7 +27,8 @@ std::string GetGamePath(){
     if (openRes != ERROR_SUCCESS){
         fatal("Please launch the game at least once");
     }
-    Path = QueryKey(hKey,4);
+    std::string T = QueryKey(hKey,4);
+    Path = std::wstring(T.begin(),T.end());
 
     if(Path.empty()){
         CoInitialize(nullptr);
@@ -33,9 +36,8 @@ std::string GetGamePath(){
         SHGetKnownFolderPath(FOLDERID_Documents, KF_FLAG_SIMPLE_IDLIST, nullptr, (PWSTR *)(&path));
         CoTaskMemFree(path);
         std::wstring ws(path);
-        std::string s(ws.begin(), ws.end());
-        Path = s;
-        Path += "\\BeamNG.drive\\";
+        ws += L"\\BeamNG.drive\\";
+        return ws;
     }
 
     return Path;
