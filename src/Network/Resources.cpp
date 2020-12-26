@@ -244,7 +244,6 @@ void SyncResources(SOCKET Sock){
     }
     if(!FNames.empty())info("Syncing...");
     SOCKET DSock = InitDSock();
-    uint64_t ModSize;
     for(auto FN = FNames.begin(),FS = FSizes.begin(); FN != FNames.end() && !Terminate; ++FN,++FS) {
         auto pos = FN->find_last_of('/');
         if (pos != std::string::npos) {
@@ -253,8 +252,7 @@ void SyncResources(SOCKET Sock){
         Pos++;
         if (fs::exists(a)) {
             if (FS->find_first_not_of("0123456789") != std::string::npos)continue;
-            ModSize = std::stoull(*FS);
-            if (fs::file_size(a) == ModSize){
+            if (fs::file_size(a) == std::stoull(*FS)){
                 UpdateUl(false,std::to_string(Pos) + "/" + std::to_string(Amount) + ": " + a.substr(a.find_last_of('/')));
                 std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 try {
@@ -287,7 +285,7 @@ void SyncResources(SOCKET Sock){
 
             std::string Name = std::to_string(Pos) + "/" + std::to_string(Amount) + ": " + FName;
 
-            Data = MultiDownload(Sock,DSock,ModSize, Name);
+            Data = MultiDownload(Sock,DSock,std::stoull(*FS), Name);
 
             if(Terminate)break;
             UpdateUl(false,std::to_string(Pos)+"/"+std::to_string(Amount)+": "+FName);
@@ -298,7 +296,7 @@ void SyncResources(SOCKET Sock){
                 LFS.close();
             }
 
-        }while(fs::file_size(a) != ModSize && !Terminate);
+        }while(fs::file_size(a) != std::stoull(*FS) && !Terminate);
         if(!Terminate){
             if(!fs::exists(GetGamePath() + L"mods/multiplayer")){
                 fs::create_directory(GetGamePath() + L"mods/multiplayer");
