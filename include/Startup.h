@@ -9,7 +9,7 @@
 #include <string>
 void InitLauncher(int argc, char* argv[]);
 void CheckDir(int argc,char* args[]);
-std::wstring GetGamePath();
+std::string GetGamePath();
 std::string GetVer();
 std::string GetEN();
 extern bool Dev;

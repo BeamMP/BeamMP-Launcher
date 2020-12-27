@@ -27,7 +27,7 @@ std::string GetVer(){
     return "1.80";
 }
 std::string GetPatch(){
-    return ".4";
+    return ".5";
 }
 void ReLaunch(int argc,char*args[]){
     std::string Arg;
@@ -187,32 +187,23 @@ void InitLauncher(int argc, char* argv[]) {
     CustomPort(argc, argv);
     CheckForUpdates(argc, argv, std::string(GetVer()) + GetPatch());
 }
-inline std::string to_string(const std::wstring& str){
-    auto loc = std::locale{};
-    std::vector<char> buf(str.size());
-    std::use_facet<std::ctype<wchar_t>>(loc).narrow(str.data(), str.data() + str.size(), '?', buf.data());
 
-    return std::string(buf.data(), buf.size());
-}
 void PreGame(const std::string& GamePath){
     info("Game Version : " + CheckVer(GamePath));
 
     if(!Dev) {
         info("Downloading mod...");
-        //if(fallback)link = "https://backup1.beammp.com/builds/client";
-        std::string link = "https://beammp.com/builds/client";
         try {
-            if (!fs::exists(GetGamePath() + L"mods")) {
-                fs::create_directory(GetGamePath() + L"mods");
+            if (!fs::exists(GetGamePath() + "mods")) {
+                fs::create_directory(GetGamePath() + "mods");
             }
-            if (!fs::exists(GetGamePath() + L"mods/multiplayer")) {
-                fs::create_directory(GetGamePath() + L"mods/multiplayer");
+            if (!fs::exists(GetGamePath() + "mods/multiplayer")) {
+                fs::create_directory(GetGamePath() + "mods/multiplayer");
             }
-            std::wstring P = GetGamePath() + LR"(mods/multiplayer/BeamMP.zip)";
-            Download(link, to_string(P), true);
         }catch(std::exception&e){
             fatal(e.what());
         }
+        Download("https://beammp.com/builds/client", GetGamePath() + R"(mods\multiplayer\BeamMP.zip)", true);
         info("Download Complete!");
     }
 

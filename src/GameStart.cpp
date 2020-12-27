@@ -8,17 +8,14 @@
 
 #include <Windows.h>
 #include "Startup.h"
-#include <ShlObj.h>
 #include "Logger.h"
 #include <iostream>
-#include <codecvt>
 #include <thread>
-#include <locale>
 
 unsigned long GamePID = 0;
 std::string QueryKey(HKEY hKey,int ID);
-std::wstring GetGamePath(){
-    static std::wstring Path;
+std::string GetGamePath(){
+    static std::string Path;
     if(!Path.empty())return Path;
 
     HKEY hKey;
@@ -27,17 +24,15 @@ std::wstring GetGamePath(){
     if (openRes != ERROR_SUCCESS){
         fatal("Please launch the game at least once");
     }
-    std::string T = QueryKey(hKey,4);
-    Path = std::wstring(T.begin(),T.end());
+    Path = QueryKey(hKey,4);
 
     if(Path.empty()){
-        CoInitialize(nullptr);
-        wchar_t * path = nullptr;
-        SHGetKnownFolderPath(FOLDERID_Documents, KF_FLAG_SIMPLE_IDLIST, nullptr, (PWSTR *)(&path));
-        CoTaskMemFree(path);
-        std::wstring ws(path);
-        ws += L"\\BeamNG.drive\\";
-        return ws;
+        size_t RS;
+        getenv_s(&RS, nullptr, 0, "USERPROFILE");
+        std::string P(RS-1,0);
+        getenv_s(&RS, &P[0], RS, "USERPROFILE");
+        Path = P + R"(\Documents\BeamNG.drive\)";
+        return Path;
     }
 
     return Path;
