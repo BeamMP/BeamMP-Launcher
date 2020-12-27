@@ -107,7 +107,7 @@ std::string QueryKey(HKEY hKey,int ID){
                 DWORD lpData = cbMaxValueData;
                 buffer[0] = '\0';
                 LONG dwRes = RegQueryValueEx(hKey, achValue, nullptr, nullptr, buffer, &lpData);
-                std::string data = reinterpret_cast<const char *const>(buffer);
+                std::string data = (char *)(buffer);
                 std::string key = achValue;
                 switch (ID){
                     case 1: if(key == "SteamExe"){
@@ -130,8 +130,8 @@ namespace fs = std::filesystem;
 void FileList(std::vector<std::string>&a,const std::string& Path){
     for (const auto &entry : fs::directory_iterator(Path)) {
         if (!entry.is_directory()) {
-            a.emplace_back(entry.path().string());
-        }else FileList(a,entry.path().string());
+            a.emplace_back(entry.path().u8string());
+        }else FileList(a,entry.path().u8string());
     }
 }
 bool Find(const std::string& FName,const std::string& Path){
@@ -248,6 +248,7 @@ void LegitimacyCheck(){
     if(dwRegOPenKey == ERROR_SUCCESS) {
         Result = QueryKey(hKey, 1);
         if(Result.empty())Exit(1);
+
         if(fs::exists(Result)){
             if(!Find("284160.json", Result))Exit(2);
             if(FindHack(Result))SteamExit(1);

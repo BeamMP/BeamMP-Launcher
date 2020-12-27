@@ -9,6 +9,7 @@
 #include "Security/Init.h"
 #include "Startup.h"
 #include <iostream>
+#include "Logger.h"
 #include <thread>
 
 
@@ -26,7 +27,11 @@ int main(int argc, char* argv[]) {
     #endif
     InitLauncher(argc,argv);
     //CheckDir(argc,argv);
-    LegitimacyCheck();
+    try {
+        LegitimacyCheck();
+    }catch (std::exception&e){
+        fatal(e.what());
+    }
     PreGame(GetGameDir());
     InitGame(GetGameDir());
     CoreNetwork();

@@ -118,9 +118,7 @@ void CheckForUpdates(int argc,char*args[],const std::string& CV){
             }
         }
         URelaunch(argc,args);
-    }else{
-        info("Version is up to date");
-    }
+    }else info("Version is up to date");
     TraceBack++;
 }
 void CheckDir(int argc,char*args[]){
