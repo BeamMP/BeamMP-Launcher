@@ -27,7 +27,7 @@ std::string GetVer(){
     return "1.80";
 }
 std::string GetPatch(){
-    return ".6";
+    return ".7";
 }
 void ReLaunch(int argc,char*args[]){
     std::string Arg;
