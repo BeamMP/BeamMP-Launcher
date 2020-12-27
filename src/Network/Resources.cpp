@@ -257,7 +257,7 @@ void SyncResources(SOCKET Sock){
                 std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 try {
                     if(!fs::exists(GetGamePath() + "mods/multiplayer")){
-                        fs::create_directory(GetGamePath() + "mods/multiplayer");
+                        fs::create_directories(GetGamePath() + "mods/multiplayer");
                     }
                     fs::copy_file(a, GetGamePath() + "mods/multiplayer" + a.substr(a.find_last_of('/')),
                                   fs::copy_options::overwrite_existing);
@@ -298,7 +298,7 @@ void SyncResources(SOCKET Sock){
         }while(fs::file_size(a) != std::stoull(*FS) && !Terminate);
         if(!Terminate){
             if(!fs::exists(GetGamePath() + "mods/multiplayer")){
-                fs::create_directory(GetGamePath() + "mods/multiplayer");
+                fs::create_directories(GetGamePath() + "mods/multiplayer");
             }
             fs::copy_file(a,GetGamePath() + "mods/multiplayer" + FName, fs::copy_options::overwrite_existing);
         }

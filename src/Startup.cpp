@@ -27,7 +27,7 @@ std::string GetVer(){
     return "1.80";
 }
 std::string GetPatch(){
-    return ".5";
+    return ".6";
 }
 void ReLaunch(int argc,char*args[]){
     std::string Arg;
@@ -194,11 +194,8 @@ void PreGame(const std::string& GamePath){
     if(!Dev) {
         info("Downloading mod...");
         try {
-            if (!fs::exists(GetGamePath() + "mods")) {
-                fs::create_directory(GetGamePath() + "mods");
-            }
             if (!fs::exists(GetGamePath() + "mods/multiplayer")) {
-                fs::create_directory(GetGamePath() + "mods/multiplayer");
+                fs::create_directories(GetGamePath() + "mods/multiplayer");
             }
         }catch(std::exception&e){
             fatal(e.what());
