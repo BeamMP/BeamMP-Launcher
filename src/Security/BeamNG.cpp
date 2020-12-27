@@ -117,6 +117,7 @@ std::string QueryKey(HKEY hKey,int ID){
                     case 2: if(key == "Name" && data == "BeamNG.drive")return data;break;
                     case 3: if(key == "rootpath")return data;break;
                     case 4: if(key == "userpath_override")return data;
+                    case 5: if(key == "Personal")return data;
                     default: break;
                 }
             }

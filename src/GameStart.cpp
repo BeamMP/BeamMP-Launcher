@@ -22,16 +22,19 @@ std::string GetGamePath(){
     LPCTSTR sk = "Software\\BeamNG\\BeamNG.drive";
     LONG openRes = RegOpenKeyEx(HKEY_CURRENT_USER, sk, 0, KEY_ALL_ACCESS, &hKey);
     if (openRes != ERROR_SUCCESS){
-        fatal("Please launch the game at least once");
+        fatal("Please launch the game at least once!");
     }
     Path = QueryKey(hKey,4);
 
     if(Path.empty()){
-        size_t RS;
-        getenv_s(&RS, nullptr, 0, "USERPROFILE");
-        std::string P(RS-1,0);
-        getenv_s(&RS, &P[0], RS, "USERPROFILE");
-        Path = P + R"(\Documents\BeamNG.drive\)";
+        sk = R"(SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders)";
+
+        openRes = RegOpenKeyEx(HKEY_CURRENT_USER, sk, 0, KEY_ALL_ACCESS, &hKey);
+        if (openRes != ERROR_SUCCESS){
+           fatal("Cannot get Documents directory!");
+        }
+        Path = QueryKey(hKey,5);
+        Path += "\\";
         return Path;
     }
 
