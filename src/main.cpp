@@ -30,7 +30,7 @@ int main(int argc, char* argv[]) {
     try {
         LegitimacyCheck();
     }catch (std::exception&e){
-        fatal(e.what());
+        fatal("Main 1 : " + std::string(e.what()));
     }
     PreGame(GetGameDir());
     InitGame(GetGameDir());
