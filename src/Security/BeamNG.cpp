@@ -227,7 +227,6 @@ std::string GetManifest(const std::string& Man){
     }else return "";
 }
 bool IDCheck(std::string Man, std::string steam){
-    info("IDCheck Called with : " + Man + " and " + steam);
     bool a = false,b = true;
     int pos = int(Man.rfind("steamapps"));
     if(pos == -1)Exit(5);
