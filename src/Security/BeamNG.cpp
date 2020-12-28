@@ -149,7 +149,7 @@ bool Find(const std::string& FName,const std::string& Path){
 bool FindHack(const std::string& Path){
     bool s = true;
     for (const auto &entry : fs::directory_iterator(Path)) {
-        std::string Name = entry.path().filename().string();
+        std::string Name = entry.path().filename().u8string();
         for(char&c : Name)c = char(tolower(c));
         if(Name == "steam.exe")s = false;
         if(Name.find("greenluma") != -1)return true;
