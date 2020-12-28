@@ -109,11 +109,15 @@ std::string QueryKey(HKEY hKey,int ID){
                 LONG dwRes = RegQueryValueEx(hKey, achValue, nullptr, nullptr, buffer, &lpData);
                 std::string data = (char *)(buffer);
                 std::string key = achValue;
+
                 switch (ID){
                     case 1: if(key == "SteamExe"){
-                            auto p = data.find_last_of('/');
-                            if(p != std::string::npos)return data.substr(0,p);
-                        }break;
+                                auto p = data.find_last_of("/\\");
+                                if(p != std::string::npos){
+                                    return data.substr(0,p);
+                                }
+                            }
+                            break;
                     case 2: if(key == "Name" && data == "BeamNG.drive")return data;break;
                     case 3: if(key == "rootpath")return data;break;
                     case 4: if(key == "userpath_override")return data;
@@ -136,7 +140,7 @@ void FileList(std::vector<std::string>&a,const std::string& Path){
 }
 bool Find(const std::string& FName,const std::string& Path){
     std::vector<std::string> FS;
-    FileList(FS,Path+"/userdata");
+    FileList(FS,Path+"\\userdata");
     for(std::string&a : FS){
         if(a.find(FName) != std::string::npos){
             FS.clear();
@@ -223,11 +227,12 @@ std::string GetManifest(const std::string& Man){
     }else return "";
 }
 bool IDCheck(std::string Man, std::string steam){
+    info("IDCheck Called with : " + Man + " and " + steam);
     bool a = false,b = true;
     int pos = int(Man.rfind("steamapps"));
     if(pos == -1)Exit(5);
-    Man = Man.substr(0,pos+9) + "/appmanifest_284160.acf";
-    steam += "/config/loginusers.vdf";
+    Man = Man.substr(0,pos+9) + "\\appmanifest_284160.acf";
+    steam += "\\config\\loginusers.vdf";
     if(fs::exists(Man) && fs::exists(steam)){
         for(const std::string&ID : GetID(steam)){
             if(ID == GetManifest(Man))b = false;
