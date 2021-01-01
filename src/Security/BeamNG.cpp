@@ -157,7 +157,7 @@ bool FindHack(const std::string& Path){
         for(char&c : Name)c = char(tolower(c));
         if(Name == "steam.exe")s = false;
         if(Name.find("greenluma") != -1){
-            error("Found malicious file/folder " + Name);
+            error("Found malicious file/folder \"" + Name+"\"");
             return true;
         }
         Name.clear();
