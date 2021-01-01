@@ -256,8 +256,8 @@ void LegitimacyCheck(){
         if(fs::exists(Result)){
             if(!Find("284160.json",Result))Exit(2);
             if(FindHack(Result)) {
-                std::string maliciousFileName = fs::directory_iterator(Result)->path().filename().string();
-                error("Found malicious file " + maliciousFileName + ". Please remove it in order to play\n");
+                std::string Name = fs::directory_iterator(Result)->path().filename().string();
+                error("Found malicious file " + Name + ". Please remove it in order to play\n");
                 SteamExit(1);
             }
         }else Exit(3);
