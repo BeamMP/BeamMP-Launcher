@@ -13,6 +13,7 @@
 #include <sstream>
 #include <string>
 #include <thread>
+#include <ShlDisp.h>
 
 #define MAX_KEY_LENGTH 255
 #define MAX_VALUE_NAME 16383
@@ -106,16 +107,21 @@ std::string QueryKey(HKEY hKey,int ID){
                 DWORD lpData = cbMaxValueData;
                 buffer[0] = '\0';
                 LONG dwRes = RegQueryValueEx(hKey, achValue, nullptr, nullptr, buffer, &lpData);
-                std::string data = reinterpret_cast<const char *const>(buffer);
+                std::string data = (char *)(buffer);
                 std::string key = achValue;
+
                 switch (ID){
                     case 1: if(key == "SteamExe"){
-                            auto p = data.find_last_of('/');
-                            if(p != std::string::npos)return data.substr(0,p);
-                        }break;
+                                auto p = data.find_last_of("/\\");
+                                if(p != std::string::npos){
+                                    return data.substr(0,p);
+                                }
+                            }
+                            break;
                     case 2: if(key == "Name" && data == "BeamNG.drive")return data;break;
                     case 3: if(key == "rootpath")return data;break;
                     case 4: if(key == "userpath_override")return data;
+                    case 5: if(key == "Personal")return data;
                     default: break;
                 }
             }
@@ -124,18 +130,17 @@ std::string QueryKey(HKEY hKey,int ID){
     delete [] buffer;
     return "";
 }
-namespace fs = std::experimental::filesystem;
+namespace fs = std::filesystem;
 void FileList(std::vector<std::string>&a,const std::string& Path){
     for (const auto &entry : fs::directory_iterator(Path)) {
-        auto pos = entry.path().filename().string().find('.');
-        if (pos != std::string::npos) {
-            a.emplace_back(entry.path().string());
-        }else FileList(a,entry.path().string());
+        if (!entry.is_directory()) {
+            a.emplace_back(entry.path().u8string());
+        }else FileList(a,entry.path().u8string());
     }
 }
 bool Find(const std::string& FName,const std::string& Path){
     std::vector<std::string> FS;
-    FileList(FS,Path+"/userdata");
+    FileList(FS,Path+"\\userdata");
     for(std::string&a : FS){
         if(a.find(FName) != std::string::npos){
             FS.clear();
@@ -148,7 +153,7 @@ bool Find(const std::string& FName,const std::string& Path){
 bool FindHack(const std::string& Path){
     bool s = true;
     for (const auto &entry : fs::directory_iterator(Path)) {
-        std::string Name = entry.path().filename().string();
+        std::string Name = entry.path().filename().u8string();
         for(char&c : Name)c = char(tolower(c));
         if(Name == "steam.exe")s = false;
         if(Name.find("greenluma") != -1)return true;
@@ -225,8 +230,8 @@ bool IDCheck(std::string Man, std::string steam){
     bool a = false,b = true;
     int pos = int(Man.rfind("steamapps"));
     if(pos == -1)Exit(5);
-    Man = Man.substr(0,pos+9) + "/appmanifest_284160.acf";
-    steam += "/config/loginusers.vdf";
+    Man = Man.substr(0,pos+9) + "\\appmanifest_284160.acf";
+    steam += "\\config\\loginusers.vdf";
     if(fs::exists(Man) && fs::exists(steam)){
         for(const std::string&ID : GetID(steam)){
             if(ID == GetManifest(Man))b = false;
@@ -241,22 +246,27 @@ void LegitimacyCheck(){
     std::string K2 = R"(Software\Valve\Steam\Apps\284160)";
     std::string K3 = R"(Software\BeamNG\BeamNG.drive)";
     HKEY hKey;
+
     LONG dwRegOPenKey = OpenKey(HKEY_CURRENT_USER, K1.c_str(), &hKey);
+
     if(dwRegOPenKey == ERROR_SUCCESS) {
         Result = QueryKey(hKey, 1);
         if(Result.empty())Exit(1);
+
         if(fs::exists(Result)){
             if(!Find("284160.json",Result))Exit(2);
             if(FindHack(Result)) {
-                std::string maliciousFileName = fs::directory_iterator(Result).path().filename().string();
+                std::string maliciousFileName = fs::directory_iterator(Result)->path().filename().string();
                 error("Found malicious file " + maliciousFileName + ". Please remove it in order to play\n");
                 SteamExit(1);
             }
         }else Exit(3);
+
         T = Result;
         Result.clear();
         TraceBack++;
     }else Exit(4);
+
     K1.clear();
     RegCloseKey(hKey);
     dwRegOPenKey = OpenKey(HKEY_CURRENT_USER, K2.c_str(), &hKey);

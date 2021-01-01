@@ -40,6 +40,11 @@ std::string GetFail(const std::string& R){
 }
 
 std::string Login(const std::string& fields){
+    if(fields == "LO"){
+        LoginAuth = false;
+        UpdateKey(nullptr);
+        return "";
+    }
     info("Attempting to authenticate...");
     std::string Buffer = PostHTTP("https://auth.beammp.com/userlogin", fields);
     json::Document d;
@@ -47,6 +52,7 @@ std::string Login(const std::string& fields){
     if(Buffer == "-1"){
         return GetFail("Failed to communicate with the auth system!");
     }
+
     if (Buffer.find('{') == -1 || d.HasParseError()) {
         return GetFail("Invalid answer from authentication servers, please try again later!");
     }

@@ -8,13 +8,15 @@
 #include "Network/network.h"
 #include "Security/Init.h"
 #include "Startup.h"
-#include <thread>
 #include <iostream>
+#include "Logger.h"
+#include <thread>
+
 
 [[noreturn]] void flush(){
     while(true){
         std::cout.flush();
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 }
 
@@ -24,9 +26,13 @@ int main(int argc, char* argv[]) {
         th.detach();
     #endif
     InitLauncher(argc,argv);
-    CheckDir(argc,argv);
-    LegitimacyCheck();
-    PreGame(argc,argv,GetGameDir());
+    //CheckDir(argc,argv);
+    try {
+        LegitimacyCheck();
+    }catch (std::exception&e){
+        fatal("Main 1 : " + std::string(e.what()));
+    }
+    PreGame(GetGameDir());
     InitGame(GetGameDir());
     CoreNetwork();
 }

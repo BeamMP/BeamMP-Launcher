@@ -8,7 +8,6 @@
 
 #include <Windows.h>
 #include "Startup.h"
-#include <ShlObj.h>
 #include "Logger.h"
 #include <iostream>
 #include <thread>
@@ -23,19 +22,19 @@ std::string GetGamePath(){
     LPCTSTR sk = "Software\\BeamNG\\BeamNG.drive";
     LONG openRes = RegOpenKeyEx(HKEY_CURRENT_USER, sk, 0, KEY_ALL_ACCESS, &hKey);
     if (openRes != ERROR_SUCCESS){
-        fatal("Please launch the game at least once");
+        fatal("Please launch the game at least once!");
     }
     Path = QueryKey(hKey,4);
 
     if(Path.empty()){
-        CoInitialize(nullptr);
-        wchar_t * path = nullptr;
-        SHGetKnownFolderPath(FOLDERID_Documents, KF_FLAG_SIMPLE_IDLIST, nullptr, (PWSTR *)(&path));
-        CoTaskMemFree(path);
-        std::wstring ws(path);
-        std::string s(ws.begin(), ws.end());
-        Path = s;
+        sk = R"(SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders)";
+        openRes = RegOpenKeyEx(HKEY_CURRENT_USER, sk, 0, KEY_ALL_ACCESS, &hKey);
+        if (openRes != ERROR_SUCCESS){
+           fatal("Cannot get Documents directory!");
+        }
+        Path = QueryKey(hKey,5);
         Path += "\\BeamNG.drive\\";
+        return Path;
     }
 
     return Path;
