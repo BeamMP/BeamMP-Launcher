@@ -156,7 +156,10 @@ bool FindHack(const std::string& Path){
         std::string Name = entry.path().filename().u8string();
         for(char&c : Name)c = char(tolower(c));
         if(Name == "steam.exe")s = false;
-        if(Name.find("greenluma") != -1)return true;
+        if(Name.find("greenluma") != -1){
+            error("Found malicious file/folder " + Name);
+            return true;
+        }
         Name.clear();
     }
     return s;
@@ -255,11 +258,7 @@ void LegitimacyCheck(){
 
         if(fs::exists(Result)){
             if(!Find("284160.json",Result))Exit(2);
-            if(FindHack(Result)) {
-                std::string Name = fs::directory_iterator(Result)->path().filename().string();
-                error("Found malicious file " + Name + ". Please remove it in order to play\n");
-                SteamExit(1);
-            }
+            if(FindHack(Result))SteamExit(1);
         }else Exit(3);
 
         T = Result;
