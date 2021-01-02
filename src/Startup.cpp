@@ -8,12 +8,10 @@
 #include "Discord/discord_info.h"
 #include "Network/network.h"
 #include "Security/Init.h"
-
 #include "Curl/http.h"
 #include <curl/curl.h>
 #include <filesystem>
 #include "Startup.h"
-#include <iostream>
 #include "Logger.h"
 #include <thread>
 
@@ -27,7 +25,7 @@ std::string GetVer(){
     return "1.80";
 }
 std::string GetPatch(){
-    return ".92";
+    return ".93";
 }
 void ReLaunch(int argc,char*args[]){
     std::string Arg;
@@ -65,7 +63,7 @@ void CheckName(int argc,char* args[]){
 
 /// Deprecated
 void RequestRole(){
-    auto NPos = std::string::npos;
+    /*auto NPos = std::string::npos;
     std::string HTTP_Result = HTTP_REQUEST("https://beammp.com/entitlement?did="+GetDID()+"&t=l",443);
     if(HTTP_Result == "-1"){
         HTTP_Result = HTTP_REQUEST("https://backup1.beammp.com/entitlement?did="+GetDID()+"&t=l",443);
@@ -79,7 +77,7 @@ void RequestRole(){
     if(HTTP_Result.find("Error") != NPos){
         fatal("Sorry You need to be in the official BeamMP Discord to proceed! https://discord.gg/beammp");
     }
-    info("Client Connected!");
+    info("Client Connected!");*/
 }
 
 void CheckForUpdates(int argc,char*args[],const std::string& CV){
@@ -118,11 +116,11 @@ void CheckForUpdates(int argc,char*args[],const std::string& CV){
             }
         }
         URelaunch(argc,args);
-    }else info("Version is up to date");
+    }else info("Launcher version is up to date");
     TraceBack++;
 }
 void CheckDir(int argc,char*args[]){
-    std::string CDir = args[0];
+    /*std::string CDir = args[0];
     std::string MDir = "BeamNG\\mods";
     if(!fs::is_directory("BeamNG")){
         if(!fs::create_directory("BeamNG")){
@@ -158,7 +156,7 @@ void CheckDir(int argc,char*args[]){
             std::this_thread::sleep_for(std::chrono::seconds(3));
             ReLaunch(argc,args);
         }
-    }
+    }*/
 }
 void CustomPort(int argc, char* argv[]){
     if(argc > 1){
@@ -180,14 +178,44 @@ void InitLauncher(int argc, char* argv[]) {
     CheckName(argc, argv);
     CheckLocalKey(); //will replace RequestRole
     Discord_Main();
-    //Dev = true;
+    Dev = true;
     //RequestRole();
     CustomPort(argc, argv);
     CheckForUpdates(argc, argv, std::string(GetVer()) + GetPatch());
 }
+size_t DirCount(const std::filesystem::path& path){
+    return (size_t)std::distance(std::filesystem::directory_iterator{path}, std::filesystem::directory_iterator{});
+}
+void CheckMP(const std::string& Path) {
+    if (!fs::exists(Path))return;
+    size_t c = DirCount(fs::path(Path));
+    if (c > 3) {
+        warn(std::to_string(c - 1) + " multiplayer mods will be wiped from mods/multiplayer! Close this if you don't want that!");
+        std::this_thread::sleep_for(std::chrono::seconds(15));
+    }
+    try {
+        for (auto& p : fs::directory_iterator(Path)){
+            if(p.exists() && !p.is_directory()){
+                std::string Name = p.path().filename().u8string();
+                for(char&Ch : Name)Ch = char(tolower(Ch));
+                if(Name != "beammp.zip")fs::remove(p.path());
+            }
+        }
+    } catch (...) {
+        fatal("Please close the game, and try again!");
+    }
 
+}
 void PreGame(const std::string& GamePath){
-    info("Game Version : " + CheckVer(GamePath));
+    const std::string CurrVer("0.21.2.0");
+    std::string GameVer = CheckVer(GamePath);
+    info("Game Version : " + GameVer);
+    if(GameVer < CurrVer){
+        fatal("Game version is old! Please update.");
+    }else if(GameVer > CurrVer){
+        warn("Game is newer than recommended, multiplayer may not work as intended!");
+    }
+    CheckMP(GetGamePath() + "mods/multiplayer");
 
     if(!Dev) {
         info("Downloading mod...");
