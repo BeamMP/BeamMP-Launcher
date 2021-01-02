@@ -131,11 +131,24 @@ std::string QueryKey(HKEY hKey,int ID){
     return "";
 }
 namespace fs = std::filesystem;
+
+bool NameValid(const std::string& N){
+    if(N == "config" || N == "librarycache"){
+        return true;
+    }
+    if(N.find_first_not_of("0123456789") == std::string::npos){
+        return true;
+    }
+    return false;
+}
 void FileList(std::vector<std::string>&a,const std::string& Path){
     for (const auto &entry : fs::directory_iterator(Path)) {
+        const auto& DPath = entry.path();
         if (!entry.is_directory()) {
-            a.emplace_back(entry.path().u8string());
-        }else FileList(a,entry.path().u8string());
+            a.emplace_back(DPath.u8string());
+        }else if(NameValid(DPath.filename().u8string())){
+            FileList(a, DPath.u8string());
+        }
     }
 }
 bool Find(const std::string& FName,const std::string& Path){
