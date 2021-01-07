@@ -6,11 +6,24 @@
 /// Created by Anonymous275 on 7/18/2020
 ///
 
-#include "Security/Game.h"
-
 #include <curl/curl.h>
 #include <iostream>
 #include <mutex>
+
+class CurlManager{
+public:
+    CurlManager(){
+        curl = curl_easy_init();
+    }
+    ~CurlManager(){
+        curl_easy_cleanup(curl);
+    }
+    inline CURL* Get(){
+        return curl;
+    }
+private:
+    CURL *curl;
+};
 
 static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp){
     ((std::string*)userp)->append((char*)contents, size * nmemb);
@@ -18,12 +31,12 @@ static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *use
 }
 
 std::string HTTP_REQUEST(const std::string& IP,int port){
+    static thread_local CurlManager M;
     static std::mutex Lock;
-    Lock.lock();
-    CURL *curl;
+    std::scoped_lock Guard(Lock);
+    CURL *curl = M.Get();
     CURLcode res;
     std::string readBuffer;
-    curl = curl_easy_init();
     if(curl) {
         curl_easy_setopt(curl, CURLOPT_URL, IP.c_str());
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
@@ -31,11 +44,10 @@ std::string HTTP_REQUEST(const std::string& IP,int port){
         curl_easy_setopt(curl, CURLOPT_PORT, port);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
+        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10);
         res = curl_easy_perform(curl);
-        curl_easy_cleanup(curl);
         if(res != CURLE_OK)return "-1";
     }
-    Lock.unlock();
     return readBuffer;
 }
 
@@ -70,10 +82,10 @@ static size_t my_fwrite(void *buffer,size_t size,size_t nmemb,void *stream){
     return fwrite(buffer, size, nmemb, out->stream);
 }
 int Download(const std::string& URL,const std::string& Path,bool close){
-    CURL *curl;
+    static thread_local CurlManager M;
+    CURL *curl = M.Get();
     CURLcode res;
     struct File file = {Path.c_str(),nullptr};
-    curl = curl_easy_init();
     if(curl){
         curl_easy_setopt(curl, CURLOPT_URL,URL.c_str());
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
@@ -84,7 +96,6 @@ int Download(const std::string& URL,const std::string& Path,bool close){
         curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, progress_bar);
         curl_easy_setopt(curl, CURLOPT_USE_SSL, CURLUSESSL_ALL);
         res = curl_easy_perform(curl);
-        curl_easy_cleanup(curl);
         if(res != CURLE_OK)return res;
     }
     if(file.stream)fclose(file.stream);
@@ -93,10 +104,13 @@ int Download(const std::string& URL,const std::string& Path,bool close){
 }
 std::string PostHTTP(const std::string& IP, const std::string& Fields) {
     static auto *header = new curl_slist{(char*)"Content-Type: application/json"};
-    CURL* curl;
+    static thread_local CurlManager M;
+    static std::mutex Lock;
+    std::scoped_lock Guard(Lock);
+    CURL* curl = M.Get();
     CURLcode res;
     std::string readBuffer;
-    curl = curl_easy_init();
+
     if (curl) {
         curl_easy_setopt(curl, CURLOPT_URL, IP.c_str());
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, header);
@@ -105,9 +119,8 @@ std::string PostHTTP(const std::string& IP, const std::string& Fields) {
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
         curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
-        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
+        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10);
         res = curl_easy_perform(curl);
-        curl_easy_cleanup(curl);
         if (res != CURLE_OK)
             return "-1";
     }

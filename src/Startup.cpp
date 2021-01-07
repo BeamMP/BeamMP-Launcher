@@ -25,7 +25,7 @@ std::string GetVer(){
     return "1.80";
 }
 std::string GetPatch(){
-    return ".93";
+    return ".94";
 }
 void ReLaunch(int argc,char*args[]){
     std::string Arg;
@@ -167,7 +167,7 @@ void CustomPort(int argc, char* argv[]){
                 warn("Running on custom port : " + std::to_string(DEFAULT_PORT));
             }
         }
-        if(argc > 2)Dev = false;
+        if(argc > 2)Dev = true;
     }
 }
 void InitLauncher(int argc, char* argv[]) {
@@ -178,7 +178,7 @@ void InitLauncher(int argc, char* argv[]) {
     CheckName(argc, argv);
     CheckLocalKey(); //will replace RequestRole
     Discord_Main();
-    Dev = true;
+    //Dev = true;
     //RequestRole();
     CustomPort(argc, argv);
     CheckForUpdates(argc, argv, std::string(GetVer()) + GetPatch());
