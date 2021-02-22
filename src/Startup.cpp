@@ -18,14 +18,22 @@
 extern int TraceBack;
 bool Dev = false;
 namespace fs = std::filesystem;
+
 std::string GetEN(){
     return "BeamMP-Launcher.exe";
 }
 std::string GetVer(){
-    return "1.80";
+    return "1.81";
 }
 std::string GetPatch(){
-    return ".94";
+    return ".0";
+}
+std::string GetEP(char*P){
+    static std::string Ret = [&](){
+        std::string path(P);
+        return path.substr(0, path.find_last_of("\\/") + 1);
+    } ();
+    return Ret;
 }
 void ReLaunch(int argc,char*args[]){
     std::string Arg;
@@ -34,7 +42,7 @@ void ReLaunch(int argc,char*args[]){
         Arg += args[c-1];
     }
     system("cls");
-    ShellExecute(nullptr,"runas",GetEN().c_str(),Arg.c_str(),nullptr,SW_SHOWNORMAL);
+    ShellExecute(nullptr,"runas",(GetEP() + GetEN()).c_str(),Arg.c_str(),nullptr,SW_SHOWNORMAL);
     ShowWindow(GetConsoleWindow(),0);
     std::this_thread::sleep_for(std::chrono::seconds(1));
     exit(1);
@@ -45,7 +53,7 @@ void URelaunch(int argc,char* args[]){
         Arg += " ";
         Arg += args[c-1];
     }
-    ShellExecute(nullptr,"open",GetEN().c_str(),Arg.c_str(),nullptr,SW_SHOWNORMAL);
+    ShellExecute(nullptr,"open",(GetEP() + GetEN()).c_str(),Arg.c_str(),nullptr,SW_SHOWNORMAL);
     ShowWindow(GetConsoleWindow(),0);
     std::this_thread::sleep_for(std::chrono::seconds(1));
     exit(1);
@@ -96,19 +104,20 @@ void CheckForUpdates(int argc,char*args[],const std::string& CV){
         link = "https://backup1.beammp.com/builds/launcher?download=true";
     }else link = "https://beammp.com/builds/launcher?download=true";
 
-    struct stat buffer{};
-    std::string Back = "BeamMP-Launcher.back";
-    if(stat(Back.c_str(), &buffer) == 0)remove(Back.c_str());
+    std::string EP(GetEP() + GetEN()), Back(GetEP() + "BeamMP-Launcher.back");
+
+    if(fs::exists(Back))remove(Back.c_str());
+
     if(HTTP > CV){
         system("cls");
         info("Update found!");
         info("Updating...");
-        if(std::rename(GetEN().c_str(), Back.c_str()))error("failed creating a backup!");
-        int i = Download(link, GetEN(),true);
+        if(std::rename(EP.c_str(), Back.c_str()))error("failed creating a backup!");
+        int i = Download(link, EP,true);
         if(i != -1){
             error("Launcher Update failed! trying again... code : " + std::to_string(i));
             std::this_thread::sleep_for(std::chrono::seconds(2));
-            int i2 = Download(link, GetEN(),true);
+            int i2 = Download(link, EP,true);
             if(i2 != -1){
                 error("Launcher Update failed! code : " + std::to_string(i2));
                 std::this_thread::sleep_for(std::chrono::seconds(5));
@@ -207,7 +216,7 @@ void CheckMP(const std::string& Path) {
 
 }
 void PreGame(const std::string& GamePath){
-    const std::string CurrVer("0.21.2.0");
+    const std::string CurrVer("0.21.3.0");
     std::string GameVer = CheckVer(GamePath);
     info("Game Version : " + GameVer);
     if(GameVer < CurrVer){

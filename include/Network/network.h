@@ -18,6 +18,7 @@ extern bool Terminate;
 extern int DEFAULT_PORT;
 extern uint64_t UDPSock;
 extern uint64_t TCPSock;
+extern std::string Role;
 extern bool TCPTerminate;
 extern std::string LastIP;
 extern std::string MStatus;

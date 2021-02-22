@@ -15,6 +15,7 @@
 using namespace std::filesystem;
 std::string PublicKey;
 extern bool LoginAuth;
+std::string Role;
 
 void UpdateKey(const char* newKey){
     if(newKey){
@@ -53,7 +54,7 @@ std::string Login(const std::string& fields){
         return GetFail("Failed to communicate with the auth system!");
     }
 
-    if (Buffer.find('{') == -1 || d.HasParseError()) {
+    if (Buffer.at(0) != '{' || d.HasParseError()) {
         return GetFail("Invalid answer from authentication servers, please try again later!");
     }
     if(!d["success"].IsNull() && d["success"].GetBool()){
@@ -88,13 +89,14 @@ void CheckLocalKey(){
             Buffer = PostHTTP("https://auth.beammp.com/userlogin", R"({"pk":")"+Buffer+"\"}");
             json::Document d;
             d.Parse(Buffer.c_str());
-            if (Buffer == "-1" || Buffer.find('{') == -1 || d.HasParseError()) {
+            if (Buffer == "-1" || Buffer.at(0) != '{' || d.HasParseError()) {
                 fatal("Invalid answer from authentication servers, please try again later!");
             }
             if(d["success"].GetBool()){
                 LoginAuth = true;
                 UpdateKey(d["private_key"].GetString());
                 PublicKey = d["public_key"].GetString();
+                Role = d["role"].GetString();
             }else{
                 info("Auto-Authentication unsuccessful please re-login!");
                 UpdateKey(nullptr);

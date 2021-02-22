@@ -8,6 +8,7 @@
 
 #include <curl/curl.h>
 #include <iostream>
+#include <Logger.h>
 #include <mutex>
 
 class CurlManager{
@@ -53,19 +54,23 @@ std::string HTTP_REQUEST(const std::string& IP,int port){
 
 int nb_bar;
 double last_progress, progress_bar_adv;
+bool Downloaded;
 int progress_bar (void *bar, double t, double d){
-    if(last_progress != round(d/t*100)){
+    if(t > 0 && last_progress != round(d/t*100)){
         nb_bar = 25;
         progress_bar_adv = round(d/t*nb_bar);
         std::cout<<"\r";
         std::cout<< "Progress : [ ";
-        if(t!=0)std::cout<<round(d/t*100);else std::cout<<0;
+        std::cout<<round(d/t*100);
         std::cout << "% ] [";
         int i;
         for(i = 0; i <= progress_bar_adv; i++)std::cout<<"#";
         for(i = 0; i < nb_bar - progress_bar_adv; i++)std::cout<<".";
         std::cout<<"]";
         last_progress = round(d/t*100);
+        if(round(d/t*100) == 100){
+            Downloaded = true;
+        }
     }
     return 0;
 }
@@ -86,6 +91,7 @@ int Download(const std::string& URL,const std::string& Path,bool close){
     CURL *curl = M.Get();
     CURLcode res;
     struct File file = {Path.c_str(),nullptr};
+    Downloaded = false;
     if(curl){
         curl_easy_setopt(curl, CURLOPT_URL,URL.c_str());
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
@@ -96,9 +102,15 @@ int Download(const std::string& URL,const std::string& Path,bool close){
         curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, progress_bar);
         curl_easy_setopt(curl, CURLOPT_USE_SSL, CURLUSESSL_ALL);
         res = curl_easy_perform(curl);
-        if(res != CURLE_OK)return res;
+        if(res != CURLE_OK){
+            return res;
+        }
     }
     if(file.stream)fclose(file.stream);
+    if(!Downloaded){
+        remove(Path.c_str());
+        fatal("Failed to download please try again later!");
+    }
     std::cout << std::endl;
     return -1;
 }

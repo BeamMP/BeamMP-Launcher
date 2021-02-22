@@ -44,14 +44,14 @@ std::string getDate() {
 }
 void InitLog(){
     std::ofstream LFS;
-    LFS.open ("Launcher.log");
+    LFS.open(GetEP() + "Launcher.log");
     if(!LFS.is_open()){
         error("logger file init failed!");
     }else LFS.close();
 }
 void addToLog(const std::string& Line){
     std::ofstream LFS;
-    LFS.open("Launcher.log", std::ios_base::app);
+    LFS.open(GetEP() + "Launcher.log", std::ios_base::app);
     LFS << Line.c_str();
     LFS.close();
 }

@@ -25,6 +25,7 @@ int main(int argc, char* argv[]) {
         std::thread th(flush);
         th.detach();
     #endif
+    GetEP(argv[0]);
     InitLauncher(argc,argv);
     //CheckDir(argc,argv);
     try {
@@ -35,4 +36,8 @@ int main(int argc, char* argv[]) {
     PreGame(GetGameDir());
     InitGame(GetGameDir());
     CoreNetwork();
+
+
+    ///TODO: make sure to use argv[0] for everything that should be in the same dir (mod down ect...)
+    ///move to master create branch then make the new config in json
 }
