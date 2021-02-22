@@ -128,45 +128,7 @@ void CheckForUpdates(int argc,char*args[],const std::string& CV){
     }else info("Launcher version is up to date");
     TraceBack++;
 }
-void CheckDir(int argc,char*args[]){
-    /*std::string CDir = args[0];
-    std::string MDir = "BeamNG\\mods";
-    if(!fs::is_directory("BeamNG")){
-        if(!fs::create_directory("BeamNG")){
-            error("Cannot Create BeamNG Directory! Retrying...");
-            std::this_thread::sleep_for(std::chrono::seconds(3));
-            ReLaunch(argc,args);
-        }
-    }
-    if(fs::is_directory(MDir) && !Dev){
-        int c = 0;
-        for (auto& p : fs::directory_iterator(MDir))c++;
-        if(c > 2) {
-            warn(std::to_string(c-1) + " local launcher mods will be wiped! Close this window if you don't want that!");
-            std::this_thread::sleep_for(std::chrono::seconds(15));
-        }
-        try{
-            fs::remove_all(MDir);
-        } catch (...) {
-            error("Please close the game and try again");
-            std::this_thread::sleep_for(std::chrono::seconds(5));
-            exit(1);
-        }
-    }
-    if(fs::is_directory(MDir) && !Dev)ReLaunch(argc,args);
-    if(!fs::create_directory(MDir) && !Dev){
-        error("Cannot Create Mods Directory! Retrying...");
-        std::this_thread::sleep_for(std::chrono::seconds(3));
-        ReLaunch(argc,args);
-    }
-    if(!fs::is_directory("BeamNG\\settings")){
-        if(!fs::create_directory("BeamNG\\settings")){
-            error("Cannot Create Settings Directory! Retrying...");
-            std::this_thread::sleep_for(std::chrono::seconds(3));
-            ReLaunch(argc,args);
-        }
-    }*/
-}
+
 void CustomPort(int argc, char* argv[]){
     if(argc > 1){
         std::string Port = argv[1];
@@ -189,6 +151,7 @@ void InitLauncher(int argc, char* argv[]) {
     Discord_Main();
     //Dev = true;
     //RequestRole();
+
     CustomPort(argc, argv);
     CheckForUpdates(argc, argv, std::string(GetVer()) + GetPatch());
 }

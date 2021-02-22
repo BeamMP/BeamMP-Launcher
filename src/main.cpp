@@ -25,12 +25,12 @@ int main(int argc, char* argv[]) {
         std::thread th(flush);
         th.detach();
     #endif
+
     GetEP(argv[0]);
     InitLauncher(argc,argv);
-    //CheckDir(argc,argv);
     try {
         LegitimacyCheck();
-    }catch (std::exception&e){
+    }catch (std::exception& e){
         fatal("Main 1 : " + std::string(e.what()));
     }
     PreGame(GetGameDir());

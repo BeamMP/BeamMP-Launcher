@@ -8,7 +8,6 @@
 #pragma once
 #include <string>
 void InitLauncher(int argc, char* argv[]);
-void CheckDir(int argc,char* args[]);
 std::string GetEP(char*P = nullptr);
 std::string GetGamePath();
 std::string GetVer();
