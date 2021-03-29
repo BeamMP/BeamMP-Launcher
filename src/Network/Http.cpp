@@ -14,6 +14,7 @@
 #include "http.h"
 #include <mutex>
 #include <cmath>
+#include <evhttp.h>
 
 #include "winmain-inl.h"
 
@@ -40,8 +41,9 @@ std::string HTTP::Get(const std::string &IP) {
     t.Start(true);
 
     auto pos = IP.find('/');
-    std::shared_ptr<evpp::httpc::ConnPool> pool = std::make_shared<evpp::httpc::ConnPool>("www." + IP.substr(0,pos), 443, true, evpp::Duration(10.0));
-    auto* r = new evpp::httpc::Request(pool.get(), t.loop(), IP.substr(pos), "");
+    std::shared_ptr<evpp::httpc::ConnPool> pool = std::make_shared<evpp::httpc::ConnPool>(IP.substr(0, pos), 443, true,
+                                                                                          evpp::Duration(10.0));
+    auto *r = new evpp::httpc::Request(pool.get(), t.loop(), IP.substr(pos), "");
     r->Execute(Response);
 
     while (!responded) {
@@ -62,10 +64,16 @@ std::string HTTP::Post(const std::string& IP, const std::string& Fields) {
     evpp::EventLoopThread t;
     t.Start(true);
 
+
     auto pos = IP.find('/');
-    std::shared_ptr<evpp::httpc::ConnPool> pool = std::make_shared<evpp::httpc::ConnPool>( IP.substr(0,pos), 443, true, evpp::Duration(10.0));
-    auto* r = new evpp::httpc::Request(pool.get(), t.loop(), IP.substr(pos), Fields);
-    r->AddHeader("Content-Type","application/json");
+    std::shared_ptr<evpp::httpc::ConnPool> pool = std::make_shared<evpp::httpc::ConnPool>(IP.substr(0, pos), 443,
+                                                                                          true,
+                                                                                          evpp::Duration(10.0));
+    auto *r = new evpp::httpc::Request(pool.get(), t.loop(), IP.substr(pos), Fields);
+    if(!Fields.empty()) {
+        r->AddHeader("Content-Type", "application/json");
+    }
+    r->set_request_type(EVHTTP_REQ_POST);
     r->Execute(Response);
 
     while (!responded) {
@@ -101,7 +109,7 @@ bool HTTP::Download(const std::string &IP, const std::string &Path) {
     evpp::EventLoopThread t;
     t.Start(true);
     auto pos = IP.find('/');
-    std::shared_ptr<evpp::httpc::ConnPool> pool = std::make_shared<evpp::httpc::ConnPool>("www." + IP.substr(0,pos), 443, true, evpp::Duration(10.0));
+    std::shared_ptr<evpp::httpc::ConnPool> pool = std::make_shared<evpp::httpc::ConnPool>(IP.substr(0,pos), 443, true, evpp::Duration(10.0));
     auto* r = new evpp::httpc::Request(pool.get(), t.loop(), IP.substr(pos), "");
     r->set_progress_callback(ProgressBar);
     r->Execute(Response);

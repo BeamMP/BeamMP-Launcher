@@ -10,9 +10,6 @@
 #include "Network/network.h"
 #include "Security/Init.h"
 #include <filesystem>
-#ifndef WIN32
-#include <windows.h>
-#endif
 #include "Startup.h"
 #include "Logger.h"
 #include <thread>

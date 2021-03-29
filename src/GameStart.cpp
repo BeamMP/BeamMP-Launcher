@@ -6,6 +6,7 @@
 /// Created by Anonymous275 on 7/19/2020
 ///
 
+#include <Security/Init.h>
 #include <windows.h>
 #include "Startup.h"
 #include "Logger.h"
@@ -30,10 +31,10 @@ std::string GetGamePath(){
         sk = R"(SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders)";
         openRes = RegOpenKeyEx(HKEY_CURRENT_USER, sk, 0, KEY_ALL_ACCESS, &hKey);
         if (openRes != ERROR_SUCCESS){
-           fatal("Cannot get Documents directory!");
+           fatal("Cannot get Local Appdata directory!");
         }
         Path = QueryKey(hKey,5);
-        Path += "\\BeamNG.drive\\";
+        Path += "\\BeamNG.drive\\" + CheckVer(GetGameDir()) + "\\";
         return Path;
     }
 
