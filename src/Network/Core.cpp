@@ -8,7 +8,7 @@
 #include "Network/network.h"
 #include "Security/Init.h"
 
-#include "Curl/http.h"
+#include "http.h"
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include "Startup.h"
@@ -58,7 +58,7 @@ void Parse(std::string Data,SOCKET CSocket){
             NetReset();
             Terminate = true;
             TCPTerminate = true;
-            Data = Code + HTTP_REQUEST("https://beammp.com/servers-info",443);
+            Data = Code + HTTP::Get("https://beammp.com/servers-info");
             break;
         case 'C':
             ListOfMods.clear();

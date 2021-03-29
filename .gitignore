@@ -1,13 +1,4 @@
-cmake-build-debug/CMakeFiles/
-cmake-build-release/CMakeFiles/
-cmake-build-debug/BeamNG/
-cmake-build-release/BeamNG/
-cmake-build-debug/Resources/
-cmake-build-release/Resources/
-cmake-build-debug/*.*
-cmake-build-release/*.*
-cmake-build-debug/Makefile
-cmake-build-release/Makefile
+cmake-build-debug
+cmake-build-release
 /.idea/
 *.log
-cmake-build-release/key

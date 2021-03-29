@@ -11,7 +11,7 @@
 #include <iostream>
 #include "Logger.h"
 #include <thread>
-
+#include "http.h"
 
 [[noreturn]] void flush(){
     while(true){
@@ -20,24 +20,25 @@
     }
 }
 
+
 int main(int argc, char* argv[]) {
     #ifdef DEBUG
         std::thread th(flush);
         th.detach();
     #endif
-
     GetEP(argv[0]);
+    HTTP::Init(argv);
     InitLauncher(argc,argv);
+
     try {
         LegitimacyCheck();
     }catch (std::exception& e){
         fatal("Main 1 : " + std::string(e.what()));
     }
+
     PreGame(GetGameDir());
     InitGame(GetGameDir());
     CoreNetwork();
 
-
     ///TODO: make sure to use argv[0] for everything that should be in the same dir (mod down ect...)
-    ///move to master create branch then make the new config in json
 }

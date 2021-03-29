@@ -6,16 +6,15 @@
 /// Created by Anonymous275 on 7/16/2020
 ///
 
-
 #include "Discord/discord_info.h"
 #include "Network/network.h"
 #include "Security/Init.h"
-#include "Curl/http.h"
-#include <curl/curl.h>
 #include <filesystem>
 #include "Startup.h"
+#include <windows.h>
 #include "Logger.h"
 #include <thread>
+#include "http.h"
 
 extern int TraceBack;
 bool Dev = false;
@@ -71,20 +70,19 @@ void CheckName(int argc,char* args[]){
 }
 
 void CheckForUpdates(int argc,char*args[],const std::string& CV){
-    std::string link = "https://beammp.com/builds/launcher?version=true";
-    std::string HTTP = HTTP_REQUEST(link,443);
+    std::string link;
+    std::string HTTP = HTTP::Get("https://beammp.com/builds/launcher?version=true");
     bool fallback = false;
     if(HTTP.find_first_of("0123456789") == std::string::npos){
-        link = "https://backup1.beammp.com/builds/launcher?version=true";
-        HTTP = HTTP_REQUEST(link,443);
+        HTTP = HTTP::Get("https://backup1.beammp.com/builds/launcher?version=true");
         fallback = true;
         if(HTTP.find_first_of("0123456789") == std::string::npos) {
             fatal("Primary Servers Offline! sorry for the inconvenience!");
         }
     }
     if(fallback){
-        link = "https://backup1.beammp.com/builds/launcher?download=true";
-    }else link = "https://beammp.com/builds/launcher?download=true";
+        link = "www.backup1.beammp.com/builds/launcher?download=true";
+    }else link = "www.beammp.com/builds/launcher?download=true";
 
     std::string EP(GetEP() + GetEN()), Back(GetEP() + "BeamMP-Launcher.back");
 
@@ -95,13 +93,13 @@ void CheckForUpdates(int argc,char*args[],const std::string& CV){
         info("Update found!");
         info("Updating...");
         if(std::rename(EP.c_str(), Back.c_str()))error("failed creating a backup!");
-        int i = Download(link, EP,true);
-        if(i != -1){
-            error("Launcher Update failed! trying again... code : " + std::to_string(i));
+
+        if(!HTTP::Download(link, EP)){
+            error("Launcher Update failed! trying again...");
             std::this_thread::sleep_for(std::chrono::seconds(2));
-            int i2 = Download(link, EP,true);
-            if(i2 != -1){
-                error("Launcher Update failed! code : " + std::to_string(i2));
+
+            if(!HTTP::Download(link, EP)){
+                error("Launcher Update failed!");
                 std::this_thread::sleep_for(std::chrono::seconds(5));
                 ReLaunch(argc,args);
             }
@@ -125,7 +123,6 @@ void CustomPort(int argc, char* argv[]){
 }
 void InitLauncher(int argc, char* argv[]) {
     system("cls");
-    curl_global_init(CURL_GLOBAL_DEFAULT);
     SetConsoleTitleA(("BeamMP Launcher v" + std::string(GetVer()) + GetPatch()).c_str());
     InitLog();
     CheckName(argc, argv);
@@ -134,7 +131,6 @@ void InitLauncher(int argc, char* argv[]) {
     CustomPort(argc, argv);
     Discord_Main();
     CheckForUpdates(argc, argv, std::string(GetVer()) + GetPatch());
-
 }
 size_t DirCount(const std::filesystem::path& path){
     return (size_t)std::distance(std::filesystem::directory_iterator{path}, std::filesystem::directory_iterator{});
@@ -180,11 +176,11 @@ void PreGame(const std::string& GamePath){
             fatal(e.what());
         }
 
-       /* Download("https://backend.beammp.com/builds/client?download=true"
+       /* Download("www.backend.beammp.com/builds/client?download=true"
                  "&pk=" + PublicKey +
                  "&branch=" + Branch, GetGamePath() + R"(mods\multiplayer\BeamMP.zip)", true);*/
 
-        Download("https://beammp.com/builds/client", GetGamePath() + R"(mods\multiplayer\BeamMP.zip)", true);
+        HTTP::Download("https://beammp.com/builds/client", GetGamePath() + R"(mods\multiplayer\BeamMP.zip)");
         info("Download Complete!");
     }
 
