@@ -1,0 +1,3 @@
+[submodule "evpp"]
+	path = evpp
+	url = git@github.com:/BeamMP/evpp
