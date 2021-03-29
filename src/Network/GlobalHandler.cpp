@@ -6,15 +6,15 @@
 /// Created by Anonymous275 on 7/25/2020
 ///
 #include "Network/network.h"
-#include <WinSock2.h>
-#include <WS2tcpip.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #include "Logger.h"
 #include <charconv>
 #include <string>
 #include <thread>
 #include <mutex>
 
-std::chrono::time_point<std::chrono::steady_clock> PingStart,PingEnd;
+std::chrono::time_point<std::chrono::high_resolution_clock> PingStart,PingEnd;
 bool GConnected = false;
 bool CServer = true;
 SOCKET CSocket = -1;

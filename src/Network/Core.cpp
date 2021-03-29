@@ -9,8 +9,8 @@
 #include "Security/Init.h"
 
 #include "Curl/http.h"
-#include <WinSock2.h>
-#include <WS2tcpip.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #include "Startup.h"
 #include "Logger.h"
 #include <charconv>
@@ -242,9 +242,13 @@ int Handle(EXCEPTION_POINTERS *ep){
 
 void CoreNetwork(){
     while(TraceBack >= 4){
+#ifndef __MINGW32__
         __try{
+#endif
                 CoreMain();
+#ifndef __MINGW32__
         }__except(Handle(GetExceptionInformation())){}
+#endif
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 }

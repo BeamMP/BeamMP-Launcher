@@ -10,7 +10,7 @@
 #include <vector>
 #include "Logger.h"
 #include <iostream>
-#include <WS2tcpip.h>
+#include <ws2tcpip.h>
 #include <Zlib/Compressor.h>
 
 #include "Network/network.h"
@@ -133,7 +133,7 @@ void TCPClientMain(const std::string& IP,int Port){
     RetCode = connect(TCPSock, (SOCKADDR *) &ServerAddr, sizeof(ServerAddr));
     if(RetCode != 0){
         UlStatus = "UlConnection Failed!";
-        std::cout << "Client: connect failed! Error code: " << WSAGetLastError() << std::endl;
+        error("Client: connect failed! Error code: " + std::to_string(WSAGetLastError()));
         KillSocket(TCPSock);
         WSACleanup();
         Terminate = true;

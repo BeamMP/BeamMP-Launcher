@@ -7,7 +7,7 @@
 ///
 #include "Discord/discord_rpc.h"
 #include "Logger.h"
-#include <iostream>
+#include <cstring>
 #include <thread>
 #include <ctime>
 

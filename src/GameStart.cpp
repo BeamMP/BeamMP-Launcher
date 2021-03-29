@@ -6,7 +6,7 @@
 /// Created by Anonymous275 on 7/19/2020
 ///
 
-#include <Windows.h>
+#include <windows.h>
 #include "Startup.h"
 #include "Logger.h"
 #include <iostream>

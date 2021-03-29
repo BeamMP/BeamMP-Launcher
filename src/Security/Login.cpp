@@ -12,7 +12,7 @@
 #include <fstream>
 #include "Json.h"
 
-using namespace std::filesystem;
+namespace fs = std::filesystem;
 std::string PublicKey;
 extern bool LoginAuth;
 std::string Role;
@@ -24,7 +24,7 @@ void UpdateKey(const char* newKey){
             Key << newKey;
             Key.close();
         }else fatal("Cannot write to disk!");
-    }else if(exists("key")){
+    }else if(fs::exists("key")){
         remove("key");
     }
 }
@@ -55,6 +55,7 @@ std::string Login(const std::string& fields){
     }
 
     if (Buffer.at(0) != '{' || d.HasParseError()) {
+        error(Buffer);
         return GetFail("Invalid answer from authentication servers, please try again later!");
     }
     if(!d["success"].IsNull() && d["success"].GetBool()){
@@ -79,17 +80,20 @@ std::string Login(const std::string& fields){
 }
 
 void CheckLocalKey(){
-    if(exists("key") && file_size("key") < 100){
+    if(fs::exists("key") && fs::file_size("key") < 100){
         std::ifstream Key("key");
         if(Key.is_open()) {
-            auto Size = file_size("key");
+            auto Size = fs::file_size("key");
             std::string Buffer(Size, 0);
             Key.read(&Buffer[0], Size);
             Key.close();
+
             Buffer = PostHTTP("https://auth.beammp.com/userlogin", R"({"pk":")"+Buffer+"\"}");
+
             json::Document d;
             d.Parse(Buffer.c_str());
             if (Buffer == "-1" || Buffer.at(0) != '{' || d.HasParseError()) {
+                error(Buffer);
                 fatal("Invalid answer from authentication servers, please try again later!");
             }
             if(d["success"].GetBool()){
@@ -97,6 +101,7 @@ void CheckLocalKey(){
                 UpdateKey(d["private_key"].GetString());
                 PublicKey = d["public_key"].GetString();
                 Role = d["role"].GetString();
+                //info(Role);
             }else{
                 info("Auto-Authentication unsuccessful please re-login!");
                 UpdateKey(nullptr);

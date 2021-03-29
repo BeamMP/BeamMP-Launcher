@@ -7,13 +7,12 @@
 ///
 
 #include <filesystem>
-#include <Windows.h>
+#include <windows.h>
 #include "Logger.h"
 #include <fstream>
 #include <sstream>
 #include <string>
 #include <thread>
-#include <ShlDisp.h>
 
 #define MAX_KEY_LENGTH 255
 #define MAX_VALUE_NAME 16383

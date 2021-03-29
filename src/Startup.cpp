@@ -5,6 +5,8 @@
 ///
 /// Created by Anonymous275 on 7/16/2020
 ///
+
+
 #include "Discord/discord_info.h"
 #include "Network/network.h"
 #include "Security/Init.h"
@@ -23,10 +25,10 @@ std::string GetEN(){
     return "BeamMP-Launcher.exe";
 }
 std::string GetVer(){
-    return "1.81";
+    return "1.80";
 }
 std::string GetPatch(){
-    return ".0";
+    return ".95";
 }
 std::string GetEP(char*P){
     static std::string Ret = [&](){
@@ -59,33 +61,13 @@ void URelaunch(int argc,char* args[]){
     exit(1);
 }
 void CheckName(int argc,char* args[]){
-    struct stat info{};
     std::string DN = GetEN(),CDir = args[0],FN = CDir.substr(CDir.find_last_of('\\')+1);
     if(FN != DN){
-        if(stat(DN.c_str(),&info)==0)remove(DN.c_str());
-        if(stat(DN.c_str(),&info)==0)ReLaunch(argc,args);
+        if(fs::exists(DN))remove(DN.c_str());
+        if(fs::exists(DN))ReLaunch(argc,args);
         std::rename(FN.c_str(), DN.c_str());
         URelaunch(argc,args);
     }
-}
-
-/// Deprecated
-void RequestRole(){
-    /*auto NPos = std::string::npos;
-    std::string HTTP_Result = HTTP_REQUEST("https://beammp.com/entitlement?did="+GetDID()+"&t=l",443);
-    if(HTTP_Result == "-1"){
-        HTTP_Result = HTTP_REQUEST("https://backup1.beammp.com/entitlement?did="+GetDID()+"&t=l",443);
-        if(HTTP_Result == "-1") {
-            fatal("Sorry Backend System Outage! Don't worry it will back on soon!");
-        }
-    }
-    if(HTTP_Result.find("\"MDEV\"") != NPos || HTTP_Result.find("\"CON\"") != NPos){
-        Dev = true;
-    }
-    if(HTTP_Result.find("Error") != NPos){
-        fatal("Sorry You need to be in the official BeamMP Discord to proceed! https://discord.gg/beammp");
-    }
-    info("Client Connected!");*/
 }
 
 void CheckForUpdates(int argc,char*args[],const std::string& CV){
@@ -147,13 +129,12 @@ void InitLauncher(int argc, char* argv[]) {
     SetConsoleTitleA(("BeamMP Launcher v" + std::string(GetVer()) + GetPatch()).c_str());
     InitLog();
     CheckName(argc, argv);
-    CheckLocalKey(); //will replace RequestRole
-    Discord_Main();
-    //Dev = true;
-    //RequestRole();
-
+    CheckLocalKey();
+    ConfigInit();
     CustomPort(argc, argv);
+    Discord_Main();
     CheckForUpdates(argc, argv, std::string(GetVer()) + GetPatch());
+
 }
 size_t DirCount(const std::filesystem::path& path){
     return (size_t)std::distance(std::filesystem::directory_iterator{path}, std::filesystem::directory_iterator{});
@@ -179,7 +160,7 @@ void CheckMP(const std::string& Path) {
 
 }
 void PreGame(const std::string& GamePath){
-    const std::string CurrVer("0.21.3.0");
+    const std::string CurrVer("0.21.4.0");
     std::string GameVer = CheckVer(GamePath);
     info("Game Version : " + GameVer);
     if(GameVer < CurrVer){
@@ -198,11 +179,13 @@ void PreGame(const std::string& GamePath){
         }catch(std::exception&e){
             fatal(e.what());
         }
+
+       /* Download("https://backend.beammp.com/builds/client?download=true"
+                 "&pk=" + PublicKey +
+                 "&branch=" + Branch, GetGamePath() + R"(mods\multiplayer\BeamMP.zip)", true);*/
+
         Download("https://beammp.com/builds/client", GetGamePath() + R"(mods\multiplayer\BeamMP.zip)", true);
         info("Download Complete!");
     }
 
-   /*debug("Name : " + GetDName());
-    debug("Discriminator : " + GetDTag());
-    debug("Unique ID : " + GetDID());*/
 }

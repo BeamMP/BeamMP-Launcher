@@ -10,6 +10,7 @@
 #include <iostream>
 #include <Logger.h>
 #include <mutex>
+#include <cmath>
 
 class CurlManager{
 public:
@@ -123,6 +124,7 @@ std::string PostHTTP(const std::string& IP, const std::string& Fields) {
     CURLcode res;
     std::string readBuffer;
 
+
     if (curl) {
         curl_easy_setopt(curl, CURLOPT_URL, IP.c_str());
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, header);
@@ -130,9 +132,11 @@ std::string PostHTTP(const std::string& IP, const std::string& Fields) {
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, Fields.c_str());
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
-        curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+        //curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10);
+
         res = curl_easy_perform(curl);
+
         if (res != CURLE_OK)
             return "-1";
     }

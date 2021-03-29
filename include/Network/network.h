@@ -5,6 +5,8 @@
 ///
 /// Created by Anonymous275 on 7/18/2020
 ///
+
+
 #pragma once
 #include <string>
 void NetReset();
@@ -18,7 +20,7 @@ extern bool Terminate;
 extern int DEFAULT_PORT;
 extern uint64_t UDPSock;
 extern uint64_t TCPSock;
-extern std::string Role;
+extern std::string Branch;
 extern bool TCPTerminate;
 extern std::string LastIP;
 extern std::string MStatus;

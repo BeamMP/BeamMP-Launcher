@@ -8,7 +8,7 @@
 #include "Zlib/Compressor.h"
 #include "Network/network.h"
 
-#include <WS2tcpip.h>
+#include <ws2tcpip.h>
 #include "Logger.h"
 #include <string>
 #include <set>

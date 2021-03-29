@@ -7,8 +7,7 @@
 ///
 
 #include "Network/network.h"
-
-#include <WS2tcpip.h>
+#include <ws2tcpip.h>
 #include <filesystem>
 #include "Startup.h"
 #include "Logger.h"
@@ -20,6 +19,7 @@
 #include <atomic>
 #include <vector>
 #include <future>
+#include <cmath>
 
 namespace fs = std::filesystem;
 std::string ListOfMods;
@@ -37,8 +37,7 @@ std::vector<std::string> Split(const std::string& String,const std::string& deli
 }
 
 void CheckForDir(){
-    struct stat info{};
-    if(stat( "Resources", &info) != 0){
+    if(!fs::exists("Resources")){
         _wmkdir(L"Resources");
     }
 }
