@@ -175,11 +175,11 @@ void PreGame(const std::string& GamePath){
             fatal(e.what());
         }
 
-       /* Download("www.backend.beammp.com/builds/client?download=true"
+       HTTP::Download("backend.beammp.com/builds/client?download=true"
                  "&pk=" + PublicKey +
-                 "&branch=" + Branch, GetGamePath() + R"(mods\multiplayer\BeamMP.zip)", true);*/
+                 "&branch=" + Branch, GetGamePath() + R"(mods\multiplayer\BeamMP.zip)");
 
-        HTTP::Download("beammp.com/builds/client", GetGamePath() + R"(mods\multiplayer\BeamMP.zip)");
+        //HTTP::Download("beammp.com/builds/client", GetGamePath() + R"(mods\multiplayer\BeamMP.zip)");
         info("Download Complete!");
     }
 
