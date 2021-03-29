@@ -180,7 +180,6 @@ void PreGame(const std::string& GamePath){
                  "&branch=" + Branch, GetGamePath() + R"(mods\multiplayer\BeamMP.zip)");
 
         //HTTP::Download("beammp.com/builds/client", GetGamePath() + R"(mods\multiplayer\BeamMP.zip)");
-        info("Download Complete!");
     }
 
 }
