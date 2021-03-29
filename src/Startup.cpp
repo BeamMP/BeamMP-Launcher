@@ -10,8 +10,10 @@
 #include "Network/network.h"
 #include "Security/Init.h"
 #include <filesystem>
-#include "Startup.h"
+#ifndef WIN32
 #include <windows.h>
+#endif
+#include "Startup.h"
 #include "Logger.h"
 #include <thread>
 #include "http.h"
@@ -71,18 +73,18 @@ void CheckName(int argc,char* args[]){
 
 void CheckForUpdates(int argc,char*args[],const std::string& CV){
     std::string link;
-    std::string HTTP = HTTP::Get("https://beammp.com/builds/launcher?version=true");
+    std::string HTTP = HTTP::Get("beammp.com/builds/launcher?version=true");
     bool fallback = false;
     if(HTTP.find_first_of("0123456789") == std::string::npos){
-        HTTP = HTTP::Get("https://backup1.beammp.com/builds/launcher?version=true");
+        HTTP = HTTP::Get("backup1.beammp.com/builds/launcher?version=true");
         fallback = true;
         if(HTTP.find_first_of("0123456789") == std::string::npos) {
             fatal("Primary Servers Offline! sorry for the inconvenience!");
         }
     }
     if(fallback){
-        link = "www.backup1.beammp.com/builds/launcher?download=true";
-    }else link = "www.beammp.com/builds/launcher?download=true";
+        link = "backup1.beammp.com/builds/launcher?download=true";
+    }else link = "beammp.com/builds/launcher?download=true";
 
     std::string EP(GetEP() + GetEN()), Back(GetEP() + "BeamMP-Launcher.back");
 
@@ -180,7 +182,7 @@ void PreGame(const std::string& GamePath){
                  "&pk=" + PublicKey +
                  "&branch=" + Branch, GetGamePath() + R"(mods\multiplayer\BeamMP.zip)", true);*/
 
-        HTTP::Download("https://beammp.com/builds/client", GetGamePath() + R"(mods\multiplayer\BeamMP.zip)");
+        HTTP::Download("beammp.com/builds/client", GetGamePath() + R"(mods\multiplayer\BeamMP.zip)");
         info("Download Complete!");
     }
 

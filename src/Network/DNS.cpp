@@ -7,7 +7,7 @@
 ///
 
 #include <string>
-#include <winsock.h>
+#include <winsock2.h>
 #include "Logger.h"
 
 std::string GetAddr(const std::string&IP){

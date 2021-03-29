@@ -47,7 +47,7 @@ std::string Login(const std::string& fields){
         return "";
     }
     info("Attempting to authenticate...");
-    std::string Buffer = HTTP::Post("https://auth.beammp.com/userlogin", fields);
+    std::string Buffer = HTTP::Post("auth.beammp.com/userlogin", fields);
     json::Document d;
     d.Parse(Buffer.c_str());
     if(Buffer == "-1"){
@@ -88,7 +88,7 @@ void CheckLocalKey(){
             Key.read(&Buffer[0], Size);
             Key.close();
 
-            Buffer = HTTP::Post("https://auth.beammp.com/userlogin", R"({"pk":")" + Buffer + "\"}");
+            Buffer = HTTP::Post("auth.beammp.com/userlogin", R"({"pk":")" + Buffer + "\"}");
 
             json::Document d;
             d.Parse(Buffer.c_str());

@@ -58,7 +58,7 @@ void Parse(std::string Data,SOCKET CSocket){
             NetReset();
             Terminate = true;
             TCPTerminate = true;
-            Data = Code + HTTP::Get("https://beammp.com/servers-info");
+            Data = Code + HTTP::Post("backend.beammp.com/servers", "");
             break;
         case 'C':
             ListOfMods.clear();

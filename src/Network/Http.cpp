@@ -39,13 +39,17 @@ std::string HTTP::Get(const std::string &IP) {
     evpp::EventLoopThread t;
     t.Start(true);
 
-    auto* r = new evpp::httpc::GetRequest(t.loop(), IP, evpp::Duration(10.0));
+    auto pos = IP.find('/');
+    std::shared_ptr<evpp::httpc::ConnPool> pool = std::make_shared<evpp::httpc::ConnPool>("www." + IP.substr(0,pos), 443, true, evpp::Duration(10.0));
+    auto* r = new evpp::httpc::Request(pool.get(), t.loop(), IP.substr(pos), "");
     r->Execute(Response);
 
     while (!responded) {
         usleep(1);
     }
 
+    pool->Clear();
+    pool.reset();
     t.Stop(true);
     return Res_;
 }
@@ -58,7 +62,9 @@ std::string HTTP::Post(const std::string& IP, const std::string& Fields) {
     evpp::EventLoopThread t;
     t.Start(true);
 
-    auto* r = new evpp::httpc::PostRequest(t.loop(), IP, Fields, evpp::Duration(10.0));
+    auto pos = IP.find('/');
+    std::shared_ptr<evpp::httpc::ConnPool> pool = std::make_shared<evpp::httpc::ConnPool>( IP.substr(0,pos), 443, true, evpp::Duration(10.0));
+    auto* r = new evpp::httpc::Request(pool.get(), t.loop(), IP.substr(pos), Fields);
     r->AddHeader("Content-Type","application/json");
     r->Execute(Response);
 
@@ -66,6 +72,8 @@ std::string HTTP::Post(const std::string& IP, const std::string& Fields) {
         usleep(1);
     }
 
+    pool->Clear();
+    pool.reset();
     t.Stop(true);
     if(Res_.empty())return "-1";
     else return Res_;
@@ -92,7 +100,9 @@ bool HTTP::Download(const std::string &IP, const std::string &Path) {
     Res_.clear();
     evpp::EventLoopThread t;
     t.Start(true);
-    auto* r = new evpp::httpc::GetRequest(t.loop(), IP, evpp::Duration(10.0));
+    auto pos = IP.find('/');
+    std::shared_ptr<evpp::httpc::ConnPool> pool = std::make_shared<evpp::httpc::ConnPool>("www." + IP.substr(0,pos), 443, true, evpp::Duration(10.0));
+    auto* r = new evpp::httpc::Request(pool.get(), t.loop(), IP.substr(pos), "");
     r->set_progress_callback(ProgressBar);
     r->Execute(Response);
 
@@ -100,6 +110,8 @@ bool HTTP::Download(const std::string &IP, const std::string &Path) {
         usleep(1);
     }
 
+    pool->Clear();
+    pool.reset();
     t.Stop(true);
 
     if(Res_.empty())return false;
