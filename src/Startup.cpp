@@ -23,10 +23,10 @@ std::string GetEN(){
     return "BeamMP-Launcher.exe";
 }
 std::string GetVer(){
-    return "1.80";
+    return "2.0";
 }
 std::string GetPatch(){
-    return ".95";
+    return "";
 }
 std::string GetEP(char*P){
     static std::string Ret = [&](){

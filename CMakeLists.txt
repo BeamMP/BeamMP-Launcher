@@ -31,8 +31,8 @@ if (WIN32)
     set(VcpkgRoot ${_VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET})
     include_directories(${VcpkgRoot}/include)
     link_directories(${VcpkgRoot}/lib)
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${VcpkgRoot}/debug/lib/discord-rpc.lib evpp_static
-            ${VcpkgRoot}/debug/lib/event.lib libevent::core libevent::extra glog::glog ZLIB::ZLIB
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${VcpkgRoot}/lib/discord-rpc.lib evpp_static
+            ${VcpkgRoot}/lib/event.lib libevent::core libevent::extra glog::glog ZLIB::ZLIB
             OpenSSL::SSL OpenSSL::Crypto libevent::openssl ws2_32)
 else(WIN32) #MINGW
     add_definitions("-D_WIN32_WINNT=0x0600")
