@@ -34,10 +34,9 @@ std::string GetGamePath(){
            fatal("Cannot get Local Appdata directory!");
         }
         Path = QueryKey(hKey,5);
-        Path += "\\BeamNG.drive\\" + CheckVer(GetGameDir()) + "\\";
-        return Path;
+        Path += "\\BeamNG.drive\\";
     }
-
+    Path += CheckVer(GetGameDir()) + "\\";
     return Path;
 }
 
