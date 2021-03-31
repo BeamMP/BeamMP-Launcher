@@ -36,6 +36,6 @@ if (WIN32)
             OpenSSL::SSL OpenSSL::Crypto libevent::openssl ws2_32)
 else(WIN32) #MINGW
     add_definitions("-D_WIN32_WINNT=0x0600")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s -static-libgcc -static-libstdc++ --static")
-    target_link_libraries(${PROJECT_NAME} discord-rpc evpp_static glog event pthread ssl crypto event_openssl ws2_32 ssp dbghelp iphlpapi z)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os -s --static")
+    target_link_libraries(${PROJECT_NAME} discord-rpc evpp_static z)
 endif(WIN32)
