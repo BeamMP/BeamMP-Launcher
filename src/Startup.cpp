@@ -155,7 +155,7 @@ void CheckMP(const std::string& Path) {
 
 }
 void PreGame(const std::string& GamePath){
-    const std::string CurrVer("0.22.0.1");
+    const std::string CurrVer("0.22.1.0");
     std::string GameVer = CheckVer(GamePath);
     info("Game Version : " + GameVer);
     if(GameVer < CurrVer){
