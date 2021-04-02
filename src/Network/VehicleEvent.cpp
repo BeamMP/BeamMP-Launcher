@@ -139,9 +139,10 @@ void TCPClientMain(const std::string& IP,int Port){
         Terminate = true;
         return;
     }
-    getsockname(TCPSock, (SOCKADDR *)&ServerAddr, (int *)sizeof(ServerAddr));
+    info("Connected!");
+
     char Code = 'C';
-    send(TCPSock,&Code,1,0);
+    send(TCPSock, &Code, 1, 0);
     SyncResources(TCPSock);
     while(!Terminate){
         ServerParser(TCPRcv(TCPSock));
