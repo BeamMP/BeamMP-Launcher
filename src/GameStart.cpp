@@ -10,7 +10,6 @@
 #include <windows.h>
 #include "Startup.h"
 #include "Logger.h"
-#include <iostream>
 #include <thread>
 
 unsigned long GamePID = 0;
