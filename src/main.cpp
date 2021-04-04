@@ -20,7 +20,6 @@
     }
 }
 
-
 int main(int argc, char* argv[]) {
     #ifdef DEBUG
         std::thread th(flush);
