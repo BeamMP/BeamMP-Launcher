@@ -5,128 +5,117 @@
 ///
 /// Created by Anonymous275 on 7/18/2020
 ///
+#define CPPHTTPLIB_OPENSSL_SUPPORT
 
-#include <evpp/event_loop_thread.h>
-#include <evpp/httpc/conn_pool.h>
 #include <iostream>
 #include <Logger.h>
 #include <fstream>
 #include "http.h"
 #include <mutex>
 #include <cmath>
-#include <evhttp.h>
+#include <httplib.h>
 
-#include "winmain-inl.h"
-
-static bool responded;
-std::string HTTP::Res_{};
-void HTTP::Response(const std::shared_ptr<evpp::httpc::Response>& response, evpp::httpc::Request* request){
-    if(response->http_code() == 200){
-        Res_ = std::move(response->body().ToString());
-    } else {
-        std::cout << "\n";
-        error("Failed request! http code " + std::to_string(response->http_code()));
-    }
-    responded = true;
-    assert(request == response->request());
-    delete request;
-}
-
+std::string HTTP::Codes_[] =
+{
+ "Success","Unknown","Connection","BindIPAddress",
+ "Read","Write","ExceedRedirectCount","Canceled",
+ "SSLConnection","SSLLoadingCerts","SSLServerVerification",
+ "UnsupportedMultipartBoundaryChars","Compression"
+};
+bool HTTP::isDownload = false;
 std::string HTTP::Get(const std::string &IP) {
     static std::mutex Lock;
     std::scoped_lock Guard(Lock);
-    responded = false;
-    Res_.clear();
-    evpp::EventLoopThread t;
-    t.Start(true);
 
-    auto pos = IP.find('/');
-    std::shared_ptr<evpp::httpc::ConnPool> pool = std::make_shared<evpp::httpc::ConnPool>(IP.substr(0, pos), 443, true,
-                                                                                          evpp::Duration(10.0));
-    auto *r = new evpp::httpc::Request(pool.get(), t.loop(), IP.substr(pos), "");
-    r->Execute(Response);
+    auto pos = IP.find('/',10);
 
-    while (!responded) {
-        usleep(1);
+    httplib::Client cli(IP.substr(0, pos).c_str());
+    cli.set_connection_timeout(std::chrono::seconds(10));
+    auto res = cli.Get(IP.substr(pos).c_str(), ProgressBar);
+    std::string Ret;
+
+    if(res.error() == 0){
+        if(res->status == 200){
+            Ret = res->body;
+        }else error(res->reason);
+
+    }else{
+        if(isDownload) {
+            std::cout << "\n";
+        }
+        error("HTTP Get failed on " + Codes_[res.error()]);
     }
 
-    pool->Clear();
-    pool.reset();
-    t.Stop(true);
-    return Res_;
+    return Ret;
 }
 
 std::string HTTP::Post(const std::string& IP, const std::string& Fields) {
     static std::mutex Lock;
     std::scoped_lock Guard(Lock);
-    responded = false;
-    Res_.clear();
-    evpp::EventLoopThread t;
-    t.Start(true);
 
+    auto pos = IP.find('/',10);
 
-    auto pos = IP.find('/');
-    std::shared_ptr<evpp::httpc::ConnPool> pool = std::make_shared<evpp::httpc::ConnPool>(IP.substr(0, pos), 443,
-                                                                                          true,
-                                                                                          evpp::Duration(10.0));
-    auto *r = new evpp::httpc::Request(pool.get(), t.loop(), IP.substr(pos), Fields);
+    httplib::Client cli(IP.substr(0, pos).c_str());
+    cli.set_connection_timeout(std::chrono::seconds(10));
+    std::string Ret;
+
     if(!Fields.empty()) {
-        r->AddHeader("Content-Type", "application/json");
-    }
-    r->set_request_type(EVHTTP_REQ_POST);
-    r->Execute(Response);
+        httplib::Result res = cli.Post(IP.substr(pos).c_str(), Fields, "application/json");
 
-    while (!responded) {
-        usleep(1);
+        if(res.error() == 0) {
+            if (res->status != 200) {
+                error(res->reason);
+            }
+            Ret = res->body;
+        }else{
+            error("HTTP Post failed on " + Codes_[res.error()]);
+        }
+    }else{
+        httplib::Result res = cli.Post(IP.substr(pos).c_str());
+        if(res.error() == 0) {
+            if (res->status != 200) {
+                error(res->reason);
+            }
+            Ret = res->body;
+        }else{
+            error("HTTP Post failed on " + Codes_[res.error()]);
+        }
     }
 
-    pool->Clear();
-    pool.reset();
-    t.Stop(true);
-    if(Res_.empty())return "-1";
-    else return Res_;
+    if(Ret.empty())return "-1";
+    else return Ret;
 }
 
-void ProgressBar(size_t d, size_t t){
-    static double last_progress, progress_bar_adv;
-    progress_bar_adv = round(d/double(t)*25);
-    std::cout << "\r";
-    std::cout << "Progress : [ ";
-    std::cout << round(d/double(t)*100);
-    std::cout << "% ] [";
-    int i;
-    for(i = 0; i <= progress_bar_adv; i++)std::cout<<"#";
-    for(i = 0; i < 25 - progress_bar_adv; i++)std::cout<<".";
-    std::cout << "]";
-    last_progress = round(d/double(t)*100);
+bool HTTP::ProgressBar(size_t c, size_t t){
+    if(isDownload) {
+        static double last_progress, progress_bar_adv;
+        progress_bar_adv = round(c / double(t) * 25);
+        std::cout << "\r";
+        std::cout << "Progress : [ ";
+        std::cout << round(c / double(t) * 100);
+        std::cout << "% ] [";
+        int i;
+        for (i = 0; i <= progress_bar_adv; i++)std::cout << "#";
+        for (i = 0; i < 25 - progress_bar_adv; i++)std::cout << ".";
+        std::cout << "]";
+        last_progress = round(c / double(t) * 100);
+    }
+    return true;
 }
 
 bool HTTP::Download(const std::string &IP, const std::string &Path) {
     static std::mutex Lock;
     std::scoped_lock Guard(Lock);
-    responded = false;
-    Res_.clear();
-    evpp::EventLoopThread t;
-    t.Start(true);
-    auto pos = IP.find('/');
-    std::shared_ptr<evpp::httpc::ConnPool> pool = std::make_shared<evpp::httpc::ConnPool>(IP.substr(0,pos), 443, true, evpp::Duration(10.0));
-    auto* r = new evpp::httpc::Request(pool.get(), t.loop(), IP.substr(pos), "");
-    r->set_progress_callback(ProgressBar);
-    r->Execute(Response);
 
-    while (!responded) {
-        usleep(1);
-    }
+    isDownload = true;
+    std::string Ret = Get(IP);
+    isDownload = false;
 
-    pool->Clear();
-    pool.reset();
-    t.Stop(true);
-
-    if(Res_.empty())return false;
+    if(Ret.empty())return false;
 
     std::ofstream File(Path, std::ios::binary);
     if(File.is_open()) {
-        File << Res_;
+        File << Ret;
         File.close();
         std::cout << "\n";
         info("Download Complete!");

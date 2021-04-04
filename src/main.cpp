@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
         th.detach();
     #endif
     GetEP(argv[0]);
-    HTTP::Init(argv);
+
     InitLauncher(argc,argv);
 
     try {

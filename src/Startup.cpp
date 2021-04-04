@@ -5,7 +5,7 @@
 ///
 /// Created by Anonymous275 on 7/16/2020
 ///
-
+#include <windows.h>
 #include "Discord/discord_info.h"
 #include "Network/network.h"
 #include "Security/Init.h"
@@ -70,18 +70,18 @@ void CheckName(int argc,char* args[]){
 
 void CheckForUpdates(int argc,char*args[],const std::string& CV){
     std::string link;
-    std::string HTTP = HTTP::Get("beammp.com/builds/launcher?version=true");
+    std::string HTTP = HTTP::Get("https://beammp.com/builds/launcher?version=true");
     bool fallback = false;
     if(HTTP.find_first_of("0123456789") == std::string::npos){
-        HTTP = HTTP::Get("backup1.beammp.com/builds/launcher?version=true");
+        HTTP = HTTP::Get("https://backup1.beammp.com/builds/launcher?version=true");
         fallback = true;
         if(HTTP.find_first_of("0123456789") == std::string::npos) {
             fatal("Primary Servers Offline! sorry for the inconvenience!");
         }
     }
     if(fallback){
-        link = "backup1.beammp.com/builds/launcher?download=true";
-    }else link = "beammp.com/builds/launcher?download=true";
+        link = "https://backup1.beammp.com/builds/launcher?download=true";
+    }else link = "https://beammp.com/builds/launcher?download=true";
 
     std::string EP(GetEP() + GetEN()), Back(GetEP() + "BeamMP-Launcher.back");
 
@@ -166,7 +166,7 @@ void PreGame(const std::string& GamePath){
     CheckMP(GetGamePath() + "mods/multiplayer");
 
     if(!Dev) {
-        info("Downloading mod...");
+        info("Downloading mod please wait...");
         try {
             if (!fs::exists(GetGamePath() + "mods/multiplayer")) {
                 fs::create_directories(GetGamePath() + "mods/multiplayer");
@@ -175,7 +175,7 @@ void PreGame(const std::string& GamePath){
             fatal(e.what());
         }
 
-       HTTP::Download("backend.beammp.com/builds/client?download=true"
+       HTTP::Download("https://backend.beammp.com/builds/client?download=true"
                  "&pk=" + PublicKey +
                  "&branch=" + Branch, GetGamePath() + R"(mods\multiplayer\BeamMP.zip)");
 
