@@ -39,5 +39,5 @@ jobs:
       - name: Archive artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: BeamMP-Server.exe
-          path: ${{github.workspace}}/build-windows/Release/BeamMP-Server.exe
+          name: BeamMP-Launcher.exe
+          path: ${{github.workspace}}/build-windows/Release/BeamMP-Launcher.exe
