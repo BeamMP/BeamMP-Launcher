@@ -17,15 +17,13 @@ add_executable(${PROJECT_NAME} ${source_files})
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "BeamMP-Launcher")
 
 if (WIN32)
-    find_package(glog CONFIG REQUIRED)
-    find_package(Libevent CONFIG REQUIRED)
     find_package(ZLIB REQUIRED)
     find_package(OpenSSL REQUIRED)
     #-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static
     set(VcpkgRoot ${_VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET})
     include_directories(${VcpkgRoot}/include)
     link_directories(${VcpkgRoot}/lib)
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${VcpkgRoot}/lib/discord-rpc.libb
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${VcpkgRoot}/lib/discord-rpc.lib
             ZLIB::ZLIB OpenSSL::SSL OpenSSL::Crypto ws2_32)
 else(WIN32) #MINGW
     add_definitions("-D_WIN32_WINNT=0x0600")
