@@ -12,8 +12,10 @@
 #include <filesystem>
 #include "Startup.h"
 #include "Logger.h"
+#include <fstream>
 #include <thread>
 #include "http.h"
+#include "Json.h"
 
 extern int TraceBack;
 bool Dev = false;
@@ -26,7 +28,7 @@ std::string GetVer(){
     return "2.0";
 }
 std::string GetPatch(){
-    return ".2";
+    return ".3";
 }
 std::string GetEP(char*P){
     static std::string Ret = [&](){
@@ -120,20 +122,74 @@ void CustomPort(int argc, char* argv[]){
         if(argc > 2)Dev = true;
     }
 }
+
+void LinuxPatch(){
+    HKEY hKey = nullptr;
+    LONG result = RegOpenKeyEx(HKEY_CURRENT_USER, R"(Software\Wine)", 0, KEY_READ, &hKey);
+    if (result != ERROR_SUCCESS)return;
+    RegCloseKey(hKey);
+    info("Wine/Proton Detected! Applying patches...");
+
+    result = RegCreateKey(HKEY_CURRENT_USER, R"(Software\Valve\Steam\Apps\284160)", &hKey);
+
+    if (result != ERROR_SUCCESS){
+        fatal(R"(failed to create HKEY_CURRENT_USER\Software\Valve\Steam\Apps\284160)");
+        return;
+    }
+
+    result = RegSetValueEx(hKey, "Name", 0, REG_SZ, (BYTE*)"BeamNG.drive", 12);
+
+    if (result != ERROR_SUCCESS){
+        fatal(R"(failed to create the value "Name" under HKEY_CURRENT_USER\Software\Valve\Steam\Apps\284160)");
+        return;
+    }
+    RegCloseKey(hKey);
+
+    std::string Path = R"(Z:\home\)" + std::string(getenv("USER")) + R"(\.steam\steam\Steam.exe)";
+
+    if(!fs::exists(Path)) {
+        std::ofstream ofs(Path);
+        if (!ofs.is_open()) {
+            fatal("Failed to create file \"" + Path + "\"");
+            return;
+        } else ofs.close();
+    }
+
+    result = RegOpenKeyEx(HKEY_CURRENT_USER, R"(Software\Valve\Steam)", 0, KEY_ALL_ACCESS, &hKey);
+    if (result != ERROR_SUCCESS){
+        fatal(R"(failed to open HKEY_CURRENT_USER\Software\Valve\Steam)");
+        return;
+    }
+
+    result = RegSetValueEx(hKey, "SteamExe", 0, REG_SZ, (BYTE*)Path.c_str(), Path.size());
+
+    if (result != ERROR_SUCCESS){
+        fatal(R"(failed to create the value "Name" under HKEY_CURRENT_USER\Software\Valve\Steam\Apps\284160)");
+        return;
+    }
+
+    RegCloseKey(hKey);
+
+    info("Patched!");
+}
+
 void InitLauncher(int argc, char* argv[]) {
     system("cls");
     SetConsoleTitleA(("BeamMP Launcher v" + std::string(GetVer()) + GetPatch()).c_str());
     InitLog();
     CheckName(argc, argv);
+    LinuxPatch();
     CheckLocalKey();
     ConfigInit();
     CustomPort(argc, argv);
     Discord_Main();
     CheckForUpdates(argc, argv, std::string(GetVer()) + GetPatch());
 }
+
 size_t DirCount(const std::filesystem::path& path){
     return (size_t)std::distance(std::filesystem::directory_iterator{path}, std::filesystem::directory_iterator{});
 }
+
 void CheckMP(const std::string& Path) {
     if (!fs::exists(Path))return;
     size_t c = DirCount(fs::path(Path));
@@ -154,8 +210,40 @@ void CheckMP(const std::string& Path) {
     }
 
 }
+
+void EnableMP(){
+    std::string File(GetGamePath() + "mods/db.json");
+    if(!fs::exists(File))return;
+    std::ifstream db(File);
+    if(db.is_open()) {
+        auto Size = fs::file_size(File);
+        std::string Data(Size, 0);
+        db.read(&Data[0], Size);
+        db.close();
+        json::Document d;
+        d.Parse(Data.c_str());
+        if(Data.at(0) != '{' || d.HasParseError()){
+            error("Failed to parse " + File);
+            return;
+        }
+        if(!d["mods"].IsNull() && !d["mods"]["multiplayerbeammp"].IsNull()){
+            d["mods"]["multiplayerbeammp"]["active"] = true;
+            rapidjson::StringBuffer buffer;
+            rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+            d.Accept(writer);
+            std::ofstream ofs(File);
+            if(ofs.is_open()){
+                ofs << buffer.GetString();
+                ofs.close();
+            }else{
+                error("Failed to write " + File);
+            }
+        }
+    }
+}
+
 void PreGame(const std::string& GamePath){
-    const std::string CurrVer("0.22.1.0");
+    const std::string CurrVer("0.22.2.0");
     std::string GameVer = CheckVer(GamePath);
     info("Game Version : " + GameVer);
     if(GameVer < CurrVer){
@@ -171,6 +259,7 @@ void PreGame(const std::string& GamePath){
             if (!fs::exists(GetGamePath() + "mods/multiplayer")) {
                 fs::create_directories(GetGamePath() + "mods/multiplayer");
             }
+            EnableMP();
         }catch(std::exception&e){
             fatal(e.what());
         }

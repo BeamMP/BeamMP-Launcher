@@ -35,7 +35,9 @@ std::string GetGamePath(){
         Path = QueryKey(hKey,5);
         Path += "\\BeamNG.drive\\";
     }
-    Path += CheckVer(GetGameDir()) + "\\";
+    std::string Ver = CheckVer(GetGameDir());
+    Ver = Ver.substr(0,Ver.find('.',Ver.find('.')+1));
+    Path += Ver + "\\";
     return Path;
 }
 
