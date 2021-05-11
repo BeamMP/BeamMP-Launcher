@@ -240,8 +240,8 @@ int Handle(EXCEPTION_POINTERS *ep){
 }
 
 
-void CoreNetwork(){
-    while(TraceBack >= 4){
+[[noreturn]] void CoreNetwork(){
+    while(true) {
 #ifndef __MINGW32__
         __try{
 #endif

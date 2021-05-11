@@ -12,7 +12,8 @@
 void NetReset();
 extern bool Dev;
 extern int ping;
-void CoreNetwork();
+
+[[noreturn]] void CoreNetwork();
 extern int ClientID;
 extern int LastPort;
 extern bool ModLoaded;
