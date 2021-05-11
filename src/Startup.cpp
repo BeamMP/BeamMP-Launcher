@@ -28,7 +28,7 @@ std::string GetVer(){
     return "2.0";
 }
 std::string GetPatch(){
-    return ".4";
+    return ".5";
 }
 std::string GetEP(char*P){
     static std::string Ret = [&](){
@@ -215,9 +215,10 @@ void CheckMP(const std::string& Path) {
 void EnableMP(){
     std::string File(GetGamePath() + "mods/db.json");
     if(!fs::exists(File))return;
+    auto Size = fs::file_size(File);
+    if(Size < 2)return;
     std::ifstream db(File);
     if(db.is_open()) {
-        auto Size = fs::file_size(File);
         std::string Data(Size, 0);
         db.read(&Data[0], Size);
         db.close();
@@ -244,7 +245,7 @@ void EnableMP(){
 }
 
 void PreGame(const std::string& GamePath){
-    const std::string CurrVer("0.22.2.0");
+    const std::string CurrVer("0.22.3.0");
     std::string GameVer = CheckVer(GamePath);
     info("Game Version : " + GameVer);
     if(GameVer < CurrVer){

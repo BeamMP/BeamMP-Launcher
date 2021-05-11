@@ -15,7 +15,6 @@ void ParseConfig(const json::Document& d){
     if(d["Port"].IsInt()){
         DEFAULT_PORT = d["Port"].GetInt();
     }
-
     //Default -1
     //Release 1
     //EA 2
