@@ -75,7 +75,7 @@ void ServerSend(std::string Data, bool Rel){
     int DLen = int(Data.length());
     if(DLen > 3)C = Data.at(0);
     if (C == 'O' || C == 'T')Ack = true;
-    if(C == 'W' || C == 'Y' || C == 'V' || C == 'E' || C == 'C')Rel = true;
+    if(C == 'N' || C == 'W' || C == 'Y' || C == 'V' || C == 'E' || C == 'C')Rel = true;
     if(Ack || Rel){
         if(Ack || DLen > 1000)SendLarge(Data);
         else TCPSend(Data,TCPSock);
