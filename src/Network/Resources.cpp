@@ -211,6 +211,11 @@ std::string MultiDownload(SOCKET MSock,SOCKET DSock, uint64_t Size, const std::s
     return Ret;
 }
 
+void InvalidResource(const std::string& File){
+    UUl("Invalid mod \"" + File + "\"");
+    warn("The server tried to sync \"" + File + "\" that is not a .zip file!");
+    Terminate = true;
+}
 
 void SyncResources(SOCKET Sock){
     std::string Ret = Auth(Sock);
@@ -237,6 +242,11 @@ void SyncResources(SOCKET Sock){
     t.clear();
     for(auto FN = FNames.begin(),FS = FSizes.begin(); FN != FNames.end() && !Terminate; ++FN,++FS) {
         auto pos = FN->find_last_of('/');
+        auto ZIP = FN->find(".zip");
+        if (ZIP == std::string::npos || FN->length() - ZIP != 4) {
+            InvalidResource(*FN);
+            return;
+        }
         if (pos == std::string::npos)continue;
         Amount++;
     }
