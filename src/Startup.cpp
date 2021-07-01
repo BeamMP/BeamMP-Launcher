@@ -5,6 +5,7 @@
 ///
 /// Created by Anonymous275 on 7/16/2020
 ///
+#include "zip_file.h"
 #include <windows.h>
 #include "Discord/discord_info.h"
 #include "Network/network.h"
@@ -14,7 +15,7 @@
 #include "Logger.h"
 #include <fstream>
 #include <thread>
-#include "http.h"
+#include "Http.h"
 #include "Json.h"
 
 extern int TraceBack;
@@ -28,7 +29,7 @@ std::string GetVer(){
     return "2.0";
 }
 std::string GetPatch(){
-    return ".5";
+    return ".6";
 }
 std::string GetEP(char*P){
     static std::string Ret = [&](){
@@ -245,7 +246,7 @@ void EnableMP(){
 }
 
 void PreGame(const std::string& GamePath){
-    const std::string CurrVer("0.22.3.0");
+    const std::string CurrVer("0.23.0.0");
     std::string GameVer = CheckVer(GamePath);
     info("Game Version : " + GameVer);
     if(GameVer < CurrVer){
@@ -265,10 +266,41 @@ void PreGame(const std::string& GamePath){
         }catch(std::exception&e){
             fatal(e.what());
         }
+        std::string ZipPath(GetGamePath() + R"(mods\multiplayer\BeamMP.zip)");
 
-       HTTP::Download("https://backend.beammp.com/builds/client?download=true"
-                 "&pk=" + PublicKey +
-                 "&branch=" + Branch, GetGamePath() + R"(mods\multiplayer\BeamMP.zip)");
+        HTTP::Download("https://backend.beammp.com/builds/client?download=true"
+                 "&pk=" + PublicKey + "&branch=" + Branch, ZipPath);
+
+        std::string Target(GetGamePath() + "mods/unpacked/beammp");
+        info("check1");
+        if(fs::is_directory(Target)) {
+            fs::remove_all(Target);
+        }
+        info("check2");
+        fs::create_directories(Target);
+        info("check3");
+        if (fs::exists(ZipPath)) {
+            info("check4");
+            miniz_cpp::zip_file zip{ ZipPath };
+            info("check5");
+            fs::create_directories(Target);
+            info("check6");
+            for(auto name : zip.namelist()){
+                info("check7");
+                if(name.back() == '/' || name.back() == '\\') {
+                    info("check8");
+                    name.erase(std::prev(name.end()));
+                    info("check9");
+                    fs::create_directories(Target + "/" + name);
+                    info("check10");
+                }
+            }
+            info("check11");
+            zip.extractall(Target);
+            info("check12");
+            fs::remove(ZipPath);
+            info("check13");
+        }
 
         //HTTP::Download("beammp.com/builds/client", GetGamePath() + R"(mods\multiplayer\BeamMP.zip)");
     }

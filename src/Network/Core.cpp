@@ -8,7 +8,7 @@
 #include "Network/network.h"
 #include "Security/Init.h"
 
-#include "http.h"
+#include "Http.h"
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include "Startup.h"

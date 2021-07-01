@@ -10,7 +10,7 @@
 #include <iostream>
 #include <Logger.h>
 #include <fstream>
-#include "http.h"
+#include "Http.h"
 #include <mutex>
 #include <cmath>
 #include <httplib.h>

@@ -8,7 +8,7 @@
 #pragma once
 #include <string>
 #include "Logger.h"
-class HTTP{
+class HTTP {
 public:
     static bool Download(const std::string &IP, const std::string &Path);
     static std::string Post(const std::string& IP, const std::string& Fields);
