@@ -272,34 +272,22 @@ void PreGame(const std::string& GamePath){
                  "&pk=" + PublicKey + "&branch=" + Branch, ZipPath);
 
         std::string Target(GetGamePath() + "mods/unpacked/beammp");
-        info("check1");
+
         if(fs::is_directory(Target)) {
             fs::remove_all(Target);
         }
-        info("check2");
         fs::create_directories(Target);
-        info("check3");
         if (fs::exists(ZipPath)) {
-            info("check4");
             miniz_cpp::zip_file zip{ ZipPath };
-            info("check5");
             fs::create_directories(Target);
-            info("check6");
             for(auto name : zip.namelist()){
-                info("check7");
                 if(name.back() == '/' || name.back() == '\\') {
-                    info("check8");
                     name.erase(std::prev(name.end()));
-                    info("check9");
                     fs::create_directories(Target + "/" + name);
-                    info("check10");
                 }
             }
-            info("check11");
             zip.extractall(Target);
-            info("check12");
             fs::remove(ZipPath);
-            info("check13");
         }
 
         //HTTP::Download("beammp.com/builds/client", GetGamePath() + R"(mods\multiplayer\BeamMP.zip)");
