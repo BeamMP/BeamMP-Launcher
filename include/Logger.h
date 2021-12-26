@@ -3,9 +3,10 @@
 /// Copyright (c) 2021-present Anonymous275 read the LICENSE file for more info.
 ///
 
-#include "Launcher.h"
+#pragma once
+#include "easylogging++.h"
 
-int main(int argc, char* argv[]) {
-    Launcher launcher(argc, argv);
-    return 0;
-}
+class Log {
+public:
+    static void Init(int argc, char* argv[]);
+};

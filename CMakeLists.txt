@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.10)
-project(Launcher)
+cmake_minimum_required(VERSION 3.0)
+project(BeamMP-Launcher)
 
 if (WIN32)
     message(STATUS "MSVC -> forcing use of statically-linked runtime.")
@@ -13,9 +13,9 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 
 add_executable(${PROJECT_NAME}
         src/main.cpp
+        src/Launcher.cpp include/Launcher.h
+        src/Logger.cpp include/Logger.h
         )
-set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "BeamMP-Launcher")
-
 if (WIN32)
     find_package(ZLIB REQUIRED)
     find_package(OpenSSL REQUIRED)
@@ -25,6 +25,8 @@ if (WIN32)
     link_directories(${VcpkgRoot}/lib)
     target_link_libraries(${PROJECT_NAME} PRIVATE ${VcpkgRoot}/lib/discord-rpc.lib
             ZLIB::ZLIB OpenSSL::SSL OpenSSL::Crypto ws2_32)
+elseif (UNIX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s")
 else(WIN32) #MINGW
     add_definitions("-D_WIN32_WINNT=0x0600")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os -s --static")
