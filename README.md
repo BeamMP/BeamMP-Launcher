@@ -1,6 +1,7 @@
 # BeamMP-Launcher
 
-The launcher is the way we communitcate to outside the game, it does a few automated actions such as but not limited to: downloading the mod, launching the game, and create a connection to a server.
+The launcher is the way we communicate to servers, it does a few automated actions such as but not limited to:
+downloading the mod, launching the game, and establishing server connections.
 
 
 Copyright (c) 2019-present Anonymous275 (@Anonymous-275), 
