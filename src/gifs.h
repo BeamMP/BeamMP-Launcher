@@ -1,12 +1,11 @@
 ///
-/// Created by Anonymous275 on 12/26/21
+/// Created by Anonymous275 on 7/17/21
 /// Copyright (c) 2021-present Anonymous275 read the LICENSE file for more info.
 ///
 
 #pragma once
-#include "easylogging++.h"
 
-class Log {
+class gif{
 public:
-    static void Init();
+    static const unsigned char Logo[30427];
 };

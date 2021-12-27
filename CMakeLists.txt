@@ -7,6 +7,8 @@ if (WIN32)
     STRING(REPLACE "/MDd" "/MTd" CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
 endif(WIN32)
 
+add_subdirectory(wxWidgets)
+
 set(CMAKE_CXX_STANDARD 20)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
@@ -15,7 +17,10 @@ add_executable(${PROJECT_NAME}
         src/main.cpp
         src/Launcher.cpp include/Launcher.h
         src/Logger.cpp include/Logger.h
-        )
+        src/Gui.cpp
+        src/gifs.cpp src/gifs.h)
+
+
 if (WIN32)
     find_package(ZLIB REQUIRED)
     find_package(OpenSSL REQUIRED)
@@ -24,9 +29,10 @@ if (WIN32)
     include_directories(${VcpkgRoot}/include)
     link_directories(${VcpkgRoot}/lib)
     target_link_libraries(${PROJECT_NAME} PRIVATE ${VcpkgRoot}/lib/discord-rpc.lib
-            ZLIB::ZLIB OpenSSL::SSL OpenSSL::Crypto ws2_32)
+            ZLIB::ZLIB OpenSSL::SSL OpenSSL::Crypto ws2_32 wx::net wx::core wx::base)
 elseif (UNIX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s")
+    target_link_libraries(${PROJECT_NAME} wx::net wx::core wx::base)
 else(WIN32) #MINGW
     add_definitions("-D_WIN32_WINNT=0x0600")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os -s --static")

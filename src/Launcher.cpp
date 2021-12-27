@@ -8,7 +8,7 @@
 
 Launcher::Launcher(int argc, char **argv) : DirPath(argv[0]) {
     DirPath = DirPath.substr(0, DirPath.find_last_of("\\/") + 1);
-    Log::Init(argc, argv);
+    Log::Init();
     WindowsInit();
 }
 

@@ -5,7 +5,9 @@
 
 #include "Launcher.h"
 
+int Entry (int argc, char *argv[]);
+
 int main(int argc, char* argv[]) {
     Launcher launcher(argc, argv);
-    return 0;
+    return Entry(argc, argv);
 }
