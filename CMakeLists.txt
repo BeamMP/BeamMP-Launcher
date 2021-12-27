@@ -5,6 +5,13 @@ if (WIN32)
     message(STATUS "MSVC -> forcing use of statically-linked runtime.")
     STRING(REPLACE "/MD" "/MT" CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
     STRING(REPLACE "/MDd" "/MTd" CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
+
+    find_package(ZLIB REQUIRED)
+    find_package(OpenSSL REQUIRED)
+    #-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static
+    set(VcpkgRoot ${_VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET})
+    include_directories(${VcpkgRoot}/include)
+    link_directories(${VcpkgRoot}/lib)
 endif(WIN32)
 
 add_subdirectory(wxWidgets)
@@ -22,12 +29,6 @@ add_executable(${PROJECT_NAME}
 
 
 if (WIN32)
-    find_package(ZLIB REQUIRED)
-    find_package(OpenSSL REQUIRED)
-    #-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static
-    set(VcpkgRoot ${_VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET})
-    include_directories(${VcpkgRoot}/include)
-    link_directories(${VcpkgRoot}/lib)
     target_link_libraries(${PROJECT_NAME} PRIVATE ${VcpkgRoot}/lib/discord-rpc.lib
             ZLIB::ZLIB OpenSSL::SSL OpenSSL::Crypto ws2_32 wx::net wx::core wx::base)
 elseif (UNIX)
