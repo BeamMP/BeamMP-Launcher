@@ -14,6 +14,7 @@ if (WIN32)
     link_directories(${VcpkgRoot}/lib)
 endif(WIN32)
 
+set(wxBUILD_SHARED OFF)
 add_subdirectory(wxWidgets)
 
 set(CMAKE_CXX_STANDARD 20)
