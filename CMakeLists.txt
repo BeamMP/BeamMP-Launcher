@@ -1,13 +1,11 @@
 cmake_minimum_required(VERSION 3.0)
 project(BeamMP-Launcher)
 
-set(wxBUILD_SHARED OFF)
-add_subdirectory(wxWidgets)
 
 if (WIN32)
-    message(STATUS "MSVC -> forcing use of statically-linked runtime.")
-    STRING(REPLACE "/MD" "/MT" CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
-    STRING(REPLACE "/MDd" "/MTd" CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
+    #message(STATUS "MSVC -> forcing use of statically-linked runtime.")
+    #STRING(REPLACE "/MD" "/MT" CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
+    #STRING(REPLACE "/MDd" "/MTd" CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
 
     find_package(ZLIB REQUIRED)
     find_package(OpenSSL REQUIRED)
@@ -16,6 +14,9 @@ if (WIN32)
     include_directories(${VcpkgRoot}/include)
     link_directories(${VcpkgRoot}/lib)
 endif(WIN32)
+
+set(wxBUILD_SHARED OFF)
+add_subdirectory(wxWidgets)
 
 set(CMAKE_CXX_STANDARD 20)
 
