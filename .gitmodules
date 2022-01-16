@@ -1,6 +1,6 @@
 [submodule "wxWidgets"]
-	path = wxWidgets
+	path = include/wxWidgets
 	url = https://github.com/wxWidgets/wxWidgets.git
 [submodule "rapidjson"]
-	path = rapidjson
+	path = include/rapidjson
 	url = https://github.com/Tencent/rapidjson.git
