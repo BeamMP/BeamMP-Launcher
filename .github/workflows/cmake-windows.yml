@@ -34,7 +34,7 @@ jobs:
       - name: Build
         working-directory: ${{github.workspace}}/build-windows
         shell: bash
-        run: cmake --build . --config $BUILD_TYPE
+        run: cmake --build . --config $BUILD_TYPE --target BeamMP-Launcher
 
       - name: Archive artifacts
         uses: actions/upload-artifact@v2
