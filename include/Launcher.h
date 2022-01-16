@@ -9,12 +9,12 @@
 class Launcher {
 public:
     Launcher(int argc, char* argv[]);
+    const std::string& getFullVersion(){return FullVersion;}
     const std::string& getWorkingDir(){return DirPath;}
     const std::string& getVersion(){return Version;}
-    const std::string& getFullVersion(){return FullVersion;}
+    void launchGame();
 private:
     void WindowsInit();
-
 private:
     std::string DirPath;
     std::string Version{"3.0"};

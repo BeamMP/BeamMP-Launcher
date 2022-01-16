@@ -3,22 +3,25 @@
 /// Copyright (c) 2021-present Anonymous275 read the LICENSE file for more info.
 ///
 
+#define WIN32_LEAN_AND_MEAN
 #include "Launcher.h"
-#include <Logger.h>
+#include "Logger.h"
+#include <windows.h>
+#include <shellapi.h>
 
-Launcher::Launcher(int argc, char **argv) : DirPath(argv[0]) {
+Launcher::Launcher(int argc, char* argv[]) : DirPath(argv[0]) {
     DirPath = DirPath.substr(0, DirPath.find_last_of("\\/") + 1);
     Log::Init();
     WindowsInit();
 }
 
-#ifdef WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
+void Launcher::launchGame() {
+    ShellExecuteA(nullptr, nullptr, "steam://rungameid/284160", nullptr, nullptr, SW_SHOWNORMAL);
+    ShowWindow(GetConsoleWindow(), HIDE_WINDOW);
+    LOG(INFO) << "Sus";
+}
+
 void Launcher::WindowsInit() {
     system("cls");
     SetConsoleTitleA(("BeamMP Launcher v" + FullVersion).c_str());
 }
-#else //WIN32
-void Launcher::WindowsInit() {}
-#endif //WIN32

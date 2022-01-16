@@ -4,10 +4,9 @@
 ///
 
 #include "Launcher.h"
-
-int Entry (int argc, char *argv[]);
-
+#include "Logger.h"
 int main(int argc, char* argv[]) {
     Launcher launcher(argc, argv);
-    return Entry(argc, argv);
+    launcher.launchGame();
+    return 0;
 }

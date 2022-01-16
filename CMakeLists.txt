@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.0)
 project(BeamMP-Launcher)
 
-
 if (WIN32)
-    #message(STATUS "MSVC -> forcing use of statically-linked runtime.")
-    #STRING(REPLACE "/MD" "/MT" CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
-    #STRING(REPLACE "/MDd" "/MTd" CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
-
+    message(STATUS "MSVC -> forcing use of statically-linked runtime.")
+    STRING(REPLACE "/MD" "/MT" CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
+    STRING(REPLACE "/MD" "/MT" CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
+    STRING(REPLACE "/MDd" "/MTd" CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
+    STRING(REPLACE "/MDd" "/MTd" CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
     find_package(ZLIB REQUIRED)
     find_package(OpenSSL REQUIRED)
     #-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static
@@ -15,19 +15,24 @@ if (WIN32)
     link_directories(${VcpkgRoot}/lib)
 endif(WIN32)
 
+set(wxUSE_STL ON)
 set(wxBUILD_SHARED OFF)
-add_subdirectory(wxWidgets)
+set(wxBUILD_MSVC_MULTIPROC ON)
+set(wxBUILD_USE_STATIC_RUNTIME ON)
+add_subdirectory(include/wxWidgets)
+add_subdirectory(include/rapidjson)
 
 set(CMAKE_CXX_STANDARD 20)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 
 add_executable(${PROJECT_NAME}
-        src/main.cpp
+        src/main.cpp include/easylogging++.h
         src/Launcher.cpp include/Launcher.h
         src/Logger.cpp include/Logger.h
-        src/Gui.cpp
-        src/gifs.cpp src/gifs.h)
+        src/gui/Gui.cpp include/Json.h
+        src/gui/gifs.cpp src/gui/gifs.h
+        )
 
 
 if (WIN32)

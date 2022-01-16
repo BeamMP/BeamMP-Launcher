@@ -3,9 +3,8 @@
 /// Copyright (c) 2021-present Anonymous275 read the LICENSE file for more info.
 ///
 
-#include <iostream>
+#define _CRT_SECURE_NO_WARNINGS
 #include <set>
-
 #include <wx/wxprec.h>
 #ifndef WX_PRECOMP
 #include <wx/wx.h>
@@ -85,7 +84,7 @@ void MyFrame::OnHello(wxCommandEvent& event) {
 }
 
 
-int Entry (int argc, char *argv[]) {
+int GUIEntry (int argc, char *argv[]) {
     new MyApp();
     return wxEntry(argc, argv);
 }
