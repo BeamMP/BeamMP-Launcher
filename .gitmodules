@@ -7,3 +7,9 @@
 [submodule "include/cpp-httplib"]
 	path = include/cpp-httplib
 	url = https://github.com/yhirose/cpp-httplib.git
+[submodule "include/tomlplusplus"]
+	path = include/tomlplusplus
+	url = https://github.com/marzer/tomlplusplus.git
+[submodule "include/easyloggingpp"]
+	path = include/easyloggingpp
+	url = https://github.com/amrayn/easyloggingpp.git
