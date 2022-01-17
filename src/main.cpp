@@ -7,6 +7,7 @@
 #include "Logger.h"
 int main(int argc, char* argv[]) {
     Launcher launcher(argc, argv);
-    launcher.launchGame();
+    launcher.checkLocalKey();
+
     return 0;
 }

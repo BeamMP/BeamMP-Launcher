@@ -25,3 +25,21 @@ void Launcher::WindowsInit() {
     system("cls");
     SetConsoleTitleA(("BeamMP Launcher v" + FullVersion).c_str());
 }
+
+const std::string& Launcher::getFullVersion() {
+    return FullVersion;
+}
+
+const std::string& Launcher::getWorkingDir() {
+    return DirPath;
+}
+
+const std::string &Launcher::getVersion() {
+    return Version;
+}
+
+const std::string& Launcher::getUserRole() {
+    return UserRole;
+}
+
+

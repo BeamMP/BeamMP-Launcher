@@ -7,16 +7,25 @@
 #include <string>
 
 class Launcher {
-public:
+public: //constructors
     Launcher(int argc, char* argv[]);
-    const std::string& getFullVersion(){return FullVersion;}
-    const std::string& getWorkingDir(){return DirPath;}
-    const std::string& getVersion(){return Version;}
+public: //available functions
+    std::string Login(const std::string& fields);
+    void checkLocalKey();
+    void loadConfig();
     void launchGame();
-private:
+public: //Getters
+    const std::string& getFullVersion();
+    const std::string& getWorkingDir();
+    const std::string& getUserRole();
+    const std::string& getVersion();
+private: //functions
     void WindowsInit();
-private:
+private: //variables
     std::string DirPath;
+    std::string UserRole;
+    std::string PublicKey;
+    bool LoginAuth = false;
     std::string Version{"3.0"};
     std::string FullVersion{Version + ".0"};
 };

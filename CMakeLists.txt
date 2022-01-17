@@ -21,7 +21,7 @@ set(wxBUILD_MSVC_MULTIPROC ON)
 set(wxBUILD_USE_STATIC_RUNTIME ON)
 add_subdirectory(include/wxWidgets)
 add_subdirectory(include/rapidjson)
-
+add_subdirectory(include/cpp-httplib)
 set(CMAKE_CXX_STANDARD 20)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
@@ -32,6 +32,8 @@ add_executable(${PROJECT_NAME}
         src/Logger.cpp include/Logger.h
         src/gui/Gui.cpp include/Json.h
         src/gui/gifs.cpp src/gui/gifs.h
+        src/Network/Http.cpp include/Http.h
+        src/Login.cpp src/Config.cpp
         )
 
 
