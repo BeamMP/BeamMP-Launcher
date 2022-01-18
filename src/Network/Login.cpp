@@ -15,7 +15,10 @@ void UpdateKey(const char* newKey){
         if(Key.is_open()){
             Key << newKey;
             Key.close();
-        }else LOG(FATAL) << "Cannot write to disk!";
+        } else {
+            LOG(FATAL) << "Cannot write to disk!";
+            throw ShutdownException("Fatal Error");
+        }
     }else if(fs::exists("key")){
         remove("key");
     }
@@ -88,8 +91,9 @@ void Launcher::CheckKey() {
             Json::Document d;
             d.Parse(Buffer.c_str());
             if (Buffer == "-1" || Buffer.at(0) != '{' || d.HasParseError()) {
-                LOG(ERROR) << Buffer;
+                LOG(DEBUG) << Buffer;
                 LOG(FATAL) << "Invalid answer from authentication servers, please try again later!";
+                throw ShutdownException("Fatal Error");
             }
             if(d["success"].GetBool()){
                 LoginAuth = true;

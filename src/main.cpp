@@ -4,14 +4,24 @@
 ///
 
 #include "Launcher.h"
+#include "Logger.h"
 
 int main(int argc, char* argv[]) {
-    Launcher launcher(argc, argv);
-    if(!launcher.Terminate()) {
+    try {
+        Launcher launcher(argc, argv);
         launcher.RunDiscordRPC();
         launcher.LoadConfig();
         launcher.CheckKey();
+        launcher.LaunchGame();
+        //launcher.WaitForGame();
+        launcher.QueryRegistry();
         //UI call
+
+
+    } catch (const ShutdownException& e) {
+        LOG(INFO) << "Launcher shutting down, reason: " << e.what();
+    } catch (const std::exception& e) {
+        LOG(FATAL) << e.what();
     }
     return 0;
 }

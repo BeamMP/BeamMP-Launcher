@@ -9,7 +9,6 @@
 #include <windows.h>
 #include <shellapi.h>
 
-
 Launcher::Launcher(int argc, char* argv[]) : CurrentPath(std::filesystem::path(argv[0])), DiscordMessage("Just launched") {
     Log::Init();
     WindowsInit();
@@ -19,17 +18,25 @@ Launcher::Launcher(int argc, char* argv[]) : CurrentPath(std::filesystem::path(a
 
 Launcher::~Launcher() {
     Shutdown = true;
-    LOG(INFO) << "Shutting down";
     if(DiscordRPC.joinable()) {
         DiscordRPC.join();
     }
 }
 
-bool Launcher::Terminate() const {
-    return Shutdown;
-}
-
 void Launcher::LaunchGame() {
+    VersionParser GameVersion(BeamVersion);
+    if(GameVersion.data[0] > SupportedVersion.data[0]) {
+        LOG(FATAL) << "BeamNG V" << BeamVersion << " not yet supported, please wait until we update BeamMP!";
+        throw ShutdownException("Fatal Error");
+    } else if(GameVersion.data[0] < SupportedVersion.data[0]) {
+        LOG(FATAL) << "BeamNG V" << BeamVersion << " not supported, please update and launch the new update!";
+        throw ShutdownException("Fatal Error");
+    } else if(GameVersion > SupportedVersion) {
+        LOG(WARNING) << "BeamNG V" << BeamVersion << " is slightly newer than recommended, this might cause issues!";
+    } else if(GameVersion < SupportedVersion) {
+        LOG(WARNING) << "BeamNG V" << BeamVersion << " is slightly older than recommended, this might cause issues!";
+    }
+
     ShellExecuteA(nullptr, nullptr, "steam://rungameid/284160", nullptr, nullptr, SW_SHOWNORMAL);
     //ShowWindow(GetConsoleWindow(), HIDE_WINDOW);
 }
@@ -37,6 +44,45 @@ void Launcher::LaunchGame() {
 void Launcher::WindowsInit() {
     system("cls");
     SetConsoleTitleA(("BeamMP Launcher v" + FullVersion).c_str());
+}
+
+std::string QueryValue(HKEY& BeamNG, const char* Name) {
+    DWORD keySize;
+    BYTE buffer[1024];
+    ZeroMemory(buffer, 1024);
+    if(RegQueryValueExA(BeamNG, Name, nullptr, nullptr, buffer, &keySize) == ERROR_SUCCESS) {
+        return {(char*)buffer, keySize};
+    }
+    return {};
+}
+
+void Launcher::QueryRegistry() {
+    HKEY BeamNG;
+    LONG RegRes = RegOpenKeyExA(HKEY_CURRENT_USER, R"(Software\BeamNG\BeamNG.drive)", 0, KEY_READ, &BeamNG);
+    if(RegRes == ERROR_SUCCESS) {
+        BeamRoot = QueryValue(BeamNG, "rootpath");
+        BeamVersion = QueryValue(BeamNG, "version");
+        BeamUserPath = QueryValue(BeamNG, "userpath_override");
+        //get shell folders for appdata dir
+        RegCloseKey(BeamNG);
+        if(!BeamRoot.empty() && !BeamVersion.empty())return;
+    }
+    LOG(FATAL) << "Please launch the game at least once, failed to read registry key Software\\BeamNG\\BeamNG.drive";
+    throw ShutdownException("Fatal Error");
+}
+
+void Launcher::AdminRelaunch() {
+    system("cls");
+    ShellExecuteA(nullptr, "runas", CurrentPath.string().c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+    ShowWindow(GetConsoleWindow(),0);
+    throw ShutdownException("Relaunching");
+}
+
+void Launcher::Relaunch() {
+    ShellExecuteA(nullptr, "open", CurrentPath.string().c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+    ShowWindow(GetConsoleWindow(),0);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    throw ShutdownException("Relaunching");
 }
 
 const std::string& Launcher::getFullVersion() {
@@ -49,19 +95,5 @@ const std::string &Launcher::getVersion() {
 
 const std::string& Launcher::getUserRole() {
     return UserRole;
-}
-
-void Launcher::AdminRelaunch() {
-    system("cls");
-    ShellExecuteA(nullptr, "runas", CurrentPath.string().c_str(), nullptr, nullptr, SW_SHOWNORMAL);
-    ShowWindow(GetConsoleWindow(),0);
-    Shutdown = true;
-}
-
-void Launcher::Relaunch() {
-    ShellExecuteA(nullptr, "open", CurrentPath.string().c_str(), nullptr, nullptr, SW_SHOWNORMAL);
-    ShowWindow(GetConsoleWindow(),0);
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    Shutdown = true;
 }
 

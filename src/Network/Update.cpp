@@ -6,32 +6,30 @@
 #include "Launcher.h"
 #include "Logger.h"
 #include "Http.h"
-#include <sstream>
-struct Ver {
-    std::vector<size_t> data;
-    explicit Ver(const std::string& from_string) {
-        std::string token;
-        std::istringstream tokenStream(from_string);
-        while (std::getline(tokenStream, token, '.')) {
-            data.emplace_back(std::stol(token));
-        }
-    }
-    std::strong_ordering operator<=>(Ver const& rhs) const noexcept {
-        size_t const fields = std::min(data.size(), rhs.data.size());
-        for(size_t i = 0; i != fields; ++i) {
-            if(data[i] == rhs.data[i]) continue;
-            else if(data[i] < rhs.data[i]) return std::strong_ordering::less;
-            else return std::strong_ordering::greater;
-        }
-        if(data.size() == rhs.data.size()) return std::strong_ordering::equal;
-        else if(data.size() > rhs.data.size()) return std::strong_ordering::greater;
-        else return std::strong_ordering::less;
-    }
-    bool operator==(Ver const& rhs) const noexcept {
-        return std::is_eq(*this <=> rhs);
-    }
-};
 
+VersionParser::VersionParser(const std::string &from_string) {
+    std::string token;
+    std::istringstream tokenStream(from_string);
+    while (std::getline(tokenStream, token, '.')) {
+        data.emplace_back(std::stol(token));
+    }
+}
+
+std::strong_ordering VersionParser::operator<=>(const VersionParser &rhs) const noexcept {
+    size_t const fields = std::min(data.size(), rhs.data.size());
+    for(size_t i = 0; i != fields; ++i) {
+        if(data[i] == rhs.data[i]) continue;
+        else if(data[i] < rhs.data[i]) return std::strong_ordering::less;
+        else return std::strong_ordering::greater;
+    }
+    if(data.size() == rhs.data.size()) return std::strong_ordering::equal;
+    else if(data.size() > rhs.data.size()) return std::strong_ordering::greater;
+    else return std::strong_ordering::less;
+}
+
+bool VersionParser::operator==(const VersionParser &rhs) const noexcept {
+    return std::is_eq(*this <=> rhs);
+}
 
 void Launcher::UpdateCheck() {
     std::string link;
@@ -42,6 +40,7 @@ void Launcher::UpdateCheck() {
         fallback = true;
         if(HTTP.find_first_of("0123456789") == std::string::npos) {
             LOG(FATAL) << "Primary Servers Offline! sorry for the inconvenience!";
+            throw ShutdownException("Fatal Error");
         }
     }
     if(fallback){
@@ -58,7 +57,7 @@ void Launcher::UpdateCheck() {
         }
     }
 
-    if(Ver(RemoteVer) > Ver(FullVersion)){
+    if(VersionParser(RemoteVer) > VersionParser(FullVersion)){
         system("cls");
         LOG(INFO) << "Update found! Downloading...";
         if(std::rename(EP.c_str(), Back.c_str())){

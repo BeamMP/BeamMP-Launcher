@@ -33,6 +33,7 @@ Build = "Default"
             cfg.close();
         }else{
             LOG(FATAL) << "Failed to write config on disk!";
+            throw ShutdownException("Fatal Error");
         }
     }
 }
