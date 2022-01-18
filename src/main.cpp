@@ -12,9 +12,9 @@ int main(int argc, char* argv[]) {
         launcher.RunDiscordRPC();
         launcher.LoadConfig();
         launcher.CheckKey();
+        launcher.QueryRegistry();
         launcher.LaunchGame();
         //launcher.WaitForGame();
-        launcher.QueryRegistry();
         //UI call
 
 

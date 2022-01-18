@@ -33,6 +33,7 @@ public: //Getters
     const std::string& getUserRole();
     const std::string& getVersion();
 private: //functions
+    std::string GetLocalAppdata();
     void AdminRelaunch();
     void RichPresence();
     void WindowsInit();
