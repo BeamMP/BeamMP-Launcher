@@ -12,6 +12,7 @@ VersionParser::VersionParser(const std::string &from_string) {
     std::istringstream tokenStream(from_string);
     while (std::getline(tokenStream, token, '.')) {
         data.emplace_back(std::stol(token));
+        split.emplace_back(token);
     }
 }
 

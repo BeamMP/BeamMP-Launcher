@@ -50,7 +50,7 @@ std::string QueryValue(HKEY& hKey, const char* Name) {
     DWORD keySize;
     BYTE buffer[16384];
     if(RegQueryValueExA(hKey, Name, nullptr, nullptr, buffer, &keySize) == ERROR_SUCCESS) {
-        return {(char*)buffer, keySize};
+        return {(char*)buffer, keySize-1};
     }
     return {};
 }
@@ -62,7 +62,7 @@ std::string Launcher::GetLocalAppdata() {
         if(!Path.empty()) {
             Path += "\\BeamNG.drive\\";
             VersionParser GameVer(BeamVersion);
-            Path += std::to_string(GameVer.data[0]) + '.' + std::to_string(GameVer.data[1]) + '\\';
+            Path += GameVer.split[0] + '.' + GameVer.split[1] + '\\';
             return Path;
         }
     }
@@ -78,9 +78,9 @@ void Launcher::QueryRegistry() {
         RegCloseKey(BeamNG);
         if(BeamUserPath.empty() && !BeamVersion.empty()) {
             BeamUserPath = GetLocalAppdata();
-        } else if(!BeamUserPath.empty()) {
+        } else if(!BeamUserPath.empty() && !BeamVersion.empty()) {
             VersionParser GameVer(BeamVersion);
-            BeamUserPath += std::to_string(GameVer.data[0]) + '.' + std::to_string(GameVer.data[1]) + '\\';
+            BeamUserPath += GameVer.split[0] + '.' + GameVer.split[1] + '\\';
         }
         if(!BeamRoot.empty() && !BeamVersion.empty() && !BeamUserPath.empty())return;
     }

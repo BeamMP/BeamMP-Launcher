@@ -14,6 +14,7 @@ struct VersionParser {
     explicit VersionParser(const std::string& from_string);
     std::strong_ordering operator<=>(VersionParser const& rhs) const noexcept;
     bool operator==(VersionParser const& rhs) const noexcept;
+    std::vector<std::string> split;
     std::vector<size_t> data;
 };
 
