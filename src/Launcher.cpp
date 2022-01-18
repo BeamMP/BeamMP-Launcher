@@ -9,13 +9,14 @@
 #include <windows.h>
 #include <shellapi.h>
 
-Launcher::Launcher(int argc, char* argv[]) : DirPath(argv[0]) {
+Launcher::Launcher(int argc, char* argv[]) : DirPath(argv[0]), DiscordMessage("Just launched") {
     DirPath = DirPath.substr(0, DirPath.find_last_of("\\/") + 1);
     Log::Init();
     WindowsInit();
 }
 
 Launcher::~Launcher() {
+    Shutdown = true;
     if(DiscordRPC.joinable()) {
         DiscordRPC.join();
     }

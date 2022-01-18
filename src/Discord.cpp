@@ -5,13 +5,13 @@
 
 #include <discord_rpc.h>
 #include "Launcher.h"
+#include "Logger.h"
 
 void Launcher::richPresence() {
     Discord_Initialize("629743237988352010", nullptr, 1,nullptr);
     while(!Shutdown) {
         DiscordRichPresence discordPresence;
         memset(&discordPresence, 0, sizeof(discordPresence));
-        if(DiscordMessage.empty()) DiscordMessage = "Playing with friends!";
         discordPresence.state = DiscordMessage.c_str();
         discordPresence.startTimestamp = 0;
         discordPresence.largeImageKey = "mainlogo";
