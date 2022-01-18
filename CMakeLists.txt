@@ -54,3 +54,5 @@ else(WIN32) #MINGW
 endif(WIN32)
 add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
 target_include_directories(${PROJECT_NAME} PRIVATE "include")
+target_include_directories(${PROJECT_NAME} PRIVATE "include/rapidjson/include")
+target_include_directories(${PROJECT_NAME} PRIVATE "include/discord-rpc/include")

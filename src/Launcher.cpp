@@ -24,8 +24,7 @@ Launcher::~Launcher() {
 
 void Launcher::launchGame() {
     ShellExecuteA(nullptr, nullptr, "steam://rungameid/284160", nullptr, nullptr, SW_SHOWNORMAL);
-    ShowWindow(GetConsoleWindow(), HIDE_WINDOW);
-    LOG(INFO) << "Sus";
+    //ShowWindow(GetConsoleWindow(), HIDE_WINDOW);
 }
 
 void Launcher::WindowsInit() {

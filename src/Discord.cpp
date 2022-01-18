@@ -3,7 +3,7 @@
 /// Copyright (c) 2021-present Anonymous275 read the LICENSE file for more info.
 ///
 
-#include <discord-rpc/include/discord_rpc.h>
+#include <discord_rpc.h>
 #include "Launcher.h"
 #include "Logger.h"
 
