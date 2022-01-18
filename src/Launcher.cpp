@@ -78,7 +78,11 @@ void Launcher::QueryRegistry() {
         RegCloseKey(BeamNG);
         if(BeamUserPath.empty() && !BeamVersion.empty()) {
             BeamUserPath = GetLocalAppdata();
+        } else if(!BeamUserPath.empty()) {
+            VersionParser GameVer(BeamVersion);
+            BeamUserPath += std::to_string(GameVer.data[0]) + '.' + std::to_string(GameVer.data[1]) + '\\';
         }
+        LOG(INFO) << BeamUserPath;
         if(!BeamRoot.empty() && !BeamVersion.empty() && !BeamUserPath.empty())return;
     }
     LOG(FATAL) << "Please launch the game at least once, failed to read registry key Software\\BeamNG\\BeamNG.drive";
