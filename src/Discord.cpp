@@ -3,17 +3,18 @@
 /// Copyright (c) 2021-present Anonymous275 read the LICENSE file for more info.
 ///
 
-#include <discord_rpc.h>
+#include <discord-rpc/include/discord_rpc.h>
 #include "Launcher.h"
 #include "Logger.h"
 
 void Launcher::richPresence() {
     Discord_Initialize("629743237988352010", nullptr, 1,nullptr);
+    int64_t Start{};
     while(!Shutdown) {
         DiscordRichPresence discordPresence;
         memset(&discordPresence, 0, sizeof(discordPresence));
         discordPresence.state = DiscordMessage.c_str();
-        discordPresence.startTimestamp = 0;
+        discordPresence.startTimestamp = Start;
         discordPresence.largeImageKey = "mainlogo";
         Discord_UpdatePresence(&discordPresence);
         Discord_RunCallbacks();
