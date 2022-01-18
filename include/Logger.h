@@ -5,7 +5,8 @@
 
 #pragma once
 #include <easyloggingpp/src/easylogging++.h>
-
+#undef min
+#undef max
 class Log {
 public:
     static void Init();

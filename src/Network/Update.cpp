@@ -6,6 +6,31 @@
 #include "Launcher.h"
 #include "Logger.h"
 #include "Http.h"
+#include <sstream>
+struct Ver {
+    std::vector<size_t> data;
+    explicit Ver(const std::string& from_string) {
+        std::string token;
+        std::istringstream tokenStream(from_string);
+        while (std::getline(tokenStream, token, '.')) {
+            data.emplace_back(std::stol(token));
+        }
+    }
+    std::strong_ordering operator<=>(Ver const& rhs) const noexcept {
+        size_t const fields = std::min(data.size(), rhs.data.size());
+        for(size_t i = 0; i != fields; ++i) {
+            if(data[i] == rhs.data[i]) continue;
+            else if(data[i] < rhs.data[i]) return std::strong_ordering::less;
+            else return std::strong_ordering::greater;
+        }
+        if(data.size() == rhs.data.size()) return std::strong_ordering::equal;
+        else if(data.size() > rhs.data.size()) return std::strong_ordering::greater;
+        else return std::strong_ordering::less;
+    }
+    bool operator==(Ver const& rhs) const noexcept {
+        return std::is_eq(*this <=> rhs);
+    }
+};
 
 
 void Launcher::UpdateCheck() {
@@ -32,7 +57,8 @@ void Launcher::UpdateCheck() {
             RemoteVer += c;
         }
     }
-    if(RemoteVer > FullVersion){
+
+    if(Ver(RemoteVer) > Ver(FullVersion)){
         system("cls");
         LOG(INFO) << "Update found! Downloading...";
         if(std::rename(EP.c_str(), Back.c_str())){
