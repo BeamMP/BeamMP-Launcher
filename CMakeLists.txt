@@ -39,8 +39,8 @@ add_executable(${PROJECT_NAME}
         src/gui/Gui.cpp include/Json.h
         src/gui/gifs.cpp src/gui/gifs.h
         src/Network/Http.cpp include/Http.h
-        src/Login.cpp src/Config.cpp
-        src/Discord.cpp
+        src/Network/Login.cpp src/Network/Update.cpp
+        src/Discord.cpp src/Config.cpp
         )
 
 

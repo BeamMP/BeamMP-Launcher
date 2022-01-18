@@ -7,9 +7,11 @@
 
 int main(int argc, char* argv[]) {
     Launcher launcher(argc, argv);
-    launcher.runDiscordRPC();
-    launcher.loadConfig();
-    launcher.checkKey();
-    //UI call
+    if(!launcher.Terminate()) {
+        launcher.RunDiscordRPC();
+        launcher.LoadConfig();
+        launcher.CheckKey();
+        //UI call
+    }
     return 0;
 }

@@ -4,13 +4,10 @@
 ///
 
 #include "Launcher.h"
-#include <filesystem>
 #include "Logger.h"
 #include <fstream>
 #include "Http.h"
 #include "Json.h"
-
-namespace fs = std::filesystem;
 
 void UpdateKey(const char* newKey){
     if(newKey){
@@ -77,7 +74,7 @@ std::string Launcher::Login(const std::string& fields) {
     return GetFail("Invalid message parsing!");
 }
 
-void Launcher::checkKey() {
+void Launcher::CheckKey() {
     if(fs::exists("key") && fs::file_size("key") < 100){
         std::ifstream Key("key");
         if(Key.is_open()) {

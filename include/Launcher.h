@@ -4,8 +4,11 @@
 ///
 
 #pragma once
+#include <filesystem>
 #include <string>
 #include <thread>
+
+namespace fs = std::filesystem;
 
 class Launcher {
 public: //constructors
@@ -13,23 +16,26 @@ public: //constructors
     ~Launcher();
 public: //available functions
     std::string Login(const std::string& fields);
-    void runDiscordRPC();
-    void loadConfig();
-    void launchGame();
-    void checkKey();
+    bool Terminate() const;
+    void RunDiscordRPC();
+    void LoadConfig();
+    void LaunchGame();
+    void CheckKey();
 public: //Getters
     const std::string& getFullVersion();
-    const std::string& getWorkingDir();
     const std::string& getUserRole();
     const std::string& getVersion();
 private: //functions
-    void richPresence();
+    void AdminRelaunch();
+    void RichPresence();
     void WindowsInit();
+    void UpdateCheck();
+    void Relaunch();
 private: //variables
     bool EnableUI = true;
     bool Shutdown = false;
-    std::string DirPath{};
     bool LoginAuth = false;
+    fs::path CurrentPath{};
     std::string UserRole{};
     std::string PublicKey{};
     std::thread DiscordRPC{};

@@ -7,7 +7,7 @@
 #include "Launcher.h"
 #include "Logger.h"
 
-void Launcher::richPresence() {
+void Launcher::RichPresence() {
     Discord_Initialize("629743237988352010", nullptr, 1,nullptr);
     int64_t Start{};
     while(!Shutdown) {
@@ -23,6 +23,6 @@ void Launcher::richPresence() {
     Discord_ClearPresence();
 }
 
-void Launcher::runDiscordRPC() {
-    DiscordRPC = std::thread(&Launcher::richPresence, this);
+void Launcher::RunDiscordRPC() {
+    DiscordRPC = std::thread(&Launcher::RichPresence, this);
 }

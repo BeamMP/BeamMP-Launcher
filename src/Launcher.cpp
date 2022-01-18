@@ -9,20 +9,27 @@
 #include <windows.h>
 #include <shellapi.h>
 
-Launcher::Launcher(int argc, char* argv[]) : DirPath(argv[0]), DiscordMessage("Just launched") {
-    DirPath = DirPath.substr(0, DirPath.find_last_of("\\/") + 1);
+
+Launcher::Launcher(int argc, char* argv[]) : CurrentPath(std::filesystem::path(argv[0])), DiscordMessage("Just launched") {
     Log::Init();
     WindowsInit();
+    LOG(INFO) << "Starting Launcher V" << FullVersion;
+    UpdateCheck();
 }
 
 Launcher::~Launcher() {
     Shutdown = true;
+    LOG(INFO) << "Shutting down";
     if(DiscordRPC.joinable()) {
         DiscordRPC.join();
     }
 }
 
-void Launcher::launchGame() {
+bool Launcher::Terminate() const {
+    return Shutdown;
+}
+
+void Launcher::LaunchGame() {
     ShellExecuteA(nullptr, nullptr, "steam://rungameid/284160", nullptr, nullptr, SW_SHOWNORMAL);
     //ShowWindow(GetConsoleWindow(), HIDE_WINDOW);
 }
@@ -36,10 +43,6 @@ const std::string& Launcher::getFullVersion() {
     return FullVersion;
 }
 
-const std::string& Launcher::getWorkingDir() {
-    return DirPath;
-}
-
 const std::string &Launcher::getVersion() {
     return Version;
 }
@@ -48,5 +51,17 @@ const std::string& Launcher::getUserRole() {
     return UserRole;
 }
 
+void Launcher::AdminRelaunch() {
+    system("cls");
+    ShellExecuteA(nullptr, "runas", CurrentPath.string().c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+    ShowWindow(GetConsoleWindow(),0);
+    Shutdown = true;
+}
 
+void Launcher::Relaunch() {
+    ShellExecuteA(nullptr, "open", CurrentPath.string().c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+    ShowWindow(GetConsoleWindow(),0);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    Shutdown = true;
+}
 

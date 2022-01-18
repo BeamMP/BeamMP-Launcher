@@ -5,15 +5,10 @@
 
 
 #include <tomlplusplus/toml.hpp>
-#include <filesystem>
 #include "Launcher.h"
 #include "Logger.h"
 
-namespace fs = std::filesystem;
-
-
-
-void Launcher::loadConfig() {
+void Launcher::LoadConfig() {
     if(fs::exists("Launcher.cfg")) {
         toml::table config = toml::parse_file("Launcher.cfg");
         auto ui = config["UI"];
