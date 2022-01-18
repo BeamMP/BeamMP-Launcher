@@ -15,6 +15,12 @@ Launcher::Launcher(int argc, char* argv[]) : DirPath(argv[0]) {
     WindowsInit();
 }
 
+Launcher::~Launcher() {
+    if(DiscordRPC.joinable()) {
+        DiscordRPC.join();
+    }
+}
+
 void Launcher::launchGame() {
     ShellExecuteA(nullptr, nullptr, "steam://rungameid/284160", nullptr, nullptr, SW_SHOWNORMAL);
     ShowWindow(GetConsoleWindow(), HIDE_WINDOW);
@@ -41,5 +47,6 @@ const std::string &Launcher::getVersion() {
 const std::string& Launcher::getUserRole() {
     return UserRole;
 }
+
 
 

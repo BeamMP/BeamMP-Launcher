@@ -16,6 +16,7 @@ if (WIN32)
 endif(WIN32)
 
 set(wxUSE_STL ON)
+set(BUILD_EXAMPLES OFF)
 set(wxBUILD_SHARED OFF)
 set(build_static_lib ON)
 set(wxBUILD_MSVC_MULTIPROC ON)
@@ -23,6 +24,7 @@ set(wxBUILD_USE_STATIC_RUNTIME ON)
 
 add_subdirectory(include/wxWidgets)
 add_subdirectory(include/rapidjson)
+add_subdirectory(include/discord-rpc)
 add_subdirectory(include/cpp-httplib)
 add_subdirectory(include/tomlplusplus)
 
@@ -38,15 +40,13 @@ add_executable(${PROJECT_NAME}
         src/gui/gifs.cpp src/gui/gifs.h
         src/Network/Http.cpp include/Http.h
         src/Login.cpp src/Config.cpp
+        src/Discord.cpp
         )
 
 
 if (WIN32)
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${VcpkgRoot}/lib/discord-rpc.lib
-            ZLIB::ZLIB OpenSSL::SSL OpenSSL::Crypto ws2_32 wx::net wx::core wx::base)
-elseif (UNIX)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s")
-    target_link_libraries(${PROJECT_NAME} wx::net wx::core wx::base)
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+            ZLIB::ZLIB discord-rpc OpenSSL::SSL OpenSSL::Crypto ws2_32 wx::net wx::core wx::base)
 else(WIN32) #MINGW
     add_definitions("-D_WIN32_WINNT=0x0600")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os -s --static")

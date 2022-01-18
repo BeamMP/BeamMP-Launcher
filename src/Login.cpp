@@ -77,7 +77,7 @@ std::string Launcher::Login(const std::string& fields) {
     return GetFail("Invalid message parsing!");
 }
 
-void Launcher::checkLocalKey() {
+void Launcher::checkKey() {
     if(fs::exists("key") && fs::file_size("key") < 100){
         std::ifstream Key("key");
         if(Key.is_open()) {

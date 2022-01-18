@@ -11,27 +11,28 @@
 
 namespace fs = std::filesystem;
 
+
+
 void Launcher::loadConfig() {
-    if(fs::exists("Launcher.cfg")){
-        std::ifstream cfg("Launcher.cfg");
-        if(cfg.is_open()) {
-            auto Size = fs::file_size("Launcher.cfg");
-            std::string Buffer(Size, 0);
-            cfg.read(&Buffer[0], std::streamsize(Size));
-            cfg.close();
-            toml::table config = toml::parse(cfg);
-            LOG(INFO) << "Parsing";
-            if(config["Port"].is_value()) {
-                /*auto Port = config["Port"].as_integer()->get();
-                LOG(INFO) << Port;*/
-                LOG(INFO) << "Got port";
-            }
-        }else LOG(FATAL) << "Failed to open Launcher.cfg!";
+    if(fs::exists("Launcher.cfg")) {
+        toml::table config = toml::parse_file("Launcher.cfg");
+        auto ui = config["UI"];
+        auto build = config["Build"];
+        if(ui.is_boolean()) {
+            EnableUI = ui.as_boolean()->get();
+        } else LOG(ERROR) << "Failed to get 'UI' boolean from config";
+
+        //Default -1 / Release 1 / EA 2 / Dev 3 / Custom 3
+        if(build.is_string()) {
+            TargetBuild = build.as_string()->get();
+            for(char& c : TargetBuild)c = char(tolower(c));
+        } else LOG(ERROR) << "Failed to get 'Build' string from config";
+
     } else {
         std::ofstream cfg("Launcher.cfg");
         if(cfg.is_open()){
             cfg <<
-                R"(Port = 4444
+                R"(UI = true
 Build = "Default"
 )";
             cfg.close();
