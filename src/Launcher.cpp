@@ -6,6 +6,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include "Launcher.h"
 #include "Logger.h"
+#include "Memory.h"
 #include <windows.h>
 #include <shellapi.h>
 
@@ -39,6 +40,20 @@ void Launcher::LaunchGame() {
 
     ShellExecuteA(nullptr, nullptr, "steam://rungameid/284160", nullptr, nullptr, SW_SHOWNORMAL);
     //ShowWindow(GetConsoleWindow(), HIDE_WINDOW);
+}
+
+void Launcher::WaitForGame() {
+    LOG(INFO) << "Waiting for game launch";
+    int Timeout = 0;
+    do{
+        Timeout++;
+        GamePID = Memory::GetProcessID("BeamNG.drive.x64.exe");
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    }while(GamePID == 0 && !Shutdown && Timeout < 600);
+    if(GamePID == 0) {
+        LOG(FATAL) << "Game process not found! aborting";
+        throw ShutdownException("Fatal Error");
+    }else LOG(INFO) << "Game found! PID " << GamePID;
 }
 
 void Launcher::WindowsInit() {

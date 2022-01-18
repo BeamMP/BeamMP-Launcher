@@ -26,6 +26,7 @@ public: //available functions
     std::string Login(const std::string& fields);
     void RunDiscordRPC();
     void QueryRegistry();
+    void WaitForGame();
     void LoadConfig();
     void LaunchGame();
     void CheckKey();
@@ -41,6 +42,7 @@ private: //functions
     void UpdateCheck();
     void Relaunch();
 private: //variables
+    size_t GamePID{0};
     bool EnableUI = true;
     bool Shutdown = false;
     bool LoginAuth = false;

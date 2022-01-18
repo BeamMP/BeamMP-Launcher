@@ -13,13 +13,14 @@ int main(int argc, char* argv[]) {
         launcher.LoadConfig();
         launcher.CheckKey();
         launcher.QueryRegistry();
-        launcher.LaunchGame();
-        //launcher.WaitForGame();
         //UI call
+        //download mod
+        launcher.LaunchGame();
+        launcher.WaitForGame();
 
 
     } catch (const ShutdownException& e) {
-        LOG(INFO) << "Launcher shutting down, reason: " << e.what();
+        LOG(INFO) << "Launcher shutting down with reason: " << e.what();
     } catch (const std::exception& e) {
         LOG(FATAL) << e.what();
     }
