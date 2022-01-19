@@ -44,12 +44,10 @@ void Launcher::LaunchGame() {
 
 void Launcher::WaitForGame() {
     LOG(INFO) << "Waiting for game launch";
-    int Timeout = 0;
     do{
-        Timeout++;
         GamePID = Memory::GetProcessID("BeamNG.drive.x64.exe");
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    }while(GamePID == 0 && !Shutdown && Timeout < 600);
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }while(GamePID == 0 && !Shutdown);
     if(GamePID == 0) {
         LOG(FATAL) << "Game process not found! aborting";
         throw ShutdownException("Fatal Error");
