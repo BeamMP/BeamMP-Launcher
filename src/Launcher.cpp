@@ -43,12 +43,10 @@ Launcher::~Launcher() {
    Abort();
 }
 
-BOOL WINAPI CtrlHandler(DWORD Flag) {
-    if((Flag >= 0 && Flag < 3) || (Flag > 4 && Flag < 7)) {
-        Launcher::StaticAbort();
-        return 1;
-    }
-    return 0;
+void ShutdownHandler(int sig) {
+    LOG(INFO) << "Got signal " << sig;
+    Launcher::StaticAbort();
+    exit(sig);
 }
 
 void Launcher::StaticAbort(Launcher* Instance) {
@@ -63,9 +61,9 @@ void Launcher::StaticAbort(Launcher* Instance) {
 void Launcher::WindowsInit() {
     system("cls");
     SetConsoleTitleA(("BeamMP Launcher v" + FullVersion).c_str());
-    if(!SetConsoleCtrlHandler(CtrlHandler, TRUE)) {
-        LOG(WARNING) << "Failed to set CtrlHandler";
-    }
+    signal(SIGINT, ShutdownHandler);
+    signal(SIGTERM, ShutdownHandler);
+    signal(SIGABRT, ShutdownHandler);
 }
 
 void Launcher::LaunchGame() {
