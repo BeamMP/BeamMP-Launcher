@@ -3,12 +3,11 @@
 /// Copyright (c) 2021-present Anonymous275 read the LICENSE file for more info.
 ///
 
-#include <discord_rpc.h>
 #include "Launcher.h"
 #include "Logger.h"
 
 void Launcher::RichPresence() {
-    Discord_Initialize("629743237988352010", nullptr, 1, nullptr);
+    /*Discord_Initialize("629743237988352010", nullptr, 1, nullptr);
     while(!Shutdown.load()) {
         DiscordRichPresence discordPresence;
         memset(&discordPresence, 0, sizeof(discordPresence));
@@ -18,7 +17,7 @@ void Launcher::RichPresence() {
         Discord_UpdatePresence(&discordPresence);
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
-    Discord_ClearPresence();
+    Discord_ClearPresence();*/
 }
 
 void Launcher::RunDiscordRPC() {
