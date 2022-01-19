@@ -8,21 +8,19 @@
 #include "Logger.h"
 
 void Launcher::RichPresence() {
-    Discord_Initialize("629743237988352010", nullptr, 1,nullptr);
-    int64_t Start{};
+    Discord_Initialize("629743237988352010", nullptr, 1, nullptr);
     while(!Shutdown.load()) {
         DiscordRichPresence discordPresence;
         memset(&discordPresence, 0, sizeof(discordPresence));
         discordPresence.state = DiscordMessage.c_str();
-        discordPresence.startTimestamp = Start;
+        discordPresence.startTimestamp = DiscordTime;
         discordPresence.largeImageKey = "mainlogo";
         Discord_UpdatePresence(&discordPresence);
-        Discord_RunCallbacks();
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
     Discord_ClearPresence();
 }
 
 void Launcher::RunDiscordRPC() {
-    DiscordRPC = std::thread(&Launcher::RichPresence, this);
+    //DiscordRPC = std::thread(&Launcher::RichPresence, this);
 }

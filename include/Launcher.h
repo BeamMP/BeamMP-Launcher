@@ -49,6 +49,7 @@ private: //functions
 private: //variables
     uint32_t GamePID{0};
     bool EnableUI = true;
+    int64_t DiscordTime{};
     bool LoginAuth = false;
     fs::path CurrentPath{};
     std::string BeamRoot{};

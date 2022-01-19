@@ -10,10 +10,16 @@
 #include <windows.h>
 #include <shellapi.h>
 
+LONG WINAPI CrashHandler(EXCEPTION_POINTERS* p) {
+    LOG(ERROR) << "CAUGHT EXCEPTION! Code " << p->ExceptionRecord->ExceptionCode;
+    return EXCEPTION_EXECUTE_HANDLER;
+}
+
 Launcher::Launcher(int argc, char* argv[]) : CurrentPath(std::filesystem::path(argv[0])), DiscordMessage("Just launched") {
     Launcher::StaticAbort(this);
     Log::Init();
     WindowsInit();
+    SetUnhandledExceptionFilter(CrashHandler);
     LOG(INFO) << "Starting Launcher V" << FullVersion;
     UpdateCheck();
 }
