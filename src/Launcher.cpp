@@ -7,6 +7,7 @@
 #include "Launcher.h"
 #include "Logger.h"
 #include "BeamNG.h"
+#include <csignal>
 #include <windows.h>
 #include <shellapi.h>
 
@@ -44,7 +45,7 @@ Launcher::~Launcher() {
 }
 
 void ShutdownHandler(int sig) {
-    LOG(INFO) << "Got signal " << sig;
+    LOG(INFO) << "Got signal (" << sig << ") Launcher shutting down";
     Launcher::StaticAbort();
     exit(sig);
 }
@@ -64,6 +65,7 @@ void Launcher::WindowsInit() {
     signal(SIGINT, ShutdownHandler);
     signal(SIGTERM, ShutdownHandler);
     signal(SIGABRT, ShutdownHandler);
+    signal(SIGBREAK, ShutdownHandler);
 }
 
 void Launcher::LaunchGame() {
