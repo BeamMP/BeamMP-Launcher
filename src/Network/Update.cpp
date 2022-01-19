@@ -6,6 +6,7 @@
 #include "Launcher.h"
 #include "Logger.h"
 #include "Http.h"
+#include "Json.h"
 
 VersionParser::VersionParser(const std::string &from_string) {
     std::string token;
@@ -77,4 +78,58 @@ void Launcher::UpdateCheck() {
         }
         Relaunch();
     }else LOG(INFO) << "Launcher version is up to date";
+}
+
+size_t DirCount(const std::filesystem::path& path){
+    return (size_t)std::distance(std::filesystem::directory_iterator{path}, std::filesystem::directory_iterator{});
+}
+
+void Launcher::ResetMods() {
+    if (!fs::exists(MPUserPath)) {
+        fs::create_directories(MPUserPath);
+        return;
+    }
+    if (DirCount(fs::path(MPUserPath)) > 3) {
+        LOG(WARNING) << "mods/multiplayer will be cleared in 15 seconds, close to abort";
+        std::this_thread::sleep_for(std::chrono::seconds(15));
+    }
+    fs::remove_all(MPUserPath);
+    fs::create_directories(MPUserPath);
+}
+
+void Launcher::EnableMP() {
+    std::string File(BeamUserPath + "mods\\db.json");
+    if(!fs::exists(File))return;
+    auto Size = fs::file_size(File);
+    if(Size < 2)return;
+    std::ifstream db(File);
+    if(db.is_open()) {
+        std::string Data(Size, 0);
+        db.read(&Data[0], std::streamsize(Size));
+        db.close();
+        Json::Document d;
+        d.Parse(Data.c_str());
+        if(Data.at(0) != '{' || d.HasParseError())return;
+        if(!d["mods"].IsNull() && !d["mods"]["multiplayerbeammp"].IsNull()){
+            d["mods"]["multiplayerbeammp"]["active"] = true;
+            Json::StringBuffer buffer;
+            Json::Writer<Json::StringBuffer> writer(buffer);
+            d.Accept(writer);
+            std::ofstream ofs(File);
+            if(ofs.is_open()){
+                ofs << buffer.GetString();
+                ofs.close();
+            } else {
+                LOG(ERROR) << "Failed to write " << File;
+            }
+        }
+    }
+}
+
+void Launcher::SetupMOD() {
+    ResetMods();
+    EnableMP();
+    LOG(INFO) << "Downloading mod please wait";
+    HTTP::Download("https://backend.beammp.com/builds/client?download=true"
+                   "&pk=" + PublicKey + "&branch=" + TargetBuild, MPUserPath + "\\BeamMP.zip");
 }

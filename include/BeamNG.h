@@ -5,8 +5,8 @@
 
 #include <cstdint>
 
-class Memory {
+class BeamNG {
 public:
-    static size_t GetProcessID(const char* PName);
     static size_t GetModuleBase(const char* Name);
+    static uint32_t GetProcessID();
 };

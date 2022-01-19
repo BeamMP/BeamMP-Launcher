@@ -5,12 +5,12 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include <string>
-#include "Memory.h"
+#include "BeamNG.h"
 #undef UNICODE
 #include <windows.h>
 #include <tlhelp32.h>
 
-size_t Memory::GetProcessID(const char* PName) {
+uint32_t BeamNG::GetProcessID() {
     SetLastError(0);
     PROCESSENTRY32 pe32;
     pe32.dwSize = sizeof(PROCESSENTRY32);
@@ -18,7 +18,7 @@ size_t Memory::GetProcessID(const char* PName) {
 
     if(Process32First(Snapshot, &pe32)) {
         do{
-            if(std::string(PName) == pe32.szExeFile)break;
+            if(std::string("BeamNG.drive.x64.exe") == pe32.szExeFile)break;
         }while(Process32Next(Snapshot, &pe32));
     }
 
@@ -30,6 +30,6 @@ size_t Memory::GetProcessID(const char* PName) {
     return pe32.th32ProcessID;
 }
 
-size_t Memory::GetModuleBase(const char* Name) {
+size_t BeamNG::GetModuleBase(const char* Name) {
     return (size_t)GetModuleHandleA(Name);
 }

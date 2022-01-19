@@ -10,7 +10,7 @@
 void Launcher::RichPresence() {
     Discord_Initialize("629743237988352010", nullptr, 1,nullptr);
     int64_t Start{};
-    while(!Shutdown) {
+    while(!Shutdown.load()) {
         DiscordRichPresence discordPresence;
         memset(&discordPresence, 0, sizeof(discordPresence));
         discordPresence.state = DiscordMessage.c_str();

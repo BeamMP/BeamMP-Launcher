@@ -41,7 +41,7 @@ add_executable(${PROJECT_NAME}
         src/Network/Http.cpp include/Http.h
         src/Network/Login.cpp src/Network/Update.cpp
         src/Discord.cpp src/Config.cpp
-        src/Memory/Memory.cpp include/Memory.h
+        src/BeamNG.cpp include/BeamNG.h
         )
 
 

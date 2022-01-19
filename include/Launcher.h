@@ -23,6 +23,7 @@ public: //constructors
     Launcher(int argc, char* argv[]);
     ~Launcher();
 public: //available functions
+    static void StaticAbort(Launcher* Instance = nullptr);
     std::string Login(const std::string& fields);
     void RunDiscordRPC();
     void QueryRegistry();
@@ -30,6 +31,7 @@ public: //available functions
     void LoadConfig();
     void LaunchGame();
     void CheckKey();
+    void SetupMOD();
 public: //Getters
     const std::string& getFullVersion();
     const std::string& getUserRole();
@@ -40,22 +42,26 @@ private: //functions
     void RichPresence();
     void WindowsInit();
     void UpdateCheck();
+    void ResetMods();
+    void EnableMP();
     void Relaunch();
+    void Abort();
 private: //variables
-    size_t GamePID{0};
+    uint32_t GamePID{0};
     bool EnableUI = true;
-    bool Shutdown = false;
     bool LoginAuth = false;
     fs::path CurrentPath{};
     std::string BeamRoot{};
     std::string UserRole{};
     std::string PublicKey{};
     std::thread DiscordRPC{};
+    std::string MPUserPath{};
     std::string BeamVersion{};
     std::string BeamUserPath{};
     std::string DiscordMessage{};
     std::string Version{"3.0"};
     std::string TargetBuild{"default"};
+    std::atomic<bool> Shutdown{false};
     std::string FullVersion{Version + ".0"};
     VersionParser SupportedVersion{"0.24.1.1"};
 };

@@ -82,7 +82,7 @@ bool HTTP::ProgressBar(size_t c, size_t t){
         static double progress_bar_adv;
         progress_bar_adv = round(double(c) / double(t) * 25);
         std::cout << "\r";
-        std::cout << "Progress : [ ";
+        std::cout << "Progress: [ ";
         std::cout << round(double(c) / double(t) * 100);
         std::cout << "% ] [";
         int i;
@@ -102,15 +102,14 @@ bool HTTP::Download(const std::string &IP, const std::string &Path) {
     isDownload = false;
 
     if(Ret.empty())return false;
-
+    std::cout << "\n";
     std::ofstream File(Path, std::ios::binary);
     if(File.is_open()) {
         File << Ret;
         File.close();
-        std::cout << "\n";
-        LOG(INFO) << "Download Complete!";
+        LOG(INFO) << "Download complete!";
     } else {
-        LOG(INFO) << "Failed to open file directory: " << Path;
+        LOG(ERROR) << "Failed to open file directory: " << Path;
         return false;
     }
     return true;
