@@ -134,7 +134,11 @@ std::string Launcher::GetLocalAppdata() {
     PWSTR folderPath = nullptr;
 
     HRESULT hr = SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, nullptr, &folderPath);
-    if (!SUCCEEDED(hr))return {};
+
+    if (!SUCCEEDED(hr)) {
+        LOG(FATAL) << "Failed to get path of localAppData";
+        throw ShutdownException("Fatal Error");
+    }
 
     _bstr_t bstrPath(folderPath);
     std::string Path((char*)bstrPath);
