@@ -2,10 +2,9 @@
 /// Created by Anonymous275 on 1/17/22
 /// Copyright (c) 2021-present Anonymous275 read the LICENSE file for more info.
 ///
-
 #define CPPHTTPLIB_OPENSSL_SUPPORT
-
 #include <cpp-httplib/httplib.h>
+#include "Launcher.h"
 #include <iostream>
 #include "Logger.h"
 #include <fstream>
@@ -14,6 +13,7 @@
 #include <cmath>
 
 bool HTTP::isDownload = false;
+std::atomic<httplib::Client*> CliRef = nullptr;
 std::string HTTP::Get(const std::string &IP) {
     static std::mutex Lock;
     std::scoped_lock Guard(Lock);
@@ -21,7 +21,8 @@ std::string HTTP::Get(const std::string &IP) {
     auto pos = IP.find('/',10);
 
     httplib::Client cli(IP.substr(0, pos));
-    cli.set_connection_timeout(std::chrono::seconds(10));
+    CliRef.store(&cli);
+    cli.set_connection_timeout(std::chrono::seconds(5));
     auto res = cli.Get(IP.substr(pos).c_str(), ProgressBar);
     std::string Ret;
 
@@ -36,7 +37,7 @@ std::string HTTP::Get(const std::string &IP) {
         }
         LOG(ERROR) << "HTTP Get failed on " << httplib::to_string(res.error());
     }
-
+    CliRef.store(nullptr);
     return Ret;
 }
 
@@ -47,7 +48,8 @@ std::string HTTP::Post(const std::string& IP, const std::string& Fields) {
     auto pos = IP.find('/',10);
 
     httplib::Client cli(IP.substr(0, pos));
-    cli.set_connection_timeout(std::chrono::seconds(10));
+    CliRef.store(&cli);
+    cli.set_connection_timeout(std::chrono::seconds(5));
     std::string Ret;
 
     if(!Fields.empty()) {
@@ -72,7 +74,7 @@ std::string HTTP::Post(const std::string& IP, const std::string& Fields) {
             LOG(ERROR) << "HTTP Post failed on " << httplib::to_string(res.error());
         }
     }
-
+    CliRef.store(nullptr);
     if(Ret.empty())return "-1";
     else return Ret;
 }
@@ -89,6 +91,12 @@ bool HTTP::ProgressBar(size_t c, size_t t){
         for (i = 0; i <= progress_bar_adv; i++)std::cout << "#";
         for (i = 0; i < 25 - progress_bar_adv; i++)std::cout << ".";
         std::cout << "]";
+    }
+    if(Launcher::Terminated()) {
+        CliRef.load()->stop();
+        std::cout << '\n';
+        isDownload = false;
+        throw ShutdownException("Interrupted");
     }
     return true;
 }

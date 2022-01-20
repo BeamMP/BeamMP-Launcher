@@ -7,6 +7,7 @@
 #include "Launcher.h"
 #include "Logger.h"
 #include "BeamNG.h"
+#include "Http.h"
 #include <csignal>
 #include <windows.h>
 #include <shellapi.h>
@@ -16,6 +17,7 @@ LONG WINAPI CrashHandler(EXCEPTION_POINTERS* p) {
     return EXCEPTION_EXECUTE_HANDLER;
 }
 
+std::atomic<bool> Launcher::Shutdown{false}, Launcher::Exit{false};
 Launcher::Launcher(int argc, char* argv[]) : CurrentPath(std::filesystem::path(argv[0])), DiscordMessage("Just launched") {
     Launcher::StaticAbort(this);
     Log::Init();
@@ -41,13 +43,20 @@ void Launcher::Abort() {
 }
 
 Launcher::~Launcher() {
-   Abort();
+    if(!Shutdown.load()) {
+        Abort();
+    }
 }
 
 void ShutdownHandler(int sig) {
-    LOG(INFO) << "Got signal (" << sig << ") Launcher shutting down";
     Launcher::StaticAbort();
-    exit(sig);
+    while(HTTP::isDownload) {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+    LOG(INFO) << "Got termination signal (" << sig << ")";
+    while(!Launcher::getExit()) {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
 }
 
 void Launcher::StaticAbort(Launcher* Instance) {
@@ -180,3 +189,14 @@ const std::string& Launcher::getUserRole() {
     return UserRole;
 }
 
+bool Launcher::Terminated() noexcept {
+    return Shutdown.load();
+}
+
+bool Launcher::getExit() {
+    return Exit.load();
+}
+
+void Launcher::setExit(bool exit) {
+    Exit.store(exit);
+}

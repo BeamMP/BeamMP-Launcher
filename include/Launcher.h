@@ -25,6 +25,9 @@ public: //constructors
 public: //available functions
     static void StaticAbort(Launcher* Instance = nullptr);
     std::string Login(const std::string& fields);
+    static bool Terminated() noexcept;
+    static void setExit(bool exit);
+    static bool getExit();
     void RunDiscordRPC();
     void QueryRegistry();
     void WaitForGame();
@@ -62,7 +65,7 @@ private: //variables
     std::string DiscordMessage{};
     std::string Version{"3.0"};
     std::string TargetBuild{"default"};
-    std::atomic<bool> Shutdown{false};
+    static std::atomic<bool> Shutdown, Exit;
     std::string FullVersion{Version + ".0"};
     VersionParser SupportedVersion{"0.24.1.1"};
 };
