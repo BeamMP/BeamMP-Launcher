@@ -11,6 +11,8 @@
 #include <csignal>
 #include <windows.h>
 #include <shellapi.h>
+#include <ShlObj.h>
+#include <comutil.h>
 
 LONG WINAPI CrashHandler(EXCEPTION_POINTERS* p) {
     LOG(ERROR) << "CAUGHT EXCEPTION! Code " << p->ExceptionRecord->ExceptionCode;
@@ -129,16 +131,20 @@ std::string QueryValue(HKEY& hKey, const char* Name) {
     return {};
 }
 std::string Launcher::GetLocalAppdata() {
-    HKEY Folders;
-    LONG RegRes = RegOpenKeyExA(HKEY_CURRENT_USER, R"(SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders)", 0, KEY_READ, &Folders);
-    if(RegRes == ERROR_SUCCESS) {
-        std::string Path = QueryValue(Folders, "Local AppData");
-        if(!Path.empty()) {
-            Path += "\\BeamNG.drive\\";
-            VersionParser GameVer(BeamVersion);
-            Path += GameVer.split[0] + '.' + GameVer.split[1] + '\\';
-            return Path;
-        }
+    PWSTR folderPath = nullptr;
+
+    HRESULT hr = SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, nullptr, &folderPath);
+    if (!SUCCEEDED(hr))return {};
+
+    _bstr_t bstrPath(folderPath);
+    std::string Path((char*)bstrPath);
+    CoTaskMemFree(folderPath);
+
+    if(!Path.empty()) {
+        Path += "\\BeamNG.drive\\";
+        VersionParser GameVer(BeamVersion);
+        Path += GameVer.split[0] + '.' + GameVer.split[1] + '\\';
+        return Path;
     }
     return {};
 }
