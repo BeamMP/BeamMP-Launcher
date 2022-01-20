@@ -20,6 +20,7 @@ LONG WINAPI CrashHandler(EXCEPTION_POINTERS* p) {
 std::atomic<bool> Launcher::Shutdown{false}, Launcher::Exit{false};
 Launcher::Launcher(int argc, char* argv[]) : CurrentPath(std::filesystem::path(argv[0])), DiscordMessage("Just launched") {
     Launcher::StaticAbort(this);
+    DiscordTime = std::time(nullptr);
     Log::Init();
     WindowsInit();
     SetUnhandledExceptionFilter(CrashHandler);
@@ -111,6 +112,7 @@ void Launcher::WaitForGame() {
         throw ShutdownException("Fatal Error");
     }
     LOG(INFO) << "Game found! PID " << GamePID;
+    setDiscordMessage("In menus");
     //TODO: Inject then start IPC
     while(!Shutdown.load() && BeamNG::GetProcessID() != 0) {
         std::this_thread::sleep_for(std::chrono::seconds(2));
@@ -193,10 +195,10 @@ bool Launcher::Terminated() noexcept {
     return Shutdown.load();
 }
 
-bool Launcher::getExit() {
+bool Launcher::getExit() noexcept {
     return Exit.load();
 }
 
-void Launcher::setExit(bool exit) {
+void Launcher::setExit(bool exit) noexcept {
     Exit.store(exit);
 }

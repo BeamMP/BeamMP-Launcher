@@ -13,6 +13,3 @@
 [submodule "include/easyloggingpp"]
 	path = include/easyloggingpp
 	url = https://github.com/amrayn/easyloggingpp.git
-[submodule "include/discord-rpc"]
-	path = include/discord-rpc
-	url = https://github.com/discord/discord-rpc.git

@@ -45,13 +45,14 @@ add_executable(${PROJECT_NAME}
 
 
 if (WIN32)
-    target_link_libraries(${PROJECT_NAME} PRIVATE
-            ZLIB::ZLIB OpenSSL::SSL OpenSSL::Crypto ws2_32 wx::net wx::core wx::base Dbghelp)
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${VcpkgRoot}/lib/discord-rpc.lib
+            ZLIB::ZLIB discord-rpc OpenSSL::SSL OpenSSL::Crypto ws2_32 wx::net wx::core wx::base Dbghelp)
 else(WIN32) #MINGW
     add_definitions("-D_WIN32_WINNT=0x0600")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os -s --static")
-    target_link_libraries(${PROJECT_NAME} ssl crypto ws2_32 ssp crypt32 z Dbghelp)
+    target_link_libraries(${PROJECT_NAME} discord-rpc ssl crypto ws2_32 ssp crypt32 z Dbghelp)
 endif(WIN32)
 add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
 target_include_directories(${PROJECT_NAME} PRIVATE "include")
 target_include_directories(${PROJECT_NAME} PRIVATE "include/rapidjson/include")
+target_include_directories(${PROJECT_NAME} PRIVATE "include/discord-rpc/include")

@@ -25,9 +25,6 @@ public: //constructors
 public: //available functions
     static void StaticAbort(Launcher* Instance = nullptr);
     std::string Login(const std::string& fields);
-    static bool Terminated() noexcept;
-    static void setExit(bool exit);
-    static bool getExit();
     void RunDiscordRPC();
     void QueryRegistry();
     void WaitForGame();
@@ -35,12 +32,17 @@ public: //available functions
     void LaunchGame();
     void CheckKey();
     void SetupMOD();
-public: //Getters
+public: //Getters and Setters
+    void setDiscordMessage(const std::string& message);
+    static void setExit(bool exit) noexcept;
     const std::string& getFullVersion();
+    static bool Terminated() noexcept;
     const std::string& getUserRole();
     const std::string& getVersion();
+    static bool getExit() noexcept;
 private: //functions
     std::string GetLocalAppdata();
+    void UpdatePresence();
     void AdminRelaunch();
     void RichPresence();
     void WindowsInit();
