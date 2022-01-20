@@ -42,7 +42,7 @@ jobs:
         uses: lukka/run-vcpkg@main
         id: runvcpkg
         with:
-            vcpkgArguments: 'zlib discord-rpc openssl'
+            vcpkgArguments: 'zlib discord-rpc rapidjson openssl'
             vcpkgDirectory: '${{ runner.workspace }}/b/vcpkg'
             vcpkgGitCommitId: '75522bb1f2e7d863078bcd06322348f053a9e33f'
             vcpkgTriplet: 'x64-windows-static'

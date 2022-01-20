@@ -1,9 +1,6 @@
 [submodule "wxWidgets"]
 	path = include/wxWidgets
 	url = https://github.com/wxWidgets/wxWidgets.git
-[submodule "rapidjson"]
-	path = include/rapidjson
-	url = https://github.com/Tencent/rapidjson.git
 [submodule "include/cpp-httplib"]
 	path = include/cpp-httplib
 	url = https://github.com/yhirose/cpp-httplib.git

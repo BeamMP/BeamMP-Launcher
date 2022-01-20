@@ -18,12 +18,10 @@ endif(WIN32)
 set(wxUSE_STL ON)
 set(BUILD_EXAMPLES OFF)
 set(wxBUILD_SHARED OFF)
-set(build_static_lib ON)
 set(wxBUILD_MSVC_MULTIPROC ON)
 set(wxBUILD_USE_STATIC_RUNTIME ON)
 
 add_subdirectory(include/wxWidgets)
-add_subdirectory(include/rapidjson)
 add_subdirectory(include/cpp-httplib)
 add_subdirectory(include/tomlplusplus)
 
@@ -54,5 +52,3 @@ else(WIN32) #MINGW
 endif(WIN32)
 add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
 target_include_directories(${PROJECT_NAME} PRIVATE "include")
-target_include_directories(${PROJECT_NAME} PRIVATE "include/rapidjson/include")
-target_include_directories(${PROJECT_NAME} PRIVATE "include/discord-rpc/include")
