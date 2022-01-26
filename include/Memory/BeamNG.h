@@ -1,12 +1,12 @@
 ///
-/// Created by Anonymous275 on 6/17/21
+/// Created by Anonymous275 on 1/21/22
 /// Copyright (c) 2021-present Anonymous275 read the LICENSE file for more info.
 ///
 
+#pragma once
 #include <cstdint>
 
 class BeamNG {
 public:
-    static size_t GetModuleBase(const char* Name);
-    static uint32_t GetProcessID();
+    static void EntryPoint();
 };

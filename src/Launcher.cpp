@@ -4,11 +4,11 @@
 ///
 
 #define WIN32_LEAN_AND_MEAN
+#include "Memory/Memory.h"
 #include "Launcher.h"
 #include "Logger.h"
-#include "BeamNG.h"
-#include "Http.h"
 #include <csignal>
+#include "Http.h"
 #include <windows.h>
 #include <shellapi.h>
 #include <ShlObj.h>
@@ -81,7 +81,7 @@ void Launcher::WindowsInit() {
 }
 
 void Launcher::LaunchGame() {
-    if(BeamNG::GetProcessID() != 0) {
+    if(Memory::GetBeamNGPID() != 0) {
         LOG(FATAL) << "Game is already running, please close it and try again!";
         throw ShutdownException("Fatal Error");
     }
@@ -105,7 +105,7 @@ void Launcher::LaunchGame() {
 void Launcher::WaitForGame() {
     LOG(INFO) << "Waiting for the game, please start BeamNG manually in case of steam issues";
     do{
-        GamePID = BeamNG::GetProcessID();
+        GamePID = Memory::GetBeamNGPID();
         std::this_thread::sleep_for(std::chrono::seconds(2));
     }while(GamePID == 0 && !Shutdown.load());
     if(Shutdown.load())return;
@@ -114,9 +114,10 @@ void Launcher::WaitForGame() {
         throw ShutdownException("Fatal Error");
     }
     LOG(INFO) << "Game found! PID " << GamePID;
+    Memory::Inject(GamePID);
+    //TODO: start IPC
     setDiscordMessage("In menus");
-    //TODO: Inject then start IPC
-    while(!Shutdown.load() && BeamNG::GetProcessID() != 0) {
+    while(!Shutdown.load() && Memory::GetBeamNGPID() != 0) {
         std::this_thread::sleep_for(std::chrono::seconds(2));
     }
     LOG(INFO) << "Game process was lost";

@@ -32,23 +32,25 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 add_executable(${PROJECT_NAME}
         src/main.cpp include/easyloggingpp/src/easylogging++.cc
         src/Launcher.cpp include/Launcher.h
+        src/Memory/Memory.cpp include/Memory/Memory.h include/Memory/Patterns.h
+        src/Memory/Detours.cpp include/Memory/Detours.h
+        src/Memory/BeamNG.cpp include/Memory/BeamNG.h
         src/Logger.cpp include/Logger.h
         src/gui/Gui.cpp include/Json.h
         src/gui/gifs.cpp src/gui/gifs.h
         src/Network/Http.cpp include/Http.h
         src/Network/Login.cpp src/Network/Update.cpp
         src/Discord.cpp src/Config.cpp
-        src/BeamNG.cpp include/BeamNG.h
         )
 
 
 if (WIN32)
     target_link_libraries(${PROJECT_NAME} PRIVATE ${VcpkgRoot}/lib/discord-rpc.lib
-            ZLIB::ZLIB discord-rpc OpenSSL::SSL OpenSSL::Crypto ws2_32 wx::net wx::core wx::base Dbghelp comsuppw)
+            ZLIB::ZLIB discord-rpc OpenSSL::SSL OpenSSL::Crypto ws2_32 wx::net wx::core wx::base Dbghelp comsuppw detours)
 else(WIN32) #MINGW
     add_definitions("-D_WIN32_WINNT=0x0600")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os -s --static")
-    target_link_libraries(${PROJECT_NAME} discord-rpc ssl crypto ws2_32 ssp crypt32 z Dbghelp comsuppw)
+    target_link_libraries(${PROJECT_NAME} discord-rpc ssl crypto ws2_32 ssp crypt32 z Dbghelp comsuppw detours)
 endif(WIN32)
 add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
 target_include_directories(${PROJECT_NAME} PRIVATE "include")
