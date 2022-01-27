@@ -8,10 +8,11 @@
 
 class Memory{
 public:
-    static uint64_t FindByPattern(const char* module, const char* Pattern, const char* Mask);
+    static uint64_t FindPattern(const char* module, const char* Pattern, const char* Mask);
     static uint64_t GetModuleBase(const char* Name);
     static void Print(const std::string& msg);
     static void Inject(uint32_t PID);
+    static uint32_t GetTickCount();
     static uint32_t GetBeamNGPID();
     static uint32_t EntryPoint();
     static uint32_t GetPID();

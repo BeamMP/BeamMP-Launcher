@@ -7,22 +7,51 @@
 #include "Memory/BeamNG.h"
 #include "Memory/Memory.h"
 
-std::string GetHex(uint64_t num) {
-    char buffer[30];
-    sprintf(buffer, "%llx", num);
-    return std::string{buffer};
+uint32_t BeamNG::GetTickCount_D() {
+    if(GEState != nullptr){
+        lua_get_field(GEState, -10002, "print");
+        lua_push_fstring(GEState, "Helloooooo");
+        lua_p_call(GEState, 1, 0, 0);
+    }
+    return Memory::GetTickCount();
+}
+
+int BeamNG::lua_open_jit_D(lua_State* State) {
+    Memory::Print("Got lua State");
+    GEState = State;
+    OpenJITDetour->Detach();
+    int r = lua_open_jit(State);
+    OpenJITDetour->Attach();
+    return r;
 }
 
 void BeamNG::EntryPoint() {
-    auto GameBaseAddr = Memory::GetModuleBase("BeamNG.drive.x64.exe");
-    auto DllBaseAddr = Memory::GetModuleBase("libbeamng.x64.dll");
     Memory::Print("PID : " + std::to_string(Memory::GetPID()));
-
-    auto res = Memory::FindByPattern("BeamNG.drive.x64.exe", Patterns::GetTickCount[0], Patterns::GetTickCount[1]);
-    auto res2 = Memory::FindByPattern("BeamNG.drive.x64.exe", Patterns::open_jit[0], Patterns::open_jit[1]);
-    auto res3 = Memory::FindByPattern("BeamNG.drive.x64.exe", Patterns::get_field[0], Patterns::get_field[1]);
-    auto res4 = Memory::FindByPattern("BeamNG.drive.x64.exe", Patterns::push_fstring[0], Patterns::push_fstring[1]);
-    auto res5 = Memory::FindByPattern("BeamNG.drive.x64.exe", Patterns::p_call[0], Patterns::p_call[1]);
-
-
+    GameModule = "BeamNG.drive.x64.exe";
+    DllModule = "libbeamng.x64.dll";
+    GEState = nullptr;
+    GameBaseAddr = Memory::GetModuleBase(GameModule);
+    DllBaseAddr = Memory::GetModuleBase(DllModule);
+    GetTickCount = reinterpret_cast<def::GetTickCount>(Memory::FindPattern(GameModule, Patterns::GetTickCount[0],Patterns::GetTickCount[1]));
+    lua_open_jit = reinterpret_cast<def::lua_open_jit>(Memory::FindPattern(GameModule, Patterns::open_jit[0], Patterns::open_jit[1]));
+    lua_push_fstring = reinterpret_cast<def::lua_push_fstring>(Memory::FindPattern(GameModule, Patterns::push_fstring[0], Patterns::push_fstring[1]));
+    lua_get_field = reinterpret_cast<def::lua_get_field>(Memory::FindPattern(GameModule, Patterns::get_field[0], Patterns::get_field[1]));
+    lua_p_call = reinterpret_cast<def::lua_p_call>(Memory::FindPattern(GameModule, Patterns::p_call[0], Patterns::p_call[1]));
+    TickCountDetour = std::make_unique<Detours>((void*)GetTickCount, (void*)GetTickCount_D);
+    TickCountDetour->Attach();
+    OpenJITDetour = std::make_unique<Detours>((void*)lua_open_jit, (void*)lua_open_jit_D);
+    OpenJITDetour->Attach();
 }
+
+std::unique_ptr<Detours> BeamNG::TickCountDetour;
+std::unique_ptr<Detours> BeamNG::OpenJITDetour;
+uint64_t BeamNG::GameBaseAddr;
+uint64_t BeamNG::DllBaseAddr;
+def::GetTickCount BeamNG::GetTickCount;
+def::lua_open_jit BeamNG::lua_open_jit;
+def::lua_push_fstring BeamNG::lua_push_fstring;
+def::lua_get_field BeamNG::lua_get_field;
+def::lua_p_call BeamNG::lua_p_call;
+const char* BeamNG::GameModule;
+const char* BeamNG::DllModule;
+lua_State* BeamNG::GEState;

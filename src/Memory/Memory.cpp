@@ -40,7 +40,7 @@ uint32_t Memory::GetPID() {
     return GetCurrentProcessId();
 }
 
-uint64_t Memory::FindByPattern(const char* module, const char* Pattern, const char* Mask) {
+uint64_t Memory::FindPattern(const char* module, const char* Pattern, const char* Mask) {
     MODULEINFO mInfo{nullptr};
     GetModuleInformation(GetCurrentProcess(), GetModuleHandleA(module), &mInfo, sizeof(MODULEINFO));
     auto base = uint64_t(mInfo.lpBaseOfDll);
@@ -128,4 +128,8 @@ uint32_t Memory::EntryPoint() {
     SetConsoleTitleA("BeamMP Console");
     BeamNG::EntryPoint();
     return 0;
+}
+
+uint32_t Memory::GetTickCount() {
+    return ::GetTickCount();
 }

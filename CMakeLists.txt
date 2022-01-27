@@ -31,10 +31,11 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 
 add_executable(${PROJECT_NAME}
         src/main.cpp include/easyloggingpp/src/easylogging++.cc
-        src/Launcher.cpp include/Launcher.h
+        src/Launcher.cpp include/Launcher.h include/Memory/Definitions.h
         src/Memory/Memory.cpp include/Memory/Memory.h include/Memory/Patterns.h
         src/Memory/Detours.cpp include/Memory/Detours.h
         src/Memory/BeamNG.cpp include/Memory/BeamNG.h
+        src/Memory/IPC.cpp include/Memory/IPC.h
         src/Logger.cpp include/Logger.h
         src/gui/Gui.cpp include/Json.h
         src/gui/gifs.cpp src/gui/gifs.h
