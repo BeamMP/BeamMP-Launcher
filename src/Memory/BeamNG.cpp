@@ -3,55 +3,89 @@
 /// Copyright (c) 2021-present Anonymous275 read the LICENSE file for more info.
 ///
 
-#include "Memory/Patterns.h"
 #include "Memory/BeamNG.h"
 #include "Memory/Memory.h"
 
 uint32_t BeamNG::GetTickCount_D() {
-    if(GEState != nullptr){
-        lua_get_field(GEState, -10002, "print");
-        lua_push_fstring(GEState, "Helloooooo");
-        lua_p_call(GEState, 1, 0, 0);
-    }
-    return Memory::GetTickCount();
+   if(GELua::State != nullptr) {
+       IPCFromLauncher->try_receive();
+       if(!IPCFromLauncher->receive_timed_out()) {
+           if(IPCFromLauncher->msg()[0] == 'C') {
+               GELua::lua_get_field(GELua::State, -10002, "handleCoreMsg");
+               Memory::Print(std::string("Sending to handleCoreMsg -> ") + char(IPCFromLauncher->msg()[1]) + std::to_string(IPCFromLauncher->msg().size()) );
+           } else {
+               GELua::lua_get_field(GELua::State, -10002, "handleGameMsg");
+               Memory::Print(std::string("Sending to handleGameMsg -> ") + char(IPCFromLauncher->msg()[1]) + std::to_string(IPCFromLauncher->msg().size()) );
+           }
+           GELua::lua_push_fstring(GELua::State, "%s", &IPCFromLauncher->c_str()[1]);
+           GELua::lua_p_call(GELua::State, 1, 0, 0);
+           IPCFromLauncher->confirm_receive();
+       }
+   }
+   return Memory::GetTickCount();
 }
 
 int BeamNG::lua_open_jit_D(lua_State* State) {
     Memory::Print("Got lua State");
-    GEState = State;
+    GELua::State = State;
+    RegisterGEFunctions();
     OpenJITDetour->Detach();
-    int r = lua_open_jit(State);
+    int r = GELua::lua_open_jit(State);
     OpenJITDetour->Attach();
     return r;
 }
 
 void BeamNG::EntryPoint() {
     Memory::Print("PID : " + std::to_string(Memory::GetPID()));
-    GameModule = "BeamNG.drive.x64.exe";
-    DllModule = "libbeamng.x64.dll";
-    GEState = nullptr;
-    GameBaseAddr = Memory::GetModuleBase(GameModule);
-    DllBaseAddr = Memory::GetModuleBase(DllModule);
-    GetTickCount = reinterpret_cast<def::GetTickCount>(Memory::FindPattern(GameModule, Patterns::GetTickCount[0],Patterns::GetTickCount[1]));
-    lua_open_jit = reinterpret_cast<def::lua_open_jit>(Memory::FindPattern(GameModule, Patterns::open_jit[0], Patterns::open_jit[1]));
-    lua_push_fstring = reinterpret_cast<def::lua_push_fstring>(Memory::FindPattern(GameModule, Patterns::push_fstring[0], Patterns::push_fstring[1]));
-    lua_get_field = reinterpret_cast<def::lua_get_field>(Memory::FindPattern(GameModule, Patterns::get_field[0], Patterns::get_field[1]));
-    lua_p_call = reinterpret_cast<def::lua_p_call>(Memory::FindPattern(GameModule, Patterns::p_call[0], Patterns::p_call[1]));
-    TickCountDetour = std::make_unique<Detours>((void*)GetTickCount, (void*)GetTickCount_D);
+    GELua::FindAddresses();
+    /*GameBaseAddr = Memory::GetModuleBase(GameModule);
+    DllBaseAddr = Memory::GetModuleBase(DllModule);*/
+    TickCountDetour = std::make_unique<Detours>((void*)GELua::GetTickCount, (void*)GetTickCount_D);
     TickCountDetour->Attach();
-    OpenJITDetour = std::make_unique<Detours>((void*)lua_open_jit, (void*)lua_open_jit_D);
+    OpenJITDetour = std::make_unique<Detours>((void*)GELua::lua_open_jit, (void*)lua_open_jit_D);
     OpenJITDetour->Attach();
+    IPCToLauncher = std::make_unique<IPC>("BeamMP_IN", "BeamMP_Sem3", "BeamMP_Sem4", 0x1900000);
+    IPCFromLauncher = std::make_unique<IPC>("BeamMP_OUT", "BeamMP_Sem1", "BeamMP_Sem2", 0x1900000);
+}
+
+int Core(lua_State* L) {
+    if(lua_gettop(L) == 1) {
+        size_t Size;
+        const char* Data = GELua::lua_tolstring(L, 1, &Size);
+        Memory::Print("Core -> " + std::string(Data) + " - " + std::to_string(Size));
+        std::string msg(Data, Size);
+        BeamNG::SendIPC("C" + msg);
+    }
+    return 0;
+}
+
+int Game(lua_State* L) {
+    if(lua_gettop(L) == 1) {
+        size_t Size;
+        const char* Data = GELua::lua_tolstring(L, 1, &Size);
+        Memory::Print("Game -> " + std::string(Data) + " - " + std::to_string(Size));
+        std::string msg(Data, Size);
+        BeamNG::SendIPC("G" + msg);
+    }
+    return 0;
+}
+
+void BeamNG::RegisterGEFunctions() {
+    Memory::Print("Registering GE Functions");
+    GELuaTable::Begin(GELua::State);
+    GELuaTable::InsertFunction(GELua::State, "Core", Core);
+    GELuaTable::InsertFunction(GELua::State, "Game", Game);
+    GELuaTable::End(GELua::State, "MP");
+    Memory::Print("Registered!");
+}
+
+void BeamNG::SendIPC(const std::string& Data) {
+    IPCToLauncher->send(Data);
 }
 
 std::unique_ptr<Detours> BeamNG::TickCountDetour;
 std::unique_ptr<Detours> BeamNG::OpenJITDetour;
+std::unique_ptr<IPC> BeamNG::IPCFromLauncher;
+std::unique_ptr<IPC> BeamNG::IPCToLauncher;
 uint64_t BeamNG::GameBaseAddr;
 uint64_t BeamNG::DllBaseAddr;
-def::GetTickCount BeamNG::GetTickCount;
-def::lua_open_jit BeamNG::lua_open_jit;
-def::lua_push_fstring BeamNG::lua_push_fstring;
-def::lua_get_field BeamNG::lua_get_field;
-def::lua_p_call BeamNG::lua_p_call;
-const char* BeamNG::GameModule;
-const char* BeamNG::DllModule;
-lua_State* BeamNG::GEState;

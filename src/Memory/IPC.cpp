@@ -33,11 +33,15 @@ void IPC::send(const std::string& msg) noexcept {
     memcpy(Data_ + sizeof(size_t), msg.c_str(), Size);
     memset(Data_ + sizeof(size_t) + Size, 0, 3);
     ReleaseSemaphore(SemHandle_, 1, nullptr);
-    WaitForSingleObject(SemConfHandle_, 5000);
+    SendTimeout = WaitForSingleObject(SemConfHandle_, 5000) == WAIT_TIMEOUT;
 }
 
-void IPC::receive() {
-    WaitForSingleObject(SemHandle_, INFINITE);
+void IPC::receive() noexcept {
+    RcvTimeout = WaitForSingleObject(SemHandle_, 5000) == WAIT_TIMEOUT;
+}
+
+void IPC::try_receive() noexcept {
+    RcvTimeout = WaitForSingleObject(SemHandle_, 0) == WAIT_TIMEOUT;
 }
 
 size_t IPC::size() const noexcept {
@@ -57,6 +61,14 @@ const std::string& IPC::msg() noexcept {
     memcpy(&Size, Data_, sizeof(size_t));
     Msg_ = std::string(c_str(), Size);
     return Msg_;
+}
+
+bool IPC::receive_timed_out() const noexcept {
+    return RcvTimeout;
+}
+
+bool IPC::send_timed_out() const noexcept {
+    return SendTimeout;
 }
 
 IPC::~IPC() noexcept {

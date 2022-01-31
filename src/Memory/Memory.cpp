@@ -40,17 +40,17 @@ uint32_t Memory::GetPID() {
     return GetCurrentProcessId();
 }
 
-uint64_t Memory::FindPattern(const char* module, const char* Pattern, const char* Mask) {
+uint64_t Memory::FindPattern(const char* module, const char* Pattern[]) {
     MODULEINFO mInfo{nullptr};
     GetModuleInformation(GetCurrentProcess(), GetModuleHandleA(module), &mInfo, sizeof(MODULEINFO));
     auto base = uint64_t(mInfo.lpBaseOfDll);
     auto size = uint32_t(mInfo.SizeOfImage);
-    auto len = strlen(Mask);
+    auto len = strlen(Pattern[1]);
 
     for(auto i = 0; i < size - len; i++) {
         bool found = true;
         for(auto j = 0; j < len && found; j++) {
-            found &= Mask[j] == '?' || Pattern[j] == *(char*)(base+i+j);
+            found &= Pattern[1][j] == '?' || Pattern[0][j] == *(char*)(base+i+j);
         }
         if(found) {
             return base+i;

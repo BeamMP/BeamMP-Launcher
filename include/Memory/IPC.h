@@ -14,15 +14,20 @@ public:
     [[nodiscard]] char* c_str() const noexcept;
     void send(const std::string& msg) noexcept;
     [[nodiscard]] void* raw() const noexcept;
+    [[nodiscard]] bool receive_timed_out() const noexcept;
+    [[nodiscard]] bool send_timed_out() const noexcept;
     const std::string& msg() noexcept;
     void confirm_receive() noexcept;
-    void receive();
+    void try_receive() noexcept;
+    void receive() noexcept;
     ~IPC() noexcept;
 private:
     void* SemConfHandle_;
     void* MemoryHandle_;
     void* SemHandle_;
     std::string Msg_;
+    bool SendTimeout;
+    bool RcvTimeout;
     size_t Size_;
     char* Data_;
 };

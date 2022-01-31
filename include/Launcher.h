@@ -4,9 +4,11 @@
 ///
 
 #pragma once
+#include "Memory/IPC.h"
 #include <filesystem>
-#include <string>
+#include "Server.h"
 #include <thread>
+
 
 namespace fs = std::filesystem;
 
@@ -25,6 +27,7 @@ public: //constructors
 public: //available functions
     static void StaticAbort(Launcher* Instance = nullptr);
     std::string Login(const std::string& fields);
+    void SendIPC(const std::string& Data, bool core = true);
     void RunDiscordRPC();
     void QueryRegistry();
     void WaitForGame();
@@ -36,11 +39,15 @@ public: //Getters and Setters
     void setDiscordMessage(const std::string& message);
     static void setExit(bool exit) noexcept;
     const std::string& getFullVersion();
+    const std::string& getMPUserPath();
     static bool Terminated() noexcept;
+    const std::string& getPublicKey();
     const std::string& getUserRole();
     const std::string& getVersion();
     static bool getExit() noexcept;
+
 private: //functions
+    void HandleIPC(const std::string& Data);
     std::string GetLocalAppdata();
     void UpdatePresence();
     void AdminRelaunch();
@@ -50,6 +57,7 @@ private: //functions
     void ResetMods();
     void EnableMP();
     void Relaunch();
+    void ListenIPC();
     void Abort();
 private: //variables
     uint32_t GamePID{0};
@@ -60,16 +68,20 @@ private: //variables
     std::string BeamRoot{};
     std::string UserRole{};
     std::string PublicKey{};
+    std::thread IPCSystem{};
     std::thread DiscordRPC{};
     std::string MPUserPath{};
     std::string BeamVersion{};
     std::string BeamUserPath{};
     std::string DiscordMessage{};
     std::string Version{"3.0"};
+    Server ServerHandler{this};
     std::string TargetBuild{"default"};
     static std::atomic<bool> Shutdown, Exit;
     std::string FullVersion{Version + ".0"};
     VersionParser SupportedVersion{"0.24.1.1"};
+    IPC IPCToGame{"BeamMP_OUT", "BeamMP_Sem1", "BeamMP_Sem2", 0x1900000};
+    IPC IPCFromGame{"BeamMP_IN", "BeamMP_Sem3", "BeamMP_Sem4", 0x1900000};
 };
 
 class ShutdownException : public std::runtime_error {

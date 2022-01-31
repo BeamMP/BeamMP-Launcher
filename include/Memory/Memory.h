@@ -8,7 +8,7 @@
 
 class Memory{
 public:
-    static uint64_t FindPattern(const char* module, const char* Pattern, const char* Mask);
+    static uint64_t FindPattern(const char* module, const char* Pattern[]);
     static uint64_t GetModuleBase(const char* Name);
     static void Print(const std::string& msg);
     static void Inject(uint32_t PID);

@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
     } catch (const std::exception& e) {
         LOG(FATAL) << e.what();
     }
-    std::this_thread::sleep_for(std::chrono::seconds(5));
+    std::this_thread::sleep_for(std::chrono::seconds(2));
     Launcher::setExit(true);
     return 0;
 }

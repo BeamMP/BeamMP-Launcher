@@ -13,6 +13,7 @@
 #include <shellapi.h>
 #include <ShlObj.h>
 #include <comutil.h>
+#include <mutex>
 
 LONG WINAPI CrashHandler(EXCEPTION_POINTERS* p) {
     LOG(ERROR) << "CAUGHT EXCEPTION! Code " << p->ExceptionRecord->ExceptionCode;
@@ -34,6 +35,9 @@ void Launcher::Abort() {
     Shutdown.store(true);
     if(DiscordRPC.joinable()) {
         DiscordRPC.join();
+    }
+    if(IPCSystem.joinable()) {
+        IPCSystem.join();
     }
     if(!MPUserPath.empty()) {
         ResetMods();
@@ -114,13 +118,38 @@ void Launcher::WaitForGame() {
         throw ShutdownException("Fatal Error");
     }
     LOG(INFO) << "Game found! PID " << GamePID;
+    IPCSystem = std::thread(&Launcher::ListenIPC, this);
     Memory::Inject(GamePID);
-    //TODO: start IPC
     setDiscordMessage("In menus");
     while(!Shutdown.load() && Memory::GetBeamNGPID() != 0) {
         std::this_thread::sleep_for(std::chrono::seconds(2));
     }
     LOG(INFO) << "Game process was lost";
+}
+
+void Launcher::ListenIPC() {
+    while(!Shutdown.load()) {
+        IPCFromGame.receive();
+        if(!IPCFromGame.receive_timed_out()) {
+            auto& MSG = IPCFromGame.msg();
+            if(MSG[0] == 'C') {
+                HandleIPC(IPCFromGame.msg().substr(1));
+            } else {
+                ServerHandler.ServerSend(IPCFromGame.msg().substr(1), false);
+            }
+            IPCFromGame.confirm_receive();
+        }
+    }
+}
+
+void Launcher::SendIPC(const std::string& Data, bool core)  {
+    static std::mutex Lock;
+    std::scoped_lock Guard(Lock);
+    if(core) {
+        IPCToGame.send("C" + Data);
+    } else {
+        IPCToGame.send("G" + Data);
+    }
 }
 
 std::string QueryValue(HKEY& hKey, const char* Name) {
@@ -194,7 +223,7 @@ const std::string& Launcher::getFullVersion() {
     return FullVersion;
 }
 
-const std::string &Launcher::getVersion() {
+const std::string& Launcher::getVersion() {
     return Version;
 }
 
@@ -212,4 +241,12 @@ bool Launcher::getExit() noexcept {
 
 void Launcher::setExit(bool exit) noexcept {
     Exit.store(exit);
+}
+
+const std::string& Launcher::getMPUserPath() {
+    return MPUserPath;
+}
+
+const std::string &Launcher::getPublicKey() {
+    return PublicKey;
 }
