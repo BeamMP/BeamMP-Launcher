@@ -4,7 +4,7 @@
 ///
 
 #pragma once
-#include "Memory/Detours.h"
+#include "Memory/Hook.h"
 #include "Memory/GELua.h"
 #include "Memory/IPC.h"
 #include <memory>
@@ -15,13 +15,14 @@ public:
     static void EntryPoint();
     static void SendIPC(const std::string& Data);
 private:
-    static std::unique_ptr<Detours> TickCountDetour;
-    static std::unique_ptr<Detours> OpenJITDetour;
-    static std::unique_ptr<IPC> IPCFromLauncher;
-    static std::unique_ptr<IPC> IPCToLauncher;
+    static inline std::unique_ptr<Hook<def::GEUpdate>> TickCountDetour;
+    static inline std::unique_ptr<Hook<def::lua_open_jit>> OpenJITDetour;
+    static inline std::unique_ptr<IPC> IPCFromLauncher;
+    static inline std::unique_ptr<IPC> IPCToLauncher;
+    static inline uint64_t GameBaseAddr;
+    static inline uint64_t DllBaseAddr;
     static int lua_open_jit_D(lua_State* State);
     static void RegisterGEFunctions();
-    static uint32_t GetTickCount_D();
-    static uint64_t GameBaseAddr;
-    static uint64_t DllBaseAddr;
+    static int GetTickCount_D(void* GEState, void* Param2, void* Param3, void* Param4);
+    static void IPCListener();
 };

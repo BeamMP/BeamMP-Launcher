@@ -47,12 +47,18 @@ void Server::TCPClientMain() {
     char Code = 'C';
     send(TCPSocket, &Code, 1, 0);
     SyncResources();
-    UDPConnection = std::thread(&Server::UDPMain, this);
     while(!Terminate.load()) {
         ServerParser(TCPRcv());
     }
     LauncherInstance->SendIPC("T", false);
     KillSocket(TCPSocket);
+}
+
+void Server::StartUDP() {
+    if(TCPConnection.joinable() && !UDPConnection.joinable()) {
+        LOG(INFO) << "Connecting UDP";
+        UDPConnection = std::thread(&Server::UDPMain, this);
+    }
 }
 
 void Server::UDPSend(std::string Data) {
@@ -153,6 +159,8 @@ void Server::PingLoop() {
 
 void Server::Close() {
     Terminate.store(true);
+    KillSocket(TCPSocket);
+    KillSocket(UDPSocket);
     Ping = -1;
     if(TCPConnection.joinable()) {
         TCPConnection.join();
@@ -163,8 +171,6 @@ void Server::Close() {
     if(AutoPing.joinable()) {
         AutoPing.join();
     }
-    KillSocket(TCPSocket);
-    KillSocket(UDPSocket);
 }
 
 const std::string &Server::getMap() {

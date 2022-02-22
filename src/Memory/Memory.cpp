@@ -5,12 +5,12 @@
 
 #define WIN32_LEAN_AND_MEAN
 #undef UNICODE
-#include <string>
-#include <windows.h>
-#include <tlhelp32.h>
-#include <psapi.h>
 #include "Memory/Memory.h"
 #include "Memory/BeamNG.h"
+#include <string>
+#include <tlhelp32.h>
+#include <psapi.h>
+
 
 uint32_t Memory::GetBeamNGPID() {
     SetLastError(0);
@@ -46,7 +46,6 @@ uint64_t Memory::FindPattern(const char* module, const char* Pattern[]) {
     auto base = uint64_t(mInfo.lpBaseOfDll);
     auto size = uint32_t(mInfo.SizeOfImage);
     auto len = strlen(Pattern[1]);
-
     for(auto i = 0; i < size - len; i++) {
         bool found = true;
         for(auto j = 0; j < len && found; j++) {
@@ -56,7 +55,6 @@ uint64_t Memory::FindPattern(const char* module, const char* Pattern[]) {
             return base+i;
         }
     }
-
     return 0;
 }
 

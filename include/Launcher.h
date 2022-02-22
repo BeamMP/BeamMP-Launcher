@@ -74,12 +74,12 @@ private: //variables
     std::string BeamVersion{};
     std::string BeamUserPath{};
     std::string DiscordMessage{};
-    std::string Version{"3.0"};
+    std::string Version{"2.0"};
     Server ServerHandler{this};
     std::string TargetBuild{"default"};
     static std::atomic<bool> Shutdown, Exit;
-    std::string FullVersion{Version + ".0"};
-    VersionParser SupportedVersion{"0.24.1.1"};
+    std::string FullVersion{Version + ".99"};
+    VersionParser SupportedVersion{"0.24.1.2"};
     IPC IPCToGame{"BeamMP_OUT", "BeamMP_Sem1", "BeamMP_Sem2", 0x1900000};
     IPC IPCFromGame{"BeamMP_IN", "BeamMP_Sem3", "BeamMP_Sem4", 0x1900000};
 };

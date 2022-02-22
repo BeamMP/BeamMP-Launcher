@@ -10,11 +10,11 @@
 IPC::IPC(const char* MemID, const char* SemID, const char* SemID2, size_t Size) noexcept : Size_(Size) {
     SemHandle_ = OpenSemaphoreA(SYNCHRONIZE | SEMAPHORE_MODIFY_STATE, FALSE, SemID);
     if(SemHandle_ == nullptr) {
-        SemHandle_ = CreateSemaphoreA(nullptr, 0, 2, SemID);
+        SemHandle_ = CreateSemaphoreA(nullptr, 0, 1, SemID);
     }
     SemConfHandle_ = OpenSemaphoreA(SYNCHRONIZE | SEMAPHORE_MODIFY_STATE, FALSE, SemID2);
     if(SemConfHandle_ == nullptr) {
-        SemConfHandle_ = CreateSemaphoreA(nullptr, 0, 2, SemID2);
+        SemConfHandle_ = CreateSemaphoreA(nullptr, 0, 1, SemID2);
     }
     MemoryHandle_ = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, MemID);
     if(MemoryHandle_ == nullptr) {

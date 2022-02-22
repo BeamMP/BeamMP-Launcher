@@ -9,17 +9,19 @@
 class GELua {
 public:
     static void FindAddresses();
-    static def::GetTickCount GetTickCount;
-    static def::lua_open_jit lua_open_jit;
-    static def::lua_push_fstring lua_push_fstring;
-    static def::lua_get_field lua_get_field;
-    static def::lua_p_call lua_p_call;
-    static def::lua_createtable lua_createtable;
-    static def::lua_pushcclosure lua_pushcclosure;
-    static def::lua_setfield lua_setfield;
-    static def::lua_settable lua_settable;
-    static def::lua_tolstring lua_tolstring;
-    static lua_State* State;
+    static inline def::GEUpdate GEUpdate;
+    static inline def::lua_settop lua_settop;
+    static inline def::GetTickCount GetTickCount;
+    static inline def::lua_open_jit lua_open_jit;
+    static inline def::lua_push_fstring lua_push_fstring;
+    static inline def::lua_get_field lua_get_field;
+    static inline def::lua_p_call lua_p_call;
+    static inline def::lua_createtable lua_createtable;
+    static inline def::lua_pushcclosure lua_pushcclosure;
+    static inline def::lua_setfield lua_setfield;
+    static inline def::lua_settable lua_settable;
+    static inline def::lua_tolstring lua_tolstring;
+    static inline lua_State* State;
 };
 
 namespace GELuaTable {

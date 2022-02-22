@@ -33,6 +33,7 @@ Launcher::Launcher(int argc, char* argv[]) : CurrentPath(std::filesystem::path(a
 
 void Launcher::Abort() {
     Shutdown.store(true);
+    ServerHandler.Close();
     if(DiscordRPC.joinable()) {
         DiscordRPC.join();
     }
@@ -145,10 +146,10 @@ void Launcher::ListenIPC() {
 void Launcher::SendIPC(const std::string& Data, bool core)  {
     static std::mutex Lock;
     std::scoped_lock Guard(Lock);
-    if(core) {
-        IPCToGame.send("C" + Data);
-    } else {
-        IPCToGame.send("G" + Data);
+    if(core)IPCToGame.send("C" + Data);
+    else IPCToGame.send("G" + Data);
+    if(IPCToGame.send_timed_out()) {
+        LOG(WARNING) << "Timed out while sending \"" << Data << "\"";
     }
 }
 

@@ -13,10 +13,9 @@
 void Launcher::HandleIPC(const std::string& Data) {
     char Code = Data.at(0), SubCode = 0;
     if(Data.length() > 1)SubCode = Data.at(1);
-    LOG(INFO) << Data;
     switch (Code) {
         case 'A':
-            SendIPC(Data.substr(0,1));
+            ServerHandler.StartUDP();
             break;
         case 'B':
             ServerHandler.Close();
@@ -24,6 +23,7 @@ void Launcher::HandleIPC(const std::string& Data) {
             LOG(INFO) << "Sent Server List";
             break;
         case 'C':
+            ServerHandler.Close();
             ServerHandler.Connect(Data);
             while(ServerHandler.getModList().empty() && !ServerHandler.Terminated()){
                 std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -32,17 +32,10 @@ void Launcher::HandleIPC(const std::string& Data) {
             else SendIPC("L"+ServerHandler.getModList());
             break;
         case 'U':
-            if(SubCode == 'l')SendIPC("Ul" + ServerHandler.getUIStatus());
-            else if(SubCode == 'p') {
-                if(ServerHandler.getPing() > 800) {
-                    SendIPC("Up-2");
-                } else SendIPC("Up" + std::to_string(ServerHandler.getPing()));
-            } else if(!SubCode) {
-                std::string Ping;
-                if(ServerHandler.getPing() > 800)Ping = "-2";
-                else Ping = std::to_string(ServerHandler.getPing());
-                SendIPC("Ul" + ServerHandler.getUIStatus() + "\nUp" + Ping);
-            }
+            SendIPC("Ul" + ServerHandler.getUIStatus());
+            if(ServerHandler.getPing() > 800) {
+                SendIPC("Up-2");
+            }else SendIPC("Up" + std::to_string(ServerHandler.getPing()));
             break;
         case 'M':
             SendIPC(ServerHandler.getMap());
@@ -73,7 +66,6 @@ void Launcher::HandleIPC(const std::string& Data) {
 
 void Server::ServerParser(const std::string& Data) {
     if(Data.empty())return;
-    LOG(INFO) << "IPC Parser: " << Data;
     char Code = Data.at(0),SubCode = 0;
     if(Data.length() > 1)SubCode = Data.at(1);
     switch (Code) {

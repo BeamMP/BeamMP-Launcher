@@ -14,7 +14,7 @@ int main(int argc, char* argv[]) {
         launcher.CheckKey();
         launcher.QueryRegistry();
         //UI call
-        launcher.SetupMOD();
+        //launcher.SetupMOD();
         launcher.LaunchGame();
         launcher.WaitForGame();
         LOG(INFO) << "Launcher shutting down";

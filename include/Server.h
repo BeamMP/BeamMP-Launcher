@@ -22,6 +22,7 @@ public:
     const std::string& getModList();
     const std::string& getUIStatus();
     const std::string& getMap();
+    void StartUDP();
     void setModLoaded();
     bool Terminated();
     int getPing() const;
