@@ -67,7 +67,7 @@ std::string Launcher::Login(const std::string& fields) {
     if(!d["message"].is_null()) {
         d.erase("private_key");
         d.erase("public_key");
-        return d;
+        return d.dump();
     }
     return GetFail("Invalid message parsing!");
 }
