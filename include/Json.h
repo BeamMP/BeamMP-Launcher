@@ -4,7 +4,6 @@
 ///
 
 #pragma once
-#include <rapidjson/stringbuffer.h>
-#include <rapidjson/document.h>
-#include <rapidjson/writer.h>
-namespace Json = rapidjson;
+#include <nlohmann/json.hpp>
+using Json = nlohmann::json;
+

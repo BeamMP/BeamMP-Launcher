@@ -107,17 +107,13 @@ void Launcher::EnableMP() {
         std::string Data(Size, 0);
         db.read(&Data[0], std::streamsize(Size));
         db.close();
-        Json::Document d;
-        d.Parse(Data.c_str());
-        if(Data.at(0) != '{' || d.HasParseError())return;
-        if(!d["mods"].IsNull() && !d["mods"]["multiplayerbeammp"].IsNull()){
+        Json d = Json::parse(Data, nullptr, false);
+        if(Data.at(0) != '{' || d.is_discarded())return;
+        if(!d["mods"].is_null() && !d["mods"]["multiplayerbeammp"].is_null()){
             d["mods"]["multiplayerbeammp"]["active"] = true;
-            Json::StringBuffer buffer;
-            Json::Writer<Json::StringBuffer> writer(buffer);
-            d.Accept(writer);
             std::ofstream ofs(File);
             if(ofs.is_open()){
-                ofs << buffer.GetString();
+                ofs << std::setw(4) << d;
                 ofs.close();
             } else {
                 LOG(ERROR) << "Failed to write " << File;
