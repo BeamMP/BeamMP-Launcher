@@ -253,11 +253,13 @@ void Server::TCPSend(const std::string& Data) {
         if (size_t(Sent) >= Send.size()) {
             LOG(ERROR) << "string OOB in " << std::string(__func__);
             UUl("TCP Send OOB");
+            Terminate = true;
             return;
         }
         Temp = send(TCPSocket, &Send[Sent], Size - Sent, 0);
         if(!CheckBytes(Temp)){
             UUl("Socket Closed Code 2");
+            Terminate = true;
             return;
         }
         Sent += Temp;
@@ -276,6 +278,7 @@ std::string Server::TCPRcv() {
         Temp = recv(TCPSocket, &Data[BytesRcv], 4-BytesRcv, 0);
         if(!CheckBytes(Temp)){
             UUl("Socket Closed Code 3");
+            Terminate = true;
             return "";
         }
         BytesRcv += Temp;
@@ -284,6 +287,7 @@ std::string Server::TCPRcv() {
 
     if(!CheckBytes(BytesRcv)){
         UUl("Socket Closed Code 4");
+        Terminate = true;
         return "";
     }
     Data.resize(Header);
@@ -292,6 +296,7 @@ std::string Server::TCPRcv() {
         Temp = recv(TCPSocket, &Data[BytesRcv], Header-BytesRcv, 0);
         if(!CheckBytes(Temp)){
             UUl("Socket Closed Code 5");
+            Terminate = true;
             return "";
         }
         BytesRcv += Temp;
