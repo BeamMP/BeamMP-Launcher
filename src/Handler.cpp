@@ -78,6 +78,10 @@ void Server::ServerParser(const std::string& Data) {
             MStatus = Data;
             UStatus = "done";
             return;
+        case 'K':
+            Terminate = true;
+            UStatus = Data.substr(1);
+            return;
         default:
             break;
     }
