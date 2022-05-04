@@ -141,7 +141,7 @@ void Server::SendLarge(std::string Data) {
     TCPSend(Data);
 }
 
-static std::string Server::GetSocketApiError() {
+std::string Server::GetSocketApiError() {
     // This will provide us with the error code and an error message, all in one.
     // The resulting format is "<CODE> - <MESSAGE>"
     int err;
