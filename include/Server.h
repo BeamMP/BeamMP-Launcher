@@ -38,6 +38,7 @@ private:
     void UpdateUl(bool D, const std::string& msg);
     std::unique_ptr<sockaddr_in> UDPSockAddress;
     void ServerParser(const std::string& Data);
+    static std::string GetSocketApiError();
     void TCPSend(const std::string& Data);
     void UDPParser(std::string Packet);
     void SendLarge(std::string Data);
