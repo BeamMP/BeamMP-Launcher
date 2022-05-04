@@ -33,6 +33,11 @@ void Server::TCPClientMain() {
         LOG(ERROR) << "Socket failed! Error code: " << WSAGetLastError();
         return;
     }
+    const char optval = 0;
+    int status = ::setsockopt(TCPSocket, SOL_SOCKET, SO_DONTLINGER, &optval, sizeof(optval));
+    if (status < 0) {
+        LOG(INFO) << "Failed to set DONTLINGER: " << GetSocketApiError();
+    }
     ServerAddr.sin_family = AF_INET;
     ServerAddr.sin_port = htons(Port);
     inet_pton(AF_INET, IP.c_str(), &ServerAddr.sin_addr);
