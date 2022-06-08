@@ -150,7 +150,7 @@ std::string Server::GetSocketApiError() {
 
     err = WSAGetLastError();
 
-    FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+    FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
         nullptr,
         err,
         MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
