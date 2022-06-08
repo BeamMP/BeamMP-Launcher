@@ -20,7 +20,7 @@ jobs:
         with:
             vcpkgArguments: 'zlib discord-rpc nlohmann-json openssl minhook'
             vcpkgDirectory: '${{ runner.workspace }}/b/vcpkg'
-            vcpkgGitCommitId: '75522bb1f2e7d863078bcd06322348f053a9e33f'
+            vcpkgGitCommitId: 'b33f616f85e207012aa8229706d8e603efd5794d'
             vcpkgTriplet: 'x64-windows-static'
 
       - name: Create Build Environment

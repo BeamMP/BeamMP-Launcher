@@ -30,16 +30,21 @@ void Server::TCPClientMain() {
     SOCKADDR_IN ServerAddr;
     TCPSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if(TCPSocket == -1) {
-        LOG(ERROR) << "Socket failed! Error code: " << WSAGetLastError();
+        LOG(ERROR) << "Socket failed! Error code: " << GetSocketApiError();
         return;
+    }
+    const char optval = 0;
+    int status = ::setsockopt(TCPSocket, SOL_SOCKET, SO_DONTLINGER, &optval, sizeof(optval));
+    if (status < 0) {
+        LOG(INFO) << "Failed to set DONTLINGER: " << GetSocketApiError();
     }
     ServerAddr.sin_family = AF_INET;
     ServerAddr.sin_port = htons(Port);
     inet_pton(AF_INET, IP.c_str(), &ServerAddr.sin_addr);
-    int status = connect(TCPSocket, (SOCKADDR *) &ServerAddr, sizeof(ServerAddr));
+    status = connect(TCPSocket, (SOCKADDR *) &ServerAddr, sizeof(ServerAddr));
     if(status != 0){
         UStatus = "Connection Failed!";
-        LOG(ERROR) << "Connect failed! Error code: " << WSAGetLastError();
+        LOG(ERROR) << "Connect failed! Error code: " << GetSocketApiError();
         Close();
         return;
     }
@@ -69,7 +74,7 @@ void Server::UDPSend(std::string Data) {
     }
     std::string Packet = char(ClientID+1) + std::string(":") + Data;
     int sendOk = sendto(UDPSocket, Packet.c_str(), int(Packet.size()), 0, (sockaddr*)UDPSockAddress.get(), sizeof(sockaddr_in));
-    if (sendOk == SOCKET_ERROR)LOG(ERROR) << "UDP Socket Error Code : " << WSAGetLastError();
+    if (sendOk == SOCKET_ERROR)LOG(ERROR) << "UDP Socket Error Code : " << GetSocketApiError();
 }
 
 void Server::UDPParser(std::string Packet) {
@@ -134,6 +139,30 @@ void Server::SendLarge(std::string Data) {
         Data = "ABG:" + CMP;
     }
     TCPSend(Data);
+}
+
+std::string Server::GetSocketApiError() {
+    // This will provide us with the error code and an error message, all in one.
+    // The resulting format is "<CODE> - <MESSAGE>"
+    int err;
+    char msgbuf[256];
+    msgbuf[0] = '\0';
+
+    err = WSAGetLastError();
+
+    FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        nullptr,
+        err,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        msgbuf,
+        sizeof(msgbuf),
+        nullptr);
+
+    if (*msgbuf) {
+        return std::to_string(WSAGetLastError()) + " - " + std::string(msgbuf);
+    } else {
+        return std::to_string(WSAGetLastError());
+    }
 }
 
 void Server::ServerSend(std::string Data, bool Rel) {
@@ -225,7 +254,7 @@ bool Server::CheckBytes(int32_t Bytes) {
         Terminate = true;
         return false;
     }else if (Bytes < 0) {
-        //debug("(TCP CB) recv failed with error: " + std::to_string(WSAGetLastError()));
+        //debug("(TCP CB) recv failed with error: " + GetSocketApiError();
         KillSocket(TCPSocket);
         Terminate = true;
         return false;
