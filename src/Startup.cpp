@@ -29,7 +29,7 @@ std::string GetVer(){
     return "2.0";
 }
 std::string GetPatch(){
-    return ".63";
+    return ".70";
 }
 std::string GetEP(char*P){
     static std::string Ret = [&](){
@@ -246,7 +246,7 @@ void EnableMP(){
 }
 
 void PreGame(const std::string& GamePath){
-    const std::string CurrVer("0.24.0.1");
+    const std::string CurrVer("0.25.0.0");
     std::string GameVer = CheckVer(GamePath);
     info("Game Version : " + GameVer);
     if(GameVer < CurrVer){
