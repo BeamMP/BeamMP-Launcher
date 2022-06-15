@@ -20,7 +20,7 @@ jobs:
         with:
             vcpkgArguments: 'discord-rpc zlib rapidjson openssl'
             vcpkgDirectory: '${{ runner.workspace }}/b/vcpkg'
-            vcpkgGitCommitId: 'e803bf11296d8e7900dafb41e7b1224778d33dc6'
+            vcpkgGitCommitId: '86ff75c6d8232b54d3ebd0e71525b4634dcd9523'
             vcpkgTriplet: 'x64-windows-static'
 
       - name: Create Build Environment
