@@ -246,7 +246,7 @@ void EnableMP(){
 }
 
 void PreGame(const std::string& GamePath){
-    const std::string CurrVer("0.25.0.0");
+    const std::string CurrVer("0.25.1.0");
     std::string GameVer = CheckVer(GamePath);
     info("Game Version : " + GameVer);
     if(GameVer < CurrVer){
