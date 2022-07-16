@@ -10,7 +10,7 @@
 
 void Launcher::LoadConfig() {
     if(fs::exists("Launcher.cfg")) {
-        toml::table config = toml::parse_file("Launcher.cfg");
+        toml::parse_result config = toml::parse_file("Launcher.cfg");
         auto ui = config["UI"];
         auto build = config["Build"];
         if(ui.is_boolean()) {

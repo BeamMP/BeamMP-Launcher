@@ -10,7 +10,7 @@ int main(int argc, char* argv[]) {
     try {
         Launcher launcher(argc, argv);
         launcher.RunDiscordRPC();
-        launcher.LoadConfig();
+        launcher.LoadConfig(); //check if json (issue)
         launcher.CheckKey();
         launcher.QueryRegistry();
         //UI call
