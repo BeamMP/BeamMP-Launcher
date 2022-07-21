@@ -20,7 +20,6 @@ LONG WINAPI CrashHandler(EXCEPTION_POINTERS* p) {
     return EXCEPTION_EXECUTE_HANDLER;
 }
 
-std::atomic<bool> Launcher::Shutdown{false}, Launcher::Exit{false};
 Launcher::Launcher(int argc, char* argv[]) : CurrentPath(std::filesystem::path(argv[0])), DiscordMessage("Just launched") {
     Launcher::StaticAbort(this);
     DiscordTime = std::time(nullptr);

@@ -77,7 +77,7 @@ private: //variables
     std::string Version{"2.0"};
     Server ServerHandler{this};
     std::string TargetBuild{"default"};
-    static std::atomic<bool> Shutdown, Exit;
+    static inline std::atomic<bool> Shutdown{false}, Exit{false};
     std::string FullVersion{Version + ".99"};
     VersionParser SupportedVersion{"0.24.1.2"};
     IPC IPCToGame{"BeamMP_OUT", "BeamMP_Sem1", "BeamMP_Sem2", 0x1900000};
