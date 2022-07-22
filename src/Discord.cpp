@@ -2,11 +2,12 @@
 /// Created by Anonymous275 on 1/18/22
 /// Copyright (c) 2021-present Anonymous275 read the LICENSE file for more info.
 ///
-
+#ifndef DEBUG
 #include <discord_rpc.h>
 #include "Launcher.h"
 #include "Logger.h"
 #include <ctime>
+
 
 void handleReady(const DiscordUser* u) {}
 void handleDisconnected(int errcode, const char* message) {}
@@ -50,3 +51,14 @@ void Launcher::RichPresence() {
 void Launcher::RunDiscordRPC() {
     DiscordRPC = std::thread(&Launcher::RichPresence, this);
 }
+#else
+#include "Launcher.h"
+void Launcher::setDiscordMessage(const std::string& message) {
+    DiscordMessage = message;
+}
+void Launcher::RunDiscordRPC() {
+    DiscordRPC = std::thread(&Launcher::RichPresence, this);
+}
+void Launcher::RichPresence() {};
+void Launcher::UpdatePresence() {};
+#endif
