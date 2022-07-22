@@ -8,7 +8,15 @@
 #include "Memory/BeamNG.h"
 #include "Memory/Memory.h"
 
-atomic_queue::AtomicQueue2<std::string, 1000> AtomicQueue;
+#include <vector>
+#include <Memory/concurrentqueue.h>
+
+struct QueueTraits : public moodycamel::ConcurrentQueueDefaultTraits {
+    static const size_t BLOCK_SIZE = 4;        // Use bigger blocks
+    static const size_t MAX_SUBQUEUE_SIZE = 1000;
+};
+
+moodycamel::ConcurrentQueue<std::string, QueueTraits> ConcQueue;
 
 int BeamNG::lua_open_jit_D(lua_State* State) {
     Memory::Print("Got lua State");
@@ -55,7 +63,7 @@ int Game(lua_State* L) {
 
 int LuaPop(lua_State* L) {
     std::string MSG;
-    if (AtomicQueue.try_pop(MSG)) {
+    if (ConcQueue.try_dequeue(MSG)) {
         GELua::lua_push_fstring(L, "%s", MSG.c_str());
         return 1;
     }
@@ -76,13 +84,21 @@ void BeamNG::SendIPC(const std::string& Data) {
     IPCToLauncher->send(Data);
 }
 
+std::unique_ptr <std::vector<std::string>> ptr1;
+
 void BeamNG::IPCListener() {
     int TimeOuts = 0;
+    int QueueTimeOut = 0;
     while(TimeOuts < 20) {
         IPCFromLauncher->receive();
         if (!IPCFromLauncher->receive_timed_out()) {
             TimeOuts = 0;
-            AtomicQueue.push(IPCFromLauncher->msg());
+            do {
+            QueueTimeOut++;
+            std::this_thread::sleep_for(std::chrono::milliseconds (500));
+            } while (QueueTimeOut < 10 && !ConcQueue.enqueue(IPCFromLauncher->msg()));
+            QueueTimeOut = 0;
+
             IPCFromLauncher->confirm_receive();
         } else TimeOuts++;
     }

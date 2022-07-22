@@ -41,7 +41,7 @@ add_executable(${PROJECT_NAME}
         src/Memory/IPC.cpp include/Memory/IPC.h
         src/Logger.cpp include/Logger.h
         #src/gui/Gui.cpp
-        include/Json.h
+        include/Json.h include/Memory/concurrentqueue.h
         src/gui/gifs.cpp src/gui/gifs.h
         src/Network/Http.cpp include/Http.h
         src/Network/Server.cpp include/Server.h
