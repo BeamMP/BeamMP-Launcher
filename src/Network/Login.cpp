@@ -4,8 +4,8 @@
 ///
 
 #include "Launcher.h"
+#include "HttpAPI.h"
 #include "Logger.h"
-#include "Http.h"
 #include "Json.h"
 
 void UpdateKey(const std::string& newKey){

@@ -5,10 +5,10 @@
 #define CPPHTTPLIB_OPENSSL_SUPPORT
 #include <cpp-httplib/httplib.h>
 #include "Launcher.h"
+#include "HttpAPI.h"
 #include <iostream>
 #include "Logger.h"
 #include <fstream>
-#include "Http.h"
 #include <mutex>
 #include <cmath>
 
