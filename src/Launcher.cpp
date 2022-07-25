@@ -8,7 +8,7 @@
 #include "Launcher.h"
 #include "Logger.h"
 #include <csignal>
-#include "Http.h"
+#include "HttpAPI.h"
 #include <windows.h>
 #include <shellapi.h>
 #include <ShlObj.h>
@@ -125,6 +125,7 @@ void Launcher::WaitForGame() {
         std::this_thread::sleep_for(std::chrono::seconds(2));
     }
     LOG(INFO) << "Game process was lost";
+    GamePID = 0;
 }
 
 void Launcher::ListenIPC() {

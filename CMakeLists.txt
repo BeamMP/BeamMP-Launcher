@@ -43,7 +43,7 @@ add_executable(${PROJECT_NAME}
         #src/gui/Gui.cpp
         include/Json.h
         src/gui/gifs.cpp src/gui/gifs.h
-        src/Network/Http.cpp include/Http.h
+        src/Network/HttpAPI.cpp include/HttpAPI.h
         src/Network/Server.cpp include/Server.h
         src/Network/Login.cpp src/Network/Update.cpp
         src/Network/Compressor.cpp include/Compressor.h

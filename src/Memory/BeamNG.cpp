@@ -4,11 +4,13 @@
 ///
 
 
-#include "atomic_queue/atomic_queue.h"
+#include "atomic_queue.h"
 #include "Memory/BeamNG.h"
 #include "Memory/Memory.h"
 
-atomic_queue::AtomicQueue2<std::string, 1000> AtomicQueue;
+//atomic_queue::AtomicQueue2<std::string, 1000> AtomicQueue;
+std::unique_ptr<atomic_queue<std::string, 1000>> Queue;
+
 
 int BeamNG::lua_open_jit_D(lua_State* State) {
     Memory::Print("Got lua State");
@@ -18,6 +20,7 @@ int BeamNG::lua_open_jit_D(lua_State* State) {
 }
 
 void BeamNG::EntryPoint() {
+    Queue = std::make_unique<atomic_queue<std::string, 1000>>();
     auto status = MH_Initialize();
     if(status != MH_OK)Memory::Print(std::string("MH Error -> ") + MH_StatusToString(status));
     Memory::Print("PID : " + std::to_string(Memory::GetPID()));
@@ -55,7 +58,7 @@ int Game(lua_State* L) {
 
 int LuaPop(lua_State* L) {
     std::string MSG;
-    if (AtomicQueue.try_pop(MSG)) {
+    if (Queue->try_pop(MSG)) {
         GELua::lua_push_fstring(L, "%s", MSG.c_str());
         return 1;
     }
@@ -82,7 +85,7 @@ void BeamNG::IPCListener() {
         IPCFromLauncher->receive();
         if (!IPCFromLauncher->receive_timed_out()) {
             TimeOuts = 0;
-            AtomicQueue.push(IPCFromLauncher->msg());
+            Queue->push(IPCFromLauncher->msg());
             IPCFromLauncher->confirm_receive();
         } else TimeOuts++;
     }

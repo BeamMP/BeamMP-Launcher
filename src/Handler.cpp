@@ -7,8 +7,9 @@
 #include "Memory/Memory.h"
 #include "Memory/BeamNG.h"
 #include "Launcher.h"
+#include "HttpAPI.h"
 #include "Logger.h"
-#include "Http.h"
+
 
 void Launcher::HandleIPC(const std::string& Data) {
     char Code = Data.at(0), SubCode = 0;
