@@ -11,7 +11,7 @@
 #include <tlhelp32.h>
 #include <psapi.h>
 
-uint32_t Memory::GetBeamNGPID(const std::vector<uint32_t>& BL) {
+uint32_t Memory::GetBeamNGPID(const std::set<uint32_t>& BL) {
     SetLastError(0);
     PROCESSENTRY32 pe32;
     pe32.dwSize = sizeof(PROCESSENTRY32);
@@ -19,9 +19,9 @@ uint32_t Memory::GetBeamNGPID(const std::vector<uint32_t>& BL) {
 
     if(Process32First(Snapshot, &pe32)) {
         do{
-            if(std::string("BeamNG.drive.x64.exe") == pe32.szExeFile &&
-            std::find(BL.begin(), BL.end(), pe32.th32ProcessID) == BL.end() &&
-                    std::find(BL.begin(), BL.end(), pe32.th32ParentProcessID) == BL.end()) {
+            if(std::string("BeamNG.drive.x64.exe") == pe32.szExeFile
+            && BL.find(pe32.th32ProcessID) == BL.end()
+            && BL.find(pe32.th32ParentProcessID) == BL.end()) {
                 break;
             }
         }while(Process32Next(Snapshot, &pe32));

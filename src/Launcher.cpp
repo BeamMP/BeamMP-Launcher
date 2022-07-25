@@ -105,11 +105,11 @@ void Launcher::LaunchGame() {
 
 void Launcher::WaitForGame() {
     LOG(INFO) << "Searching for a game process, please start BeamNG manually in case of steam issues";
-    std::vector<uint32_t> BlackList;
+    std::set<uint32_t> BlackList;
     do {
         auto PID = Memory::GetBeamNGPID(BlackList);
         if(PID != 0 && IPC::mem_used(PID)) {
-            BlackList.emplace_back(PID);
+            BlackList.emplace(PID);
         } else {
             GamePID = PID;
         }
