@@ -7,18 +7,22 @@
 #include <windows.h>
 #include "Memory/IPC.h"
 
-IPC::IPC(const char* MemID, const char* SemID, const char* SemID2, size_t Size) noexcept : Size_(Size) {
-    SemHandle_ = OpenSemaphoreA(SYNCHRONIZE | SEMAPHORE_MODIFY_STATE, FALSE, SemID);
+IPC::IPC(uint32_t ID, size_t Size) noexcept : Size_(Size) {
+    std::string Sem{"MP_S" + std::to_string(ID)},
+    SemConf{"MP_SC" + std::to_string(ID)},
+    Mem{"MP_IO" + std::to_string(ID)};
+
+    SemHandle_ = OpenSemaphoreA(SYNCHRONIZE | SEMAPHORE_MODIFY_STATE, FALSE, Sem.c_str());
     if(SemHandle_ == nullptr) {
-        SemHandle_ = CreateSemaphoreA(nullptr, 0, 1, SemID);
+        SemHandle_ = CreateSemaphoreA(nullptr, 0, 1, Sem.c_str());
     }
-    SemConfHandle_ = OpenSemaphoreA(SYNCHRONIZE | SEMAPHORE_MODIFY_STATE, FALSE, SemID2);
+    SemConfHandle_ = OpenSemaphoreA(SYNCHRONIZE | SEMAPHORE_MODIFY_STATE, FALSE, SemConf.c_str());
     if(SemConfHandle_ == nullptr) {
-        SemConfHandle_ = CreateSemaphoreA(nullptr, 0, 1, SemID2);
+        SemConfHandle_ = CreateSemaphoreA(nullptr, 0, 1, SemConf.c_str());
     }
-    MemoryHandle_ = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, MemID);
+    MemoryHandle_ = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, Mem.c_str());
     if(MemoryHandle_ == nullptr) {
-        MemoryHandle_ = CreateFileMappingA(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, 0, DWORD(Size), MemID);
+        MemoryHandle_ = CreateFileMappingA(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, 0, DWORD(Size), Mem.c_str());
     }
     Data_ = (char*)MapViewOfFile(MemoryHandle_, FILE_MAP_ALL_ACCESS, 0, 0, Size);
 }
@@ -75,6 +79,14 @@ IPC::~IPC() noexcept {
     UnmapViewOfFile(Data_);
     CloseHandle(SemHandle_);
     CloseHandle(MemoryHandle_);
+}
+
+bool IPC::mem_used(uint32_t MemID) noexcept {
+    std::string Mem{"MP_IO" + std::to_string(MemID)};
+    HANDLE MEM = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, Mem.c_str());
+    bool used = MEM != nullptr;
+    UnmapViewOfFile(MEM);
+    return used;
 }
 
 

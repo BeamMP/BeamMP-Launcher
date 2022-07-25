@@ -8,9 +8,7 @@
 #include "Memory/BeamNG.h"
 #include "Memory/Memory.h"
 
-//atomic_queue::AtomicQueue2<std::string, 1000> AtomicQueue;
 std::unique_ptr<atomic_queue<std::string, 1000>> Queue;
-
 
 int BeamNG::lua_open_jit_D(lua_State* State) {
     Memory::Print("Got lua State");
@@ -21,16 +19,17 @@ int BeamNG::lua_open_jit_D(lua_State* State) {
 
 void BeamNG::EntryPoint() {
     Queue = std::make_unique<atomic_queue<std::string, 1000>>();
+    uint32_t PID = Memory::GetPID();
     auto status = MH_Initialize();
     if(status != MH_OK)Memory::Print(std::string("MH Error -> ") + MH_StatusToString(status));
-    Memory::Print("PID : " + std::to_string(Memory::GetPID()));
+    Memory::Print("PID : " + std::to_string(PID));
     GELua::FindAddresses();
     /*GameBaseAddr = Memory::GetModuleBase(GameModule);
     DllBaseAddr = Memory::GetModuleBase(DllModule);*/
     OpenJITDetour = std::make_unique<Hook<def::lua_open_jit>>(GELua::lua_open_jit, lua_open_jit_D);
     OpenJITDetour->Enable();
-    IPCToLauncher = std::make_unique<IPC>("BeamMP_IN", "BeamMP_Sem3", "BeamMP_Sem4", 0x1900000);
-    IPCFromLauncher = std::make_unique<IPC>("BeamMP_OUT", "BeamMP_Sem1", "BeamMP_Sem2", 0x1900000);
+    IPCFromLauncher = std::make_unique<IPC>(PID, 0x1900000);
+    IPCToLauncher = std::make_unique<IPC>(PID+1, 0x1900000);
     IPCListener();
 }
 

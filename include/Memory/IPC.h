@@ -8,8 +8,8 @@
 
 class IPC {
 public:
-    IPC() = delete;
-    IPC(const char* MemID, const char* SemID, const char* SemID2, size_t Size) noexcept;
+    IPC() = default;
+    IPC(uint32_t ID, size_t Size) noexcept;
     [[nodiscard]] size_t size() const noexcept;
     [[nodiscard]] char* c_str() const noexcept;
     void send(const std::string& msg) noexcept;
@@ -21,6 +21,7 @@ public:
     void try_receive() noexcept;
     void receive() noexcept;
     ~IPC() noexcept;
+    static bool mem_used(uint32_t MemID) noexcept;
 private:
     void* SemConfHandle_;
     void* MemoryHandle_;

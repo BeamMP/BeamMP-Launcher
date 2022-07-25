@@ -69,7 +69,7 @@ std::string Server::Auth() {
     }
 
     Res = Res.substr(1);
-    if(Res.find_first_not_of("0123456789") == std::string::npos){
+    if(std::all_of(Res.begin(), Res.end(), isdigit)){
         ClientID = std::stoi(Res);
     }else{
         Abort();
@@ -253,7 +253,7 @@ void Server::SyncResources() {
         } else continue;
         Pos++;
         if (fs::exists(a)) {
-            if (FS->find_first_not_of("0123456789") != std::string::npos)continue;
+            if (!std::all_of(FS->begin(), FS->end(), isdigit))continue;
             if (fs::file_size(a) == std::stoull(*FS)){
                 UpdateUl(false,std::to_string(Pos) + "/" + std::to_string(Amount) + ": " + a.substr(a.find_last_of('/')));
                 std::this_thread::sleep_for(std::chrono::milliseconds(50));

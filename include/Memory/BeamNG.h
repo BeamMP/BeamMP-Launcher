@@ -23,6 +23,6 @@ private:
     static inline uint64_t DllBaseAddr;
     static int lua_open_jit_D(lua_State* State);
     static void RegisterGEFunctions();
-    static int GetTickCount_D(void* GEState, void* Param2, void* Param3, void* Param4);
+   // static int GetTickCount_D(void* GEState, void* Param2, void* Param3, void* Param4);
     static void IPCListener();
 };

@@ -16,7 +16,7 @@
 #include <mutex>
 
 LONG WINAPI CrashHandler(EXCEPTION_POINTERS* p) {
-    LOG(ERROR) << "CAUGHT EXCEPTION! Code " << p->ExceptionRecord->ExceptionCode;
+    LOG(ERROR) << "CAUGHT EXCEPTION! Code 0x" << std::hex << std::uppercase << p->ExceptionRecord->ExceptionCode;
     return EXCEPTION_EXECUTE_HANDLER;
 }
 
@@ -85,15 +85,11 @@ void Launcher::WindowsInit() {
 }
 
 void Launcher::LaunchGame() {
-    if(Memory::GetBeamNGPID() != 0) {
-        LOG(FATAL) << "Game is already running, please close it and try again!";
-        throw ShutdownException("Fatal Error");
-    }
     VersionParser GameVersion(BeamVersion);
-    if(GameVersion.data[0] > SupportedVersion.data[0]) {
+    if(GameVersion.data[1] > SupportedVersion.data[1]) {
         LOG(FATAL) << "BeamNG V" << BeamVersion << " not yet supported, please wait until we update BeamMP!";
         throw ShutdownException("Fatal Error");
-    } else if(GameVersion.data[0] < SupportedVersion.data[0]) {
+    } else if(GameVersion.data[1] < SupportedVersion.data[1]) {
         LOG(FATAL) << "BeamNG V" << BeamVersion << " not supported, please update and launch the new update!";
         throw ShutdownException("Fatal Error");
     } else if(GameVersion > SupportedVersion) {
@@ -101,27 +97,40 @@ void Launcher::LaunchGame() {
     } else if(GameVersion < SupportedVersion) {
         LOG(WARNING) << "BeamNG V" << BeamVersion << " is slightly older than recommended, this might cause issues!";
     }
-
-    ShellExecuteA(nullptr, nullptr, "steam://rungameid/284160", nullptr, nullptr, SW_SHOWNORMAL);
-    //ShowWindow(GetConsoleWindow(), HIDE_WINDOW);
+    if(Memory::GetBeamNGPID({}) == 0) {
+        ShellExecuteA(nullptr, nullptr, "steam://rungameid/284160", nullptr, nullptr, SW_SHOWNORMAL);
+        //ShowWindow(GetConsoleWindow(), HIDE_WINDOW);
+    }
 }
 
 void Launcher::WaitForGame() {
-    LOG(INFO) << "Waiting for the game, please start BeamNG manually in case of steam issues";
-    do{
-        GamePID = Memory::GetBeamNGPID();
-        std::this_thread::sleep_for(std::chrono::seconds(2));
-    }while(GamePID == 0 && !Shutdown.load());
+    LOG(INFO) << "Searching for a game process, please start BeamNG manually in case of steam issues";
+    std::vector<uint32_t> BlackList;
+    do {
+        auto PID = Memory::GetBeamNGPID(BlackList);
+        if(PID != 0 && IPC::mem_used(PID)) {
+            BlackList.emplace_back(PID);
+        } else {
+            GamePID = PID;
+        }
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    } while(GamePID == 0 && !Shutdown.load());
     if(Shutdown.load())return;
+
     if(GamePID == 0) {
         LOG(FATAL) << "Game process not found! aborting";
         throw ShutdownException("Fatal Error");
     }
+
     LOG(INFO) << "Game found! PID " << GamePID;
+
+    IPCToGame = std::make_unique<IPC>(GamePID, 0x1900000);
+    IPCFromGame = std::make_unique<IPC>(GamePID+1, 0x1900000);
+
     IPCSystem = std::thread(&Launcher::ListenIPC, this);
     Memory::Inject(GamePID);
     setDiscordMessage("In menus");
-    while(!Shutdown.load() && Memory::GetBeamNGPID() != 0) {
+    while(!Shutdown.load() && Memory::GetBeamNGPID(BlackList) != 0) {
         std::this_thread::sleep_for(std::chrono::seconds(2));
     }
     LOG(INFO) << "Game process was lost";
@@ -130,15 +139,15 @@ void Launcher::WaitForGame() {
 
 void Launcher::ListenIPC() {
     while(!Shutdown.load()) {
-        IPCFromGame.receive();
-        if(!IPCFromGame.receive_timed_out()) {
-            auto& MSG = IPCFromGame.msg();
+        IPCFromGame->receive();
+        if(!IPCFromGame->receive_timed_out()) {
+            auto& MSG = IPCFromGame->msg();
             if(MSG[0] == 'C') {
-                HandleIPC(IPCFromGame.msg().substr(1));
+                HandleIPC(IPCFromGame->msg().substr(1));
             } else {
-                ServerHandler.ServerSend(IPCFromGame.msg().substr(1), false);
+                ServerHandler.ServerSend(IPCFromGame->msg().substr(1), false);
             }
-            IPCFromGame.confirm_receive();
+            IPCFromGame->confirm_receive();
         }
     }
 }
@@ -146,9 +155,9 @@ void Launcher::ListenIPC() {
 void Launcher::SendIPC(const std::string& Data, bool core)  {
     static std::mutex Lock;
     std::scoped_lock Guard(Lock);
-    if(core)IPCToGame.send("C" + Data);
-    else IPCToGame.send("G" + Data);
-    if(IPCToGame.send_timed_out()) {
+    if(core)IPCToGame->send("C" + Data);
+    else IPCToGame->send("G" + Data);
+    if(IPCToGame->send_timed_out()) {
         LOG(WARNING) << "Timed out while sending \"" << Data << "\"";
     }
 }
