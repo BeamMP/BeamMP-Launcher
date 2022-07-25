@@ -9,8 +9,8 @@
 #include "Logger.h"
 
 void Launcher::LoadConfig() {
-    if(fs::exists("Launcher.cfg")) {
-        toml::parse_result config = toml::parse_file("Launcher.cfg");
+    if(fs::exists("Launcher.toml")) {
+        toml::parse_result config = toml::parse_file("Launcher.toml");
         auto ui = config["UI"];
         auto build = config["Build"];
         if(ui.is_boolean()) {
@@ -24,13 +24,13 @@ void Launcher::LoadConfig() {
         } else LOG(ERROR) << "Failed to get 'Build' string from config";
 
     } else {
-        std::ofstream cfg("Launcher.cfg");
-        if(cfg.is_open()){
-            cfg <<
+        std::ofstream tml("Launcher.toml");
+        if(tml.is_open()){
+            tml <<
                 R"(UI = true
 Build = "Default"
 )";
-            cfg.close();
+            tml.close();
         }else{
             LOG(FATAL) << "Failed to write config on disk!";
             throw ShutdownException("Fatal Error");
