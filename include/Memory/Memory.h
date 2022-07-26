@@ -4,17 +4,17 @@
 ///
 
 #pragma once
-#include <string>
 #include <set>
+#include <string>
 
-class Memory{
-public:
-    static uint64_t FindPattern(const char* module, const char* Pattern[]);
-    static uint32_t GetBeamNGPID(const std::set<uint32_t>& BL);
-    static uint64_t GetModuleBase(const char* Name);
-    static void Print(const std::string& msg);
-    static void Inject(uint32_t PID);
-    static uint32_t GetTickCount();
-    static uint32_t EntryPoint();
-    static uint32_t GetPID();
+class Memory {
+   public:
+   static uint64_t FindPattern(const char* module, const char* Pattern[]);
+   static uint32_t GetBeamNGPID(const std::set<uint32_t>& BL);
+   static uint64_t GetModuleBase(const char* Name);
+   static void Print(const std::string& msg);
+   static void Inject(uint32_t PID);
+   static uint32_t GetTickCount();
+   static uint32_t EntryPoint();
+   static uint32_t GetPID();
 };

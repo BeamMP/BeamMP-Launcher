@@ -7,12 +7,12 @@
 #include <string>
 
 class HTTP {
-public:
-    static bool Download(const std::string& IP, const std::string& Path);
-    static std::string Post(const std::string& IP, const std::string& Fields);
-    static std::string Get(const std::string& IP);
-    static bool ProgressBar(size_t c, size_t t);
+   public:
+   static bool Download(const std::string& IP, const std::string& Path);
+   static std::string Post(const std::string& IP, const std::string& Fields);
+   static std::string Get(const std::string& IP);
+   static bool ProgressBar(size_t c, size_t t);
 
-public:
-    static bool isDownload;
+   public:
+   static bool isDownload;
 };

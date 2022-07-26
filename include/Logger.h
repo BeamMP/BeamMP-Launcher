@@ -8,6 +8,6 @@
 #undef min
 #undef max
 class Log {
-public:
-    static void Init();
+   public:
+   static void Init();
 };

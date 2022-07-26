@@ -3,46 +3,49 @@
 /// Copyright (c) 2021-present Anonymous275 read the LICENSE file for more info.
 ///
 #define WIN32_LEAN_AND_MEAN
-#include "Memory/Memory.h"
 #include <MinHook.h>
+#include "Memory/Memory.h"
 
 #pragma once
-template <class FuncType>
+template<class FuncType>
 class Hook {
-    FuncType targetPtr;
-    FuncType detourFunc;
-    bool Attached = false;
-public:
+   FuncType targetPtr;
+   FuncType detourFunc;
+   bool Attached = false;
 
-    Hook(FuncType src, FuncType dest) : targetPtr(src), detourFunc(dest) {
-        auto status = MH_CreateHook((void*)targetPtr, (void*)detourFunc, (void**)&Original);
-        if(status != MH_OK) {
-            Memory::Print(std::string("MH Error -> ") + MH_StatusToString(status));
+   public:
+   Hook(FuncType src, FuncType dest) : targetPtr(src), detourFunc(dest) {
+      auto status =
+          MH_CreateHook((void*)targetPtr, (void*)detourFunc, (void**)&Original);
+      if (status != MH_OK) {
+         Memory::Print(std::string("MH Error -> ") + MH_StatusToString(status));
+         return;
+      }
+   }
+
+   void Enable() {
+      if (!Attached) {
+         auto status = MH_EnableHook((void*)targetPtr);
+         if (status != MH_OK) {
+            Memory::Print(std::string("MH Error -> ") +
+                          MH_StatusToString(status));
             return;
-        }
-    }
+         }
+         Attached = true;
+      }
+   }
 
-    void Enable() {
-        if(!Attached){
-            auto status = MH_EnableHook((void*)targetPtr);
-            if(status != MH_OK) {
-                Memory::Print(std::string("MH Error -> ") + MH_StatusToString(status));
-                return;
-            }
-            Attached = true;
-        }
-    }
+   void Disable() {
+      if (Attached) {
+         auto status = MH_DisableHook((void*)targetPtr);
+         if (status != MH_OK) {
+            Memory::Print(std::string("MH Error -> ") +
+                          MH_StatusToString(status));
+            return;
+         }
+         Attached = false;
+      }
+   }
 
-    void Disable() {
-        if(Attached){
-            auto status = MH_DisableHook((void*)targetPtr);
-            if(status != MH_OK) {
-                Memory::Print(std::string("MH Error -> ") + MH_StatusToString(status));
-                return;
-            }
-            Attached = false;
-        }
-    }
-
-    FuncType Original{};
+   FuncType Original{};
 };

@@ -4,25 +4,27 @@
 ///
 
 #pragma once
-#include "Memory/Hook.h"
-#include "Memory/GELua.h"
-#include "Memory/IPC.h"
 #include <memory>
 #include <string>
+#include "Memory/GELua.h"
+#include "Memory/Hook.h"
+#include "Memory/IPC.h"
 
 class BeamNG {
-public:
-    static void EntryPoint();
-    static void SendIPC(const std::string& Data);
-private:
-    static inline std::unique_ptr<Hook<def::GEUpdate>> TickCountDetour;
-    static inline std::unique_ptr<Hook<def::lua_open_jit>> OpenJITDetour;
-    static inline std::unique_ptr<IPC> IPCFromLauncher;
-    static inline std::unique_ptr<IPC> IPCToLauncher;
-    static inline uint64_t GameBaseAddr;
-    static inline uint64_t DllBaseAddr;
-    static int lua_open_jit_D(lua_State* State);
-    static void RegisterGEFunctions();
-   // static int GetTickCount_D(void* GEState, void* Param2, void* Param3, void* Param4);
-    static void IPCListener();
+   public:
+   static void EntryPoint();
+   static void SendIPC(const std::string& Data);
+
+   private:
+   static inline std::unique_ptr<Hook<def::GEUpdate>> TickCountDetour;
+   static inline std::unique_ptr<Hook<def::lua_open_jit>> OpenJITDetour;
+   static inline std::unique_ptr<IPC> IPCFromLauncher;
+   static inline std::unique_ptr<IPC> IPCToLauncher;
+   static inline uint64_t GameBaseAddr;
+   static inline uint64_t DllBaseAddr;
+   static int lua_open_jit_D(lua_State* State);
+   static void RegisterGEFunctions();
+   // static int GetTickCount_D(void* GEState, void* Param2, void* Param3, void*
+   // Param4);
+   static void IPCListener();
 };

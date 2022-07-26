@@ -7,7 +7,7 @@
 #include <string>
 
 class Zlib {
-public:
-    static std::string DeComp(std::string Compressed);
-    static std::string Comp(std::string Data);
+   public:
+   static std::string DeComp(std::string Compressed);
+   static std::string Comp(std::string Data);
 };

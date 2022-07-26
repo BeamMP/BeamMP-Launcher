@@ -6,6 +6,6 @@
 #pragma once
 
 class gif {
-public:
-    static const unsigned char Logo[30427];
+   public:
+   static const unsigned char Logo[30427];
 };
