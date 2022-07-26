@@ -98,13 +98,14 @@ void Launcher::LaunchGame() {
         LOG(WARNING) << "BeamNG V" << BeamVersion << " is slightly older than recommended, this might cause issues!";
     }
     if(Memory::GetBeamNGPID({}) == 0) {
+        LOG(INFO) << "Launching BeamNG from steam";
         ShellExecuteA(nullptr, nullptr, "steam://rungameid/284160", nullptr, nullptr, SW_SHOWNORMAL);
         //ShowWindow(GetConsoleWindow(), HIDE_WINDOW);
     }
+    LOG(INFO) << "Waiting for a game process, please start BeamNG manually in case of steam issues";
 }
 
 void Launcher::WaitForGame() {
-    LOG(INFO) << "Searching for a game process, please start BeamNG manually in case of steam issues";
     std::set<uint32_t> BlackList;
     do {
         auto PID = Memory::GetBeamNGPID(BlackList);
