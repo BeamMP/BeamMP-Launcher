@@ -5,11 +5,13 @@
 
 #define WIN32_LEAN_AND_MEAN
 #undef UNICODE
-#include "Memory/Memory.h"
+#include <windows.h>
+
 #include <psapi.h>
 #include <tlhelp32.h>
 #include <string>
 #include "Memory/BeamNG.h"
+#include "Memory/Memory.h"
 
 uint32_t Memory::GetBeamNGPID(const std::set<uint32_t>& BL) {
    SetLastError(0);
