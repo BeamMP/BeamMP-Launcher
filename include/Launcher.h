@@ -5,10 +5,9 @@
 
 #pragma once
 #include "Memory/IPC.h"
-#include <filesystem>
 #include "Server.h"
+#include <filesystem>
 #include <thread>
-
 
 namespace fs = std::filesystem;
 
@@ -21,10 +20,11 @@ struct VersionParser {
 };
 
 class Launcher {
-public: //constructors
+public: // constructors
     Launcher(int argc, char* argv[]);
     ~Launcher();
-public: //available functions
+
+public: // available functions
     static void StaticAbort(Launcher* Instance = nullptr);
     std::string Login(const std::string& fields);
     void SendIPC(const std::string& Data, bool core = true);
@@ -35,7 +35,8 @@ public: //available functions
     void LaunchGame();
     void CheckKey();
     void SetupMOD();
-public: //Getters and Setters
+
+public: // Getters and Setters
     void setDiscordMessage(const std::string& message);
     static void setExit(bool exit) noexcept;
     const std::string& getFullVersion();
@@ -46,7 +47,7 @@ public: //Getters and Setters
     const std::string& getVersion();
     static bool getExit() noexcept;
 
-private: //functions
+private: // functions
     void HandleIPC(const std::string& Data);
     std::string GetLocalAppdata();
     void UpdatePresence();
@@ -59,32 +60,34 @@ private: //functions
     void Relaunch();
     void ListenIPC();
     void Abort();
-private: //variables
-    uint32_t GamePID{0};
+
+private: // variables
+    uint32_t GamePID { 0 };
     bool EnableUI = true;
-    int64_t DiscordTime{};
+    int64_t DiscordTime {};
     bool LoginAuth = false;
-    fs::path CurrentPath{};
-    std::string BeamRoot{};
-    std::string UserRole{};
-    std::string PublicKey{};
-    std::thread IPCSystem{};
-    std::thread DiscordRPC{};
-    std::string MPUserPath{};
-    std::string BeamVersion{};
-    std::string BeamUserPath{};
-    std::string DiscordMessage{};
-    std::string Version{"2.0"};
-    Server ServerHandler{this};
-    std::string TargetBuild{"default"};
-    static inline std::atomic<bool> Shutdown{false}, Exit{false};
-    std::string FullVersion{Version + ".99"};
-    VersionParser SupportedVersion{"0.25.4.0"};
-    std::unique_ptr<IPC> IPCToGame{};
-    std::unique_ptr<IPC> IPCFromGame{};
+    fs::path CurrentPath {};
+    std::string BeamRoot {};
+    std::string UserRole {};
+    std::string PublicKey {};
+    std::thread IPCSystem {};
+    std::thread DiscordRPC {};
+    std::string MPUserPath {};
+    std::string BeamVersion {};
+    std::string BeamUserPath {};
+    std::string DiscordMessage {};
+    std::string Version { "2.0" };
+    Server ServerHandler { this };
+    std::string TargetBuild { "default" };
+    static inline std::atomic<bool> Shutdown { false }, Exit { false };
+    std::string FullVersion { Version + ".99" };
+    VersionParser SupportedVersion { "0.25.4.0" };
+    std::unique_ptr<IPC> IPCToGame {};
+    std::unique_ptr<IPC> IPCFromGame {};
 };
 
 class ShutdownException : public std::runtime_error {
 public:
-    explicit ShutdownException(const std::string& message): runtime_error(message){};
+    explicit ShutdownException(const std::string& message)
+        : runtime_error(message) {};
 };

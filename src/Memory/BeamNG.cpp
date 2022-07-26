@@ -3,10 +3,9 @@
 /// Copyright (c) 2021-present Anonymous275 read the LICENSE file for more info.
 ///
 
-
-#include "atomic_queue.h"
 #include "Memory/BeamNG.h"
 #include "Memory/Memory.h"
+#include "atomic_queue.h"
 
 std::unique_ptr<atomic_queue<std::string, 1000>> Queue;
 
@@ -21,7 +20,8 @@ void BeamNG::EntryPoint() {
     Queue = std::make_unique<atomic_queue<std::string, 1000>>();
     uint32_t PID = Memory::GetPID();
     auto status = MH_Initialize();
-    if(status != MH_OK)Memory::Print(std::string("MH Error -> ") + MH_StatusToString(status));
+    if (status != MH_OK)
+        Memory::Print(std::string("MH Error -> ") + MH_StatusToString(status));
     Memory::Print("PID : " + std::to_string(PID));
     GELua::FindAddresses();
     /*GameBaseAddr = Memory::GetModuleBase(GameModule);
@@ -29,15 +29,15 @@ void BeamNG::EntryPoint() {
     OpenJITDetour = std::make_unique<Hook<def::lua_open_jit>>(GELua::lua_open_jit, lua_open_jit_D);
     OpenJITDetour->Enable();
     IPCFromLauncher = std::make_unique<IPC>(PID, 0x1900000);
-    IPCToLauncher = std::make_unique<IPC>(PID+1, 0x1900000);
+    IPCToLauncher = std::make_unique<IPC>(PID + 1, 0x1900000);
     IPCListener();
 }
 
 int Core(lua_State* L) {
-    if(lua_gettop(L) == 1) {
+    if (lua_gettop(L) == 1) {
         size_t Size;
         const char* Data = GELua::lua_tolstring(L, 1, &Size);
-        //Memory::Print("Core -> " + std::string(Data) + " - " + std::to_string(Size));
+        // Memory::Print("Core -> " + std::string(Data) + " - " + std::to_string(Size));
         std::string msg(Data, Size);
         BeamNG::SendIPC("C" + msg);
     }
@@ -45,10 +45,10 @@ int Core(lua_State* L) {
 }
 
 int Game(lua_State* L) {
-    if(lua_gettop(L) == 1) {
+    if (lua_gettop(L) == 1) {
         size_t Size;
         const char* Data = GELua::lua_tolstring(L, 1, &Size);
-        //Memory::Print("Game -> " + std::string(Data) + " - " + std::to_string(Size));
+        // Memory::Print("Game -> " + std::string(Data) + " - " + std::to_string(Size));
         std::string msg(Data, Size);
         BeamNG::SendIPC("G" + msg);
     }
@@ -80,13 +80,14 @@ void BeamNG::SendIPC(const std::string& Data) {
 
 void BeamNG::IPCListener() {
     int TimeOuts = 0;
-    while(TimeOuts < 20) {
+    while (TimeOuts < 20) {
         IPCFromLauncher->receive();
         if (!IPCFromLauncher->receive_timed_out()) {
             TimeOuts = 0;
             Queue->push(IPCFromLauncher->msg());
             IPCFromLauncher->confirm_receive();
-        } else TimeOuts++;
+        } else
+            TimeOuts++;
     }
     Memory::Print("IPC System shutting down");
 }

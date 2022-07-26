@@ -5,17 +5,18 @@
 
 #define WIN32_LEAN_AND_MEAN
 
-#include "Compressor.h"
 #include "Server.h"
+#include "Compressor.h"
 #include "Launcher.h"
+#include "Logger.h"
 #include <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
-#include "Logger.h"
 
-Server::Server(Launcher *Instance) : LauncherInstance(Instance) {
+Server::Server(Launcher* Instance)
+    : LauncherInstance(Instance) {
     WSADATA wsaData;
-    int iRes = WSAStartup(514, &wsaData); //2.2
+    int iRes = WSAStartup(514, &wsaData); // 2.2
     if (iRes != 0) {
         LOG(ERROR) << "WSAStartup failed with error: " << iRes;
     }
@@ -42,7 +43,7 @@ void Server::TCPClientMain() {
     ServerAddr.sin_family = AF_INET;
     ServerAddr.sin_port = htons(Port);
     inet_pton(AF_INET, IP.c_str(), &ServerAddr.sin_addr);
-    status = connect(TCPSocket, (SOCKADDR *) &ServerAddr, sizeof(ServerAddr));
+    status = connect(TCPSocket, (SOCKADDR*)&ServerAddr, sizeof(ServerAddr));
     if (status != 0) {
         UStatus = "Connection Failed!";
         LOG(ERROR) << "Connect failed! Error code: " << GetSocketApiError();
@@ -72,15 +73,17 @@ void Server::StartUDP() {
 }
 
 void Server::UDPSend(std::string Data) {
-    if (ClientID == -1 || UDPSocket == -1)return;
+    if (ClientID == -1 || UDPSocket == -1)
+        return;
     if (Data.length() > 400) {
         std::string CMP(Zlib::Comp(Data));
         Data = "ABG:" + CMP;
     }
     std::string Packet = char(ClientID + 1) + std::string(":") + Data;
-    int sendOk = sendto(UDPSocket, Packet.c_str(), int(Packet.size()), 0, (sockaddr *) UDPSockAddress.get(),
-                        sizeof(sockaddr_in));
-    if (sendOk == SOCKET_ERROR)LOG(ERROR) << "UDP Socket Error Code : " << GetSocketApiError();
+    int sendOk = sendto(UDPSocket, Packet.c_str(), int(Packet.size()), 0, (sockaddr*)UDPSockAddress.get(),
+        sizeof(sockaddr_in));
+    if (sendOk == SOCKET_ERROR)
+        LOG(ERROR) << "UDP Socket Error Code : " << GetSocketApiError();
 }
 
 void Server::UDPParser(std::string Packet) {
@@ -91,13 +94,15 @@ void Server::UDPParser(std::string Packet) {
 }
 
 void Server::UDPRcv() {
-    sockaddr_in FromServer{};
+    sockaddr_in FromServer {};
     int clientLength = sizeof(FromServer);
     ZeroMemory(&FromServer, clientLength);
     std::string Ret(10240, 0);
-    if (UDPSocket == -1)return;
-    int32_t Rcv = recvfrom(UDPSocket, &Ret[0], 10240, 0, (sockaddr *) &FromServer, &clientLength);
-    if (Rcv == SOCKET_ERROR)return;
+    if (UDPSocket == -1)
+        return;
+    int32_t Rcv = recvfrom(UDPSocket, &Ret[0], 10240, 0, (sockaddr*)&FromServer, &clientLength);
+    if (Rcv == SOCKET_ERROR)
+        return;
     UDPParser(Ret.substr(0, Rcv));
 }
 
@@ -109,7 +114,8 @@ void Server::UDPClient() {
     LauncherInstance->SendIPC("P" + std::to_string(ClientID), false);
     TCPSend("H");
     UDPSend("p");
-    while (!Terminate)UDPRcv();
+    while (!Terminate)
+        UDPRcv();
     KillSocket(UDPSocket);
 }
 
@@ -120,16 +126,19 @@ void Server::UDPMain() {
     LOG(INFO) << "Connection terminated";
 }
 
-void Server::Connect(const std::string &Data) {
+void Server::Connect(const std::string& Data) {
     ModList.clear();
     Terminate.store(false);
     IP = GetAddress(Data.substr(1, Data.find(':') - 1));
     std::string port = Data.substr(Data.find(':') + 1);
     bool ValidPort = std::all_of(port.begin(), port.end(), ::isdigit);
     if (IP.find('.') == -1 || !ValidPort) {
-        if (IP == "DNS") UStatus = "Connection Failed! (DNS Lookup Failed)";
-        else if (!ValidPort) UStatus = "Connection Failed! (Invalid Port)";
-        else UStatus = "Connection Failed! (WSA failed to start)";
+        if (IP == "DNS")
+            UStatus = "Connection Failed! (DNS Lookup Failed)";
+        else if (!ValidPort)
+            UStatus = "Connection Failed! (Invalid Port)";
+        else
+            UStatus = "Connection Failed! (WSA failed to start)";
         ModList = "-";
         Terminate.store(true);
         return;
@@ -160,12 +169,12 @@ std::string Server::GetSocketApiError() {
     err = WSAGetLastError();
 
     FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                   nullptr,
-                   err,
-                   MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                   msgbuf,
-                   sizeof(msgbuf),
-                   nullptr);
+        nullptr,
+        err,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        msgbuf,
+        sizeof(msgbuf),
+        nullptr);
 
     if (*msgbuf) {
         return std::to_string(WSAGetLastError()) + " - " + std::string(msgbuf);
@@ -175,16 +184,22 @@ std::string Server::GetSocketApiError() {
 }
 
 void Server::ServerSend(std::string Data, bool Rel) {
-    if (Terminate || Data.empty())return;
+    if (Terminate || Data.empty())
+        return;
     char C = 0;
     int DLen = int(Data.length());
-    if (DLen > 3)C = Data.at(0);
+    if (DLen > 3)
+        C = Data.at(0);
     bool Ack = C == 'O' || C == 'T';
-    if (C == 'N' || C == 'W' || C == 'Y' || C == 'V' || C == 'E' || C == 'C')Rel = true;
+    if (C == 'N' || C == 'W' || C == 'Y' || C == 'V' || C == 'E' || C == 'C')
+        Rel = true;
     if (Ack || Rel) {
-        if (Ack || DLen > 1000)SendLarge(Data);
-        else TCPSend(Data);
-    } else UDPSend(Data);
+        if (Ack || DLen > 1000)
+            SendLarge(Data);
+        else
+            TCPSend(Data);
+    } else
+        UDPSend(Data);
 }
 
 void Server::PingLoop() {
@@ -211,7 +226,7 @@ void Server::Close() {
     }
 }
 
-const std::string &Server::getMap() {
+const std::string& Server::getMap() {
     return MStatus;
 }
 
@@ -219,7 +234,7 @@ bool Server::Terminated() {
     return Terminate;
 }
 
-const std::string &Server::getModList() {
+const std::string& Server::getModList() {
     return ModList;
 }
 
@@ -227,24 +242,26 @@ int Server::getPing() const {
     return Ping;
 }
 
-const std::string &Server::getUIStatus() {
+const std::string& Server::getUIStatus() {
     return UStatus;
 }
 
-std::string Server::GetAddress(const std::string &Data) {
-    if (Data.find_first_not_of("0123456789.") == -1)return Data;
-    hostent *host;
+std::string Server::GetAddress(const std::string& Data) {
+    if (Data.find_first_not_of("0123456789.") == -1)
+        return Data;
+    hostent* host;
     host = gethostbyname(Data.c_str());
     if (!host) {
         LOG(ERROR) << "DNS lookup failed! on " << Data;
         return "DNS";
     }
-    std::string Ret = inet_ntoa(*((struct in_addr *) host->h_addr));
+    std::string Ret = inet_ntoa(*((struct in_addr*)host->h_addr));
     return Ret;
 }
 
 int Server::KillSocket(uint64_t Dead) {
-    if (Dead == (SOCKET) -1)return 0;
+    if (Dead == (SOCKET)-1)
+        return 0;
     shutdown(Dead, SD_BOTH);
     return closesocket(Dead);
 }
@@ -253,17 +270,17 @@ void Server::setModLoaded() {
     ModLoaded.store(true);
 }
 
-void Server::UUl(const std::string &R) {
+void Server::UUl(const std::string& R) {
     UStatus = "Disconnected: " + R;
 }
 
 bool Server::CheckBytes(int32_t Bytes) {
     if (Bytes == 0) {
-        //debug("(TCP) Connection closing... CheckBytes(16)");
+        // debug("(TCP) Connection closing... CheckBytes(16)");
         Terminate = true;
         return false;
     } else if (Bytes < 0) {
-        //debug("(TCP CB) recv failed with error: " + GetSocketApiError();
+        // debug("(TCP CB) recv failed with error: " + GetSocketApiError();
         KillSocket(TCPSocket);
         Terminate = true;
         return false;
@@ -271,7 +288,7 @@ bool Server::CheckBytes(int32_t Bytes) {
     return true;
 }
 
-void Server::TCPSend(const std::string &Data) {
+void Server::TCPSend(const std::string& Data) {
 
     if (TCPSocket == -1) {
         Terminate = true;
@@ -346,6 +363,7 @@ std::string Server::TCPRcv() {
         Ret = Zlib::DeComp(Ret.substr(4));
     }
 
-    if (Ret[0] == 'E')UUl(Ret.substr(1));
+    if (Ret[0] == 'E')
+        UUl(Ret.substr(1));
     return Ret;
 }

@@ -5,7 +5,7 @@
 
 #pragma once
 
-class gif{
+class gif {
 public:
     static const unsigned char Logo[30427];
 };

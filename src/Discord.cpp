@@ -3,14 +3,13 @@
 /// Copyright (c) 2021-present Anonymous275 read the LICENSE file for more info.
 ///
 #ifndef DEBUG
-#include <discord_rpc.h>
 #include "Launcher.h"
 #include "Logger.h"
 #include <ctime>
+#include <discord_rpc.h>
 
-
-void handleReady(const DiscordUser* u) {}
-void handleDisconnected(int errcode, const char* message) {}
+void handleReady(const DiscordUser* u) { }
+void handleDisconnected(int errcode, const char* message) { }
 void handleError(int errcode, const char* message) {
     LOG(ERROR) << "Discord error: " << message;
 }
@@ -40,7 +39,7 @@ void Launcher::RichPresence() {
     handlers.disconnected = handleDisconnected;
     Discord_Initialize("629743237988352010", &handlers, 1, nullptr);
     UpdatePresence();
-    while(!Shutdown.load()) {
+    while (!Shutdown.load()) {
         Discord_RunCallbacks();
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }

@@ -4,10 +4,10 @@
 ///
 
 #pragma once
-#include <string>
 #include <atomic>
-#include <thread>
 #include <chrono>
+#include <string>
+#include <thread>
 
 struct sockaddr_in;
 class Launcher;
@@ -16,6 +16,7 @@ public:
     Server() = delete;
     explicit Server(Launcher* Instance);
     ~Server();
+
 public:
     void ServerSend(std::string Data, bool Rel);
     void Connect(const std::string& Data);
@@ -27,11 +28,12 @@ public:
     bool Terminated();
     int getPing() const;
     void Close();
+
 private:
     std::chrono::time_point<std::chrono::high_resolution_clock> PingStart, PingEnd;
     std::string MultiDownload(uint64_t DSock, uint64_t Size, const std::string& Name);
-    void AsyncUpdate(uint64_t& Rcv,uint64_t Size,const std::string& Name);
-    std::atomic<bool> Terminate{false}, ModLoaded{false};
+    void AsyncUpdate(uint64_t& Rcv, uint64_t Size, const std::string& Name);
+    std::atomic<bool> Terminate { false }, ModLoaded { false };
     char* TCPRcvRaw(uint64_t Sock, uint64_t& GRcv, uint64_t Size);
     std::string GetAddress(const std::string& Data);
     void InvalidResource(const std::string& File);
@@ -54,21 +56,21 @@ private:
     uint64_t TCPSocket = -1;
     uint64_t UDPSocket = -1;
     void WaitForConfirm();
-    std::string UStatus{};
-    std::string MStatus{};
-    std::string ModList{};
+    std::string UStatus {};
+    std::string MStatus {};
+    std::string ModList {};
     void TCPClientMain();
     void SyncResources();
     std::string TCPRcv();
     uint64_t InitDSock();
     std::string Auth();
-    std::string IP{};
+    std::string IP {};
     void UDPClient();
     void PingLoop();
-    int ClientID{0};
+    int ClientID { 0 };
     void UDPMain();
     void UDPRcv();
     void Abort();
-    int Port{0};
-    int Ping{0};
+    int Port { 0 };
+    int Ping { 0 };
 };

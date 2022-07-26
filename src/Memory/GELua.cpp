@@ -3,9 +3,9 @@
 /// Copyright (c) 2021-present Anonymous275 read the LICENSE file for more info.
 ///
 
-#include "Memory/Patterns.h"
-#include "Memory/Memory.h"
 #include "Memory/GELua.h"
+#include "Memory/Memory.h"
+#include "Memory/Patterns.h"
 
 const char* GameModule = "BeamNG.drive.x64.exe";
 const char* DllModule = "libbeamng.x64.dll";
@@ -13,7 +13,7 @@ const char* DllModule = "libbeamng.x64.dll";
 std::string GetHex(uint64_t num) {
     char buffer[30];
     sprintf(buffer, "%llx", num);
-    return std::string{buffer};
+    return std::string { buffer };
 }
 
 void GELua::FindAddresses() {
