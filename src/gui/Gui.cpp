@@ -80,7 +80,7 @@ void MyFrame::OnHello(wxCommandEvent& event) {
    wxLogMessage("Hello world from wxWidgets!");
 }
 
-int GUIEntry(int argc, char* argv[]) {
+int main(int argc, char* argv[]) {
    new MyApp();
    return wxEntry(argc, argv);
 }
