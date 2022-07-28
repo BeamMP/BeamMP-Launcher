@@ -23,7 +23,7 @@ set(wxBUILD_SHARED OFF)
 set(wxBUILD_MSVC_MULTIPROC ON)
 set(wxBUILD_USE_STATIC_RUNTIME ON)
 
-#add_subdirectory(include/wxWidgets)
+add_subdirectory(include/wxWidgets)
 add_subdirectory(include/cpp-httplib)
 add_subdirectory(include/tomlplusplus)
 
@@ -40,7 +40,7 @@ add_executable(${PROJECT_NAME}
         src/Memory/GELua.cpp include/Memory/GELua.h
         src/Memory/IPC.cpp include/Memory/IPC.h
         src/Logger.cpp include/Logger.h
-        #src/gui/Gui.cpp
+        src/gui/Gui.cpp
         include/Json.h
         src/gui/gifs.cpp src/gui/gifs.h
         src/Network/HttpAPI.cpp include/HttpAPI.h
@@ -55,7 +55,7 @@ if (WIN32)
     if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
         target_link_libraries(${PROJECT_NAME} PRIVATE discord-rpc)
     endif()
-    #target_link_libraries(${PROJECT_NAME} PRIVATE wx::net wx::core wx::base)
+    target_link_libraries(${PROJECT_NAME} PRIVATE wx::net wx::core wx::base)
     target_link_libraries(${PROJECT_NAME} PRIVATE
             ZLIB::ZLIB OpenSSL::SSL OpenSSL::Crypto ws2_32
             Dbghelp comsuppw minhook::minhook nlohmann_json nlohmann_json::nlohmann_json)
