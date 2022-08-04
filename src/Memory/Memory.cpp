@@ -29,9 +29,7 @@ uint32_t Memory::GetBeamNGPID(const std::set<uint32_t>& BL) {
       } while (Process32Next(Snapshot, &pe32));
    }
 
-   if (Snapshot != INVALID_HANDLE_VALUE) {
-      CloseHandle(Snapshot);
-   }
+   if (Snapshot != INVALID_HANDLE_VALUE) { CloseHandle(Snapshot); }
 
    if (GetLastError() != 0) return 0;
    return pe32.th32ProcessID;
@@ -58,9 +56,7 @@ uint64_t Memory::FindPattern(const char* module, const char* Pattern[]) {
          found &=
              Pattern[1][j] == '?' || Pattern[0][j] == *(char*)(base + i + j);
       }
-      if (found) {
-         return base + i;
-      }
+      if (found) { return base + i; }
    }
    return 0;
 }
