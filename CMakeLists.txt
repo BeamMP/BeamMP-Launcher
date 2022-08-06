@@ -44,7 +44,6 @@ add_executable(${PROJECT_NAME} WIN32
         src/Logger.cpp include/Logger.h
         src/gui/Gui.cpp
         include/Json.h
-        src/gui/gifs.cpp src/gui/gifs.h
         src/Network/HttpAPI.cpp include/HttpAPI.h
         src/Network/Server.cpp include/Server.h
         src/Network/Login.cpp src/Network/Update.cpp
