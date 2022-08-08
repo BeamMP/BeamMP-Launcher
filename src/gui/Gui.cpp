@@ -264,7 +264,6 @@ MyMainFrame::MyMainFrame() :
       txtServers->SetForegroundColour("white");
       txtPatreon->SetForegroundColour("white");
       txtStatus->SetForegroundColour("white");
-      txtStatusResult->SetForegroundColour("green");
 
       //Line Separators:
       HorizontalLine1->SetForegroundColour("white");
@@ -280,6 +279,7 @@ MyMainFrame::MyMainFrame() :
       auto* logo = new wxBitmapButton(this, 42, wxBitmapBundle(wxImage("BeamMP.png", wxBITMAP_TYPE_PNG).Scale(100,100, wxIMAGE_QUALITY_HIGH)), wxPoint(850, -15), wxSize(100,100), wxBORDER_NONE);
       logo->SetBackgroundColour("white");
    }
+   txtStatusResult->SetForegroundColour("green");
 }
 
 /////////// Account Frame Content ///////////
