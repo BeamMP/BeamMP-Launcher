@@ -2,7 +2,6 @@
 /// Created by Anonymous275 on 12/27/21
 /// Copyright (c) 2021-present Anonymous275 read the LICENSE file for more info.
 ///
-
 #include <wx/wxprec.h>
 #ifndef WX_PRECOMP
 #include <wx/dc.h>
@@ -33,6 +32,7 @@ class MyMainFrame : public wxFrame {
 
    private:
    // Here you put the frame functions:
+   wxStaticText* txtStatusResult;
    wxButton* btnLaunch;
    bool DarkMode = wxSystemSettings::GetAppearance().IsDark();
    void OnClickAccount(wxCommandEvent& event);
@@ -40,7 +40,6 @@ class MyMainFrame : public wxFrame {
    void OnClickLaunch(wxCommandEvent& event);
    void OnClickLogo(wxCommandEvent& event);
    wxDECLARE_EVENT_TABLE();
-
 };
 
 /////////// AccountFrame class ///////////
@@ -79,9 +78,7 @@ class MyTestFrame : public wxFrame {
    bool DarkMode = wxSystemSettings::GetAppearance().IsDark();
 };
 
-
 enum { ID_Hello = 1 };
-
 
 /////////// MainFrame Event Table ///////////
 wxBEGIN_EVENT_TABLE(MyMainFrame, wxFrame)
@@ -102,7 +99,6 @@ wxBEGIN_EVENT_TABLE(MySettingsFrame, wxFrame)
         EVT_CHECKBOX(45, MySettingsFrame::OnClickConsole)
 wxEND_EVENT_TABLE()
 
-
 /////////// OnInit function to show frame ///////////
 bool MyApp::OnInit() {
    auto* MainFrame = new MyMainFrame();
@@ -116,15 +112,12 @@ bool MyApp::OnInit() {
       MainFrame->SetBackgroundColour(wxColour(40, 40, 40));
       MainFrame->SetForegroundColour(wxColour(255, 255, 255));
    }
-
    else {
       MainFrame->SetBackgroundColour(wxColour("white"));
       MainFrame->SetForegroundColour(wxColour("white"));
    }
-
    wxFileSystem::AddHandler(new wxInternetFSHandler);
    MainFrame->Show(true);
-
 
    //Test Frame Properties:
 /*   auto* TestFrame = new MyTestFrame();
@@ -149,6 +142,7 @@ bool MyApp::OnInit() {
 bool isSignedIn () {
    return false;
 }
+
 void WindowsConsole (bool isChecked) {
    if (isChecked) {
       AllocConsole();
@@ -160,7 +154,6 @@ void WindowsConsole (bool isChecked) {
       ::freopen_s(&pNewStderr, "CONOUT$", "w", stderr);
       ::freopen_s(&pNewStdin, "CONIN$", "r", stdin);
    }
-
    else {
       FreeConsole();
       ::fclose(stdout);
@@ -174,7 +167,6 @@ void WindowsConsole (bool isChecked) {
    std::cout.clear();
    std::cerr.clear();
    std::cin.clear();
-
    std::wcout.clear();
    std::wcerr.clear();
    std::wcin.clear();
@@ -188,17 +180,16 @@ void WindowsConsole (bool isChecked) {
    auto* file = new wxFileDialog (this, wxT("Test"), wxT(""),wxT(""));
    file->SetPosition(wxPoint(250,250));
    file->SetForegroundColour("white");
-
 }*/
 
 /////////// MainFrame Function ///////////
 MyMainFrame::MyMainFrame() :
     wxFrame(nullptr, wxID_ANY, "BeamMP Launcher V3", wxDefaultPosition,wxDefaultSize,
             wxMINIMIZE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLOSE_BOX) {
-
    //News:
    wxWebView::New() ->Create(this, wxID_ANY, "https://beammp.com", wxPoint(10, 70), wxSize(950, 400));
    auto* txtNews = new wxStaticText(this, wxID_ANY, wxT("News"), wxPoint(10, 40));
+   MyMainFrame::SetFocus();
 
    auto* HorizontalLine1 = new wxStaticLine(this, wxID_ANY, wxPoint(10, 60), wxSize(950, 1));
    auto* HorizontalLine2 = new wxStaticLine(this, wxID_ANY, wxPoint(10, 480), wxSize(950, 1));
@@ -211,14 +202,11 @@ MyMainFrame::MyMainFrame() :
    auto* HyperForum = new wxHyperlinkCtrl(this, wxID_ANY, wxT("Forum"), wxT("https://forum.beammp.com"), wxPoint(10, 10));
    auto* txtSeparator1 = new wxStaticText(this, wxID_ANY, wxT("|"), wxPoint(55, 10));
 
-
    auto* HyperDiscord = new wxHyperlinkCtrl(this, wxID_ANY, wxT("Discord"), wxT("https://discord.gg/beammp"), wxPoint(70, 10));
    auto* txtSeparator2 = new wxStaticText(this, wxID_ANY, wxT("|"), wxPoint(120, 10));
 
-
    auto* HyperGithub = new wxHyperlinkCtrl(this, wxID_ANY, wxT("GitHub"), wxT("https://github.com/BeamMP"), wxPoint(130, 10));
    auto* txtSeparator3 = new wxStaticText(this, wxID_ANY, wxT("|"), wxPoint(180, 10));
-
 
    auto* HyperWiki = new wxHyperlinkCtrl(this, wxID_ANY, wxT("Wiki"), wxT("https://wiki.beammp.com"), wxPoint(195, 10));
    auto* txtSeparator4 = new wxStaticText(this, wxID_ANY, wxT("|"), wxPoint(230, 10));
@@ -238,12 +226,12 @@ MyMainFrame::MyMainFrame() :
    //Information:
    auto* txtGameVersion = new wxStaticText(this, wxID_ANY, wxT("Game Version: NA"), wxPoint(160, 490));
    auto* txtPlayers = new wxStaticText(this, wxID_ANY, wxT("Currently Playing: NA"), wxPoint(300, 490));
-   auto* txtPatreon = new wxStaticText(this, wxID_ANY, wxT("Patreons:"), wxPoint(570, 490));
-   auto* txtPatreonList = new wxStaticText(this, wxID_ANY, wxT("yesn't"), wxPoint(570, 510));
+   auto* txtPatreon = new wxStaticText(this, wxID_ANY, wxT("Special thanks to our Patreon Members!"), wxPoint(570, 490));
 
    auto* txtModVersion = new wxStaticText(this, wxID_ANY, wxT("Mod Version: NA"), wxPoint(160, 520));
    auto* txtServers = new wxStaticText(this, wxID_ANY, wxT("Available Servers: NA"), wxPoint(300, 520));
-   auto* txtStatus = new wxStaticText(this, wxID_ANY, wxT("Status: NA"), wxPoint(880, 520));
+   auto* txtStatus = new wxStaticText(this, wxID_ANY, wxT("Status: "), wxPoint(880, 520));
+   txtStatusResult = new wxStaticText(this, wxID_ANY, wxT("Online"), wxPoint(920, 520));
 
    auto* HorizontalLine3 = new wxStaticLine(this, wxID_ANY, wxPoint(10, 550), wxSize(950, 1));
 
@@ -275,8 +263,8 @@ MyMainFrame::MyMainFrame() :
       txtModVersion->SetForegroundColour("white");
       txtServers->SetForegroundColour("white");
       txtPatreon->SetForegroundColour("white");
-      txtPatreonList->SetForegroundColour("white");
       txtStatus->SetForegroundColour("white");
+      txtStatusResult->SetForegroundColour("green");
 
       //Line Separators:
       HorizontalLine1->SetForegroundColour("white");
@@ -287,7 +275,6 @@ MyMainFrame::MyMainFrame() :
       auto* logo = new wxBitmapButton(this, 42, wxBitmapBundle(wxImage("beammp_original.png", wxBITMAP_TYPE_PNG).Scale(100,100, wxIMAGE_QUALITY_HIGH)), wxPoint(850, -15), wxSize(100,100), wxBORDER_NONE);
       logo->SetBackgroundColour(wxColour(40, 40, 40));
    }
-
    else {
       //Logo:
       auto* logo = new wxBitmapButton(this, 42, wxBitmapBundle(wxImage("BeamMP.png", wxBITMAP_TYPE_PNG).Scale(100,100, wxIMAGE_QUALITY_HIGH)), wxPoint(850, -15), wxSize(100,100), wxBORDER_NONE);
@@ -298,7 +285,7 @@ MyMainFrame::MyMainFrame() :
 /////////// Account Frame Content ///////////
 MyAccountFrame::MyAccountFrame() : wxFrame(nullptr, wxID_ANY, "Account Manager", wxDefaultPosition,wxDefaultSize,
             wxMINIMIZE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLOSE_BOX) {
-
+   MyAccountFrame::SetFocus();
    auto *handler = new wxPNGHandler;
    wxImage::AddHandler(handler);
    wxStaticBitmap *image;
@@ -311,14 +298,13 @@ MyAccountFrame::MyAccountFrame() : wxFrame(nullptr, wxID_ANY, "Account Manager",
       auto* txtEmail = new wxStaticText(this, wxID_ANY, wxT("Email: beamMP@gmail.com"), wxPoint(180, 250));
       auto btnLogout = new wxButton(this, 44, wxT("Logout"), wxPoint(185,550), wxSize(110, 25));
 
-      /////////// UI Colors ///////////
+      //UI Colors:
       if (DarkMode) {
          //Text:
          txtName->SetForegroundColour("white");
          txtEmail->SetForegroundColour("white");
       }
    }
-
    else {
       image->SetBitmap(wxBitmapBundle(wxImage("default.png", wxBITMAP_TYPE_PNG).Scale(120,120, wxIMAGE_QUALITY_HIGH)));
 
@@ -331,7 +317,6 @@ MyAccountFrame::MyAccountFrame() : wxFrame(nullptr, wxID_ANY, "Account Manager",
 
       auto btnLogin = new wxButton(this, wxID_ANY, wxT("Login"), wxPoint(120,375), wxSize(110, 25));
       auto btnRegister = new wxButton(this, 43, wxT("Register"), wxPoint(250,375), wxSize(110, 25));
-
 
       //UI Colors:
       if (DarkMode) {
@@ -346,10 +331,11 @@ MySettingsFrame::MySettingsFrame() :
     wxFrame(nullptr, wxID_ANY, "Settings", wxDefaultPosition,wxDefaultSize,
             wxMINIMIZE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLOSE_BOX) {
 
-
    auto* txtDirectory = new wxStaticText(this, wxID_ANY, wxT("Game Directory: "), wxPoint(30, 100));
    auto* ctrlDirectory = new wxTextCtrl (this, wxID_ANY, wxT("D:/PATH/BeamNG.exe"), wxPoint(130, 100), wxSize(220,-1));
+   MySettingsFrame::SetFocus();
    auto btnGame = new wxButton(this, 40, wxT("Change Directory"), wxPoint(185,140), wxSize(110, 25));
+
    //auto* bitmapGame = new wxBitmapButton(this, wxID_ANY, wxBitmapBundle(wxImage("explorer.png", wxBITMAP_TYPE_PNG).Scale(15,15, wxIMAGE_QUALITY_HIGH)), wxPoint(350, 100), wxSize(15,15), wxBORDER_NONE);
 
    auto* txtProfileDirectory = new wxStaticText(this, wxID_ANY, wxT("Profile Directory: "), wxPoint(30, 200));
@@ -372,7 +358,6 @@ MySettingsFrame::MySettingsFrame() :
 
    checkConsole = new wxCheckBox (this, 45, " Show Console", wxPoint(30, 450));
 
-
    //UI Colors:
    if (DarkMode) {
       //Text:
@@ -391,7 +376,6 @@ MySettingsFrame::MySettingsFrame() :
 
 /////////// OnClick Account Event ///////////
 void MyMainFrame::OnClickAccount(wxCommandEvent& event WXUNUSED(event)) {
-
    auto* AccountFrame = new MyAccountFrame();
    AccountFrame->SetSize(500, 650);
    AccountFrame->Center();
@@ -401,7 +385,6 @@ void MyMainFrame::OnClickAccount(wxCommandEvent& event WXUNUSED(event)) {
       AccountFrame->SetBackgroundColour(wxColour(40, 40, 40));
       AccountFrame->SetForegroundColour(wxColour(255, 255, 255));
    }
-
    else {
       AccountFrame->SetBackgroundColour(wxColour("white"));
       AccountFrame->SetForegroundColour(wxColour("white"));
@@ -411,7 +394,6 @@ void MyMainFrame::OnClickAccount(wxCommandEvent& event WXUNUSED(event)) {
 
 /////////// OnClick Settings Event ///////////
 void MyMainFrame::OnClickSettings(wxCommandEvent& event WXUNUSED(event)) {
-
    auto* SettingsFrame = new MySettingsFrame();
    SettingsFrame->SetSize(500, 650);
    SettingsFrame->Center();
@@ -421,7 +403,6 @@ void MyMainFrame::OnClickSettings(wxCommandEvent& event WXUNUSED(event)) {
       SettingsFrame->SetBackgroundColour(wxColour(40, 40, 40));
       SettingsFrame->SetForegroundColour(wxColour(255, 255, 255));
    }
-
    else {
       SettingsFrame->SetBackgroundColour(wxColour("white"));
       SettingsFrame->SetForegroundColour(wxColour("white"));
@@ -436,9 +417,7 @@ void MyMainFrame::OnClickLogo(wxCommandEvent& event WXUNUSED(event)) {
 
 /////////// OnClick Register Event ///////////
 void MyAccountFrame::OnClickRegister(wxCommandEvent& event WXUNUSED(event)) {
-
    wxLaunchDefaultApplication("https://forum.beammp.com/signup");
-
 }
 
 /////////// OnClick Logout Event ///////////
@@ -448,26 +427,23 @@ void MyAccountFrame::OnClickLogout(wxCommandEvent& event WXUNUSED(event)) {
 
 }
 
-
-
 /////////// OnClick Launch Event ///////////
 void MyMainFrame::OnClickLaunch(wxCommandEvent& event WXUNUSED(event)) {
-   if (!Launcher::EntryThread.joinable()) {
-      Launcher::EntryThread = std::thread([&]() {
-         entry();
-         btnLaunch->Enable();
-      });
-      btnLaunch->Disable();
-   }
-
+   if (Launcher::EntryThread.joinable()) Launcher::EntryThread.join();
+   Launcher::EntryThread = std::thread([&]() {
+      entry();
+      txtStatusResult->SetLabelText(wxT("Online"));
+      txtStatusResult->SetForegroundColour("green");
+      btnLaunch->Enable();
+   });
+   txtStatusResult->SetLabelText(wxT("In-Game"));
+   txtStatusResult->SetForegroundColour("purple");
+   btnLaunch->Disable();
 }
-
-
 
 /////////// OnClick Console Event ///////////
 void MySettingsFrame::OnClickConsole(wxCommandEvent& event WXUNUSED(event)) {
       WindowsConsole(checkConsole->IsChecked());
-
 }
 
 /////////// MAIN FUNCTION ///////////
@@ -476,9 +452,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
    wxLog::SetLogLevel(wxLOG_Info);
    new MyApp();
    int result = wxEntry(hInstance, hPrevInstance, lpCmdLine, nShowCmd);
-   if (Launcher::EntryThread.joinable()) {
+   if (Launcher::EntryThread.joinable())
       Launcher::EntryThread.join();
-   }
    return result;
 }
-

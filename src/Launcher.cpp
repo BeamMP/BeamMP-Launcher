@@ -24,6 +24,8 @@ LONG WINAPI CrashHandler(EXCEPTION_POINTERS* p) {
 Launcher::Launcher() :
     CurrentPath(std::filesystem::current_path()),
     DiscordMessage("Just launched") {
+   Shutdown.store(false);
+   Exit.store(false);
    Launcher::StaticAbort(this);
    DiscordTime = std::time(nullptr);
    Log::Init();
