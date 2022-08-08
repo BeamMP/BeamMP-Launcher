@@ -21,8 +21,8 @@ LONG WINAPI CrashHandler(EXCEPTION_POINTERS* p) {
    return EXCEPTION_EXECUTE_HANDLER;
 }
 
-Launcher::Launcher(int argc, char* argv[]) :
-    CurrentPath(std::filesystem::path(argv[0])),
+Launcher::Launcher() :
+    CurrentPath(std::filesystem::current_path()),
     DiscordMessage("Just launched") {
    Launcher::StaticAbort(this);
    DiscordTime = std::time(nullptr);

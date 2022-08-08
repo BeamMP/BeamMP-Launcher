@@ -3,13 +3,13 @@
 /// Copyright (c) 2021-present Anonymous275 read the LICENSE file for more info.
 ///
 
-/*#include "Launcher.h"
+#include "Launcher.h"
 #include "Logger.h"
 
-int main(int argc, char* argv[]) {
+void entry() {
 
    try {
-      Launcher launcher(argc, argv);
+      Launcher launcher;
       launcher.RunDiscordRPC();
       launcher.LoadConfig();  // check if json (issue)
       launcher.CheckKey();
@@ -26,5 +26,5 @@ int main(int argc, char* argv[]) {
    }
    std::this_thread::sleep_for(std::chrono::seconds(2));
    Launcher::setExit(true);
-   return 0;
-}*/
+
+}

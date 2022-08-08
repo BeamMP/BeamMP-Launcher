@@ -33,6 +33,7 @@ class MyMainFrame : public wxFrame {
 
    private:
    // Here you put the frame functions:
+   wxButton* btnLaunch;
    bool DarkMode = wxSystemSettings::GetAppearance().IsDark();
    void OnClickAccount(wxCommandEvent& event);
    void OnClickSettings(wxCommandEvent& event);
@@ -62,6 +63,19 @@ class MySettingsFrame : public wxFrame {
 
    private:
    // Here you put the frame functions:
+   wxCheckBox* checkConsole;
+   bool DarkMode = wxSystemSettings::GetAppearance().IsDark();
+   void OnClickConsole(wxCommandEvent& event);
+   wxDECLARE_EVENT_TABLE();
+};
+
+/////////// TestFrame class ///////////
+class MyTestFrame : public wxFrame {
+   public:
+   MyTestFrame();
+
+   private:
+   // Here you put the frame functions:
    bool DarkMode = wxSystemSettings::GetAppearance().IsDark();
 };
 
@@ -83,6 +97,10 @@ wxBEGIN_EVENT_TABLE(MyAccountFrame, wxFrame)
    EVT_BUTTON(44, MyAccountFrame::OnClickLogout)
 wxEND_EVENT_TABLE()
 
+    /////////// SettingsFrame Event Table ///////////
+wxBEGIN_EVENT_TABLE(MySettingsFrame, wxFrame)
+        EVT_CHECKBOX(45, MySettingsFrame::OnClickConsole)
+wxEND_EVENT_TABLE()
 
 
 /////////// OnInit function to show frame ///////////
@@ -106,30 +124,90 @@ bool MyApp::OnInit() {
 
    wxFileSystem::AddHandler(new wxInternetFSHandler);
    MainFrame->Show(true);
+
+
+   //Test Frame Properties:
+/*   auto* TestFrame = new MyTestFrame();
+   TestFrame->SetIcon(wxIcon("beammp_original.png",wxBITMAP_TYPE_PNG));
+   TestFrame->SetSize(1000, 650);
+   TestFrame->Center();
+
+   if (wxSystemSettings::GetAppearance().IsDark()) {
+      TestFrame->SetBackgroundColour(wxColour(40, 40, 40));
+      TestFrame->SetForegroundColour(wxColour(255, 255, 255));
+   }
+
+   else {
+      TestFrame->SetBackgroundColour(wxColour("white"));
+      TestFrame->SetForegroundColour(wxColour("white"));
+   }
+   TestFrame->Show(true);*/
+
    return true;
 }
 
 bool isSignedIn () {
    return false;
 }
+void WindowsConsole (bool isChecked) {
+   if (isChecked) {
+      AllocConsole();
+      FILE* pNewStdout = nullptr;
+      FILE* pNewStderr = nullptr;
+      FILE* pNewStdin  = nullptr;
+
+      ::freopen_s(&pNewStdout, "CONOUT$", "w", stdout);
+      ::freopen_s(&pNewStderr, "CONOUT$", "w", stderr);
+      ::freopen_s(&pNewStdin, "CONIN$", "r", stdin);
+   }
+
+   else {
+      FreeConsole();
+      ::fclose(stdout);
+      ::fclose(stderr);
+      ::fclose(stdin);
+   }
+   // Clear the error state for all of the C++ standard streams. Attempting to accessing the streams before they refer
+   // to a valid target causes the stream to enter an error state. Clearing the error state will fix this problem,
+   // which seems to occur in newer version of Visual Studio even when the console has not been read from or written
+   // to yet.
+   std::cout.clear();
+   std::cerr.clear();
+   std::cin.clear();
+
+   std::wcout.clear();
+   std::wcerr.clear();
+   std::wcin.clear();
+}
+
+/////////// TestFrame Function ///////////
+/*MyTestFrame::MyTestFrame() :
+    wxFrame(nullptr, wxID_ANY, "BeamMP Launcher V3", wxDefaultPosition,wxDefaultSize,
+            wxMINIMIZE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLOSE_BOX) {
+
+   auto* file = new wxFileDialog (this, wxT("Test"), wxT(""),wxT(""));
+   file->SetPosition(wxPoint(250,250));
+   file->SetForegroundColour("white");
+
+}*/
 
 /////////// MainFrame Function ///////////
 MyMainFrame::MyMainFrame() :
     wxFrame(nullptr, wxID_ANY, "BeamMP Launcher V3", wxDefaultPosition,wxDefaultSize,
             wxMINIMIZE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLOSE_BOX) {
 
-   /////////// News ///////////
+   //News:
    wxWebView::New() ->Create(this, wxID_ANY, "https://beammp.com", wxPoint(10, 70), wxSize(950, 400));
    auto* txtNews = new wxStaticText(this, wxID_ANY, wxT("News"), wxPoint(10, 40));
 
    auto* HorizontalLine1 = new wxStaticLine(this, wxID_ANY, wxPoint(10, 60), wxSize(950, 1));
    auto* HorizontalLine2 = new wxStaticLine(this, wxID_ANY, wxPoint(10, 480), wxSize(950, 1));
 
-   /////////// PNG Handler to load the files ///////////
+   //PNG Handler:
    auto *handler = new wxPNGHandler;
    wxImage::AddHandler(handler);
 
-   /////////// Hyperlinks ///////////
+   //Hyperlinks:
    auto* HyperForum = new wxHyperlinkCtrl(this, wxID_ANY, wxT("Forum"), wxT("https://forum.beammp.com"), wxPoint(10, 10));
    auto* txtSeparator1 = new wxStaticText(this, wxID_ANY, wxT("|"), wxPoint(55, 10));
 
@@ -147,7 +225,7 @@ MyMainFrame::MyMainFrame() :
 
    auto* HyperPatreon = new wxHyperlinkCtrl(this, wxID_ANY, wxT("Patreon"), wxT("https://www.patreon.com/BeamMP"), wxPoint(240, 10));
 
-   /////////// Update ///////////
+   //Update:
    auto* txtUpdate = new wxStaticText(this, wxID_ANY, wxT("Updating BeamMP "), wxPoint(10, 490));
 
    auto* UpdateBar = new wxGauge(this, wxID_ANY, 100, wxPoint(10, 520), wxSize(127, -1));
@@ -157,7 +235,7 @@ MyMainFrame::MyMainFrame() :
       UpdateBar->SetValue(UpdateBar->GetValue() + 1);
    }
 
-   /////////// Information ///////////
+   //Information:
    auto* txtGameVersion = new wxStaticText(this, wxID_ANY, wxT("Game Version: NA"), wxPoint(160, 490));
    auto* txtPlayers = new wxStaticText(this, wxID_ANY, wxT("Currently Playing: NA"), wxPoint(300, 490));
    auto* txtPatreon = new wxStaticText(this, wxID_ANY, wxT("Patreons:"), wxPoint(570, 490));
@@ -169,7 +247,7 @@ MyMainFrame::MyMainFrame() :
 
    auto* HorizontalLine3 = new wxStaticLine(this, wxID_ANY, wxPoint(10, 550), wxSize(950, 1));
 
-   /////////// Account ///////////
+   //Account:
    auto* bitmap = new wxBitmapButton(this, 39, wxBitmapBundle(wxImage("deer.png", wxBITMAP_TYPE_PNG).Scale(45,45, wxIMAGE_QUALITY_HIGH)), wxPoint(20, 560), wxSize(45,45));
 
    if (isSignedIn())
@@ -177,11 +255,11 @@ MyMainFrame::MyMainFrame() :
    else
    bitmap->SetBitmap(wxBitmapBundle(wxImage("default.png", wxBITMAP_TYPE_PNG).Scale(45,45, wxIMAGE_QUALITY_HIGH)));
 
-   /////////// Buttons ///////////
+   //Buttons:
    auto btnSettings = new wxButton(this, 40, wxT("Settings"), wxPoint(730,570), wxSize(110, 25));
-   auto btnLaunch = new wxButton(this, 41, wxT("Launch"), wxPoint(850,570), wxSize(110, 25));
+   btnLaunch = new wxButton(this, 41, wxT("Launch"), wxPoint(850,570), wxSize(110, 25));
 
-   /////////// UI Colors ///////////
+   //UI Colors:
    if (DarkMode) {
       //Text Separators:
       txtSeparator1->SetForegroundColour("white");
@@ -255,7 +333,7 @@ MyAccountFrame::MyAccountFrame() : wxFrame(nullptr, wxID_ANY, "Account Manager",
       auto btnRegister = new wxButton(this, 43, wxT("Register"), wxPoint(250,375), wxSize(110, 25));
 
 
-      /////////// UI Colors ///////////
+      //UI Colors:
       if (DarkMode) {
          //Text:
          txtLogin->SetForegroundColour("white");
@@ -270,28 +348,32 @@ MySettingsFrame::MySettingsFrame() :
 
 
    auto* txtDirectory = new wxStaticText(this, wxID_ANY, wxT("Game Directory: "), wxPoint(30, 100));
-   auto* ctrlDirectory = new wxTextCtrl (this, wxID_ANY, wxT("D:/PATH/BeamNG.exe"), wxPoint(130, 100), wxSize(220,20), wxBORDER_NONE);
-   auto* bitmapGame = new wxBitmapButton(this, wxID_ANY, wxBitmapBundle(wxImage("explorer.png", wxBITMAP_TYPE_PNG).Scale(20,20, wxIMAGE_QUALITY_HIGH)), wxPoint(350, 100), wxSize(20,20), wxBORDER_NONE);
+   auto* ctrlDirectory = new wxTextCtrl (this, wxID_ANY, wxT("D:/PATH/BeamNG.exe"), wxPoint(130, 100), wxSize(220,-1));
+   auto btnGame = new wxButton(this, 40, wxT("Change Directory"), wxPoint(185,140), wxSize(110, 25));
+   //auto* bitmapGame = new wxBitmapButton(this, wxID_ANY, wxBitmapBundle(wxImage("explorer.png", wxBITMAP_TYPE_PNG).Scale(15,15, wxIMAGE_QUALITY_HIGH)), wxPoint(350, 100), wxSize(15,15), wxBORDER_NONE);
 
-   auto* txtProfileDirectory = new wxStaticText(this, wxID_ANY, wxT("Profile Directory: "), wxPoint(30, 175));
-   auto* ctrlProfileDirectory = new wxTextCtrl (this, wxID_ANY, wxT("D:/PATH/BeamNG.exe"), wxPoint(130, 175), wxSize(220,20));
-   auto* bitmapProfile = new wxBitmapButton(this, wxID_ANY, wxBitmapBundle(wxImage("explorer.png", wxBITMAP_TYPE_PNG).Scale(20,20, wxIMAGE_QUALITY_HIGH)), wxPoint(350, 175), wxSize(20,20), wxBORDER_NONE);
+   auto* txtProfileDirectory = new wxStaticText(this, wxID_ANY, wxT("Profile Directory: "), wxPoint(30, 200));
+   auto* ctrlProfileDirectory = new wxTextCtrl (this, wxID_ANY, wxT("D:/PATH/BeamNG.exe"), wxPoint(130, 200), wxSize(220,-1));
+   auto btnProfile = new wxButton(this, 40, wxT("Change Directory"), wxPoint(185,240), wxSize(110, 25));
+   //auto* bitmapProfile = new wxBitmapButton(this, wxID_ANY, wxBitmapBundle(wxImage("explorer.png", wxBITMAP_TYPE_PNG).Scale(20,20, wxIMAGE_QUALITY_HIGH)), wxPoint(350, 175), wxSize(25,25));
 
-   auto* txtCacheDirectory = new wxStaticText(this, wxID_ANY, wxT("Cache Directory: "), wxPoint(30, 250));
-   auto* ctrlCacheDirectory = new wxTextCtrl (this, wxID_ANY, wxT("D:/PATH/Cache"), wxPoint(130, 250), wxSize(220,20));
-   auto* bitmapCache = new wxBitmapButton(this, wxID_ANY, wxBitmapBundle(wxImage("explorer.png", wxBITMAP_TYPE_PNG).Scale(20,20, wxIMAGE_QUALITY_HIGH)), wxPoint(350, 250), wxSize(20,20), wxBORDER_NONE);
+   auto* txtCacheDirectory = new wxStaticText(this, wxID_ANY, wxT("Cache Directory: "), wxPoint(30, 300));
+   auto* ctrlCacheDirectory = new wxTextCtrl (this, wxID_ANY, wxT("D:/PATH/Cache"), wxPoint(130, 300), wxSize(220,-1));
+   auto btnCache = new wxButton(this, 40, wxT("Change Directory"), wxPoint(185,340), wxSize(110, 25));
+   //auto* bitmapCache = new wxBitmapButton(this, wxID_ANY, wxBitmapBundle(wxImage("explorer.png", wxBITMAP_TYPE_PNG).Scale(20,20, wxIMAGE_QUALITY_HIGH)), wxPoint(350, 250), wxSize(20,20), wxBORDER_NONE);
 
-   auto* txtBranch = new wxStaticText(this, wxID_ANY, wxT("Branch: "), wxPoint(30, 325));
+   auto* txtBranch = new wxStaticText(this, wxID_ANY, wxT("Branch: "), wxPoint(30, 400));
    wxArrayString BranchChoices;
    BranchChoices.Add("Public");
    BranchChoices.Add("Development");
    BranchChoices.Add("Early Access");
-   auto* choiceController = new wxChoice (this, wxID_ANY, wxPoint(85, 325), wxSize(120, 20), BranchChoices);
+   auto* choiceController = new wxChoice (this, wxID_ANY, wxPoint(85, 400), wxSize(120, 20), BranchChoices);
    choiceController->Select(0);
 
-   auto* checkConsole = new wxCheckBox (this, wxID_ANY, " Show Console", wxPoint(30, 400));
+   checkConsole = new wxCheckBox (this, 45, " Show Console", wxPoint(30, 450));
 
-   /////////// UI Colors ///////////
+
+   //UI Colors:
    if (DarkMode) {
       //Text:
       txtDirectory->SetForegroundColour("white");
@@ -365,30 +447,27 @@ void MyAccountFrame::OnClickLogout(wxCommandEvent& event WXUNUSED(event)) {
 
 
 }
+
+
+
 /////////// OnClick Launch Event ///////////
 void MyMainFrame::OnClickLaunch(wxCommandEvent& event WXUNUSED(event)) {
-
-/*
-   try {
-
-      Launcher launcher(argc, argv);
-      launcher.RunDiscordRPC();
-      launcher.LoadConfig();  // check if json (issue)
-      launcher.CheckKey();
-      launcher.QueryRegistry();
-      // UI call
-      // launcher.SetupMOD();
-      launcher.LaunchGame();
-      launcher.WaitForGame();
-      LOG(INFO) << "Launcher shutting down";
-   } catch (const ShutdownException& e) {
-      LOG(INFO) << "Launcher shutting down with reason: " << e.what();
-   } catch (const std::exception& e) {
-      LOG(FATAL) << e.what();
+   if (!Launcher::EntryThread.joinable()) {
+      Launcher::EntryThread = std::thread([&]() {
+         entry();
+         btnLaunch->Enable();
+      });
+      btnLaunch->Disable();
    }
-   std::this_thread::sleep_for(std::chrono::seconds(2));
-   Launcher::setExit(true);
-*/
+
+}
+
+
+
+/////////// OnClick Console Event ///////////
+void MySettingsFrame::OnClickConsole(wxCommandEvent& event WXUNUSED(event)) {
+      WindowsConsole(checkConsole->IsChecked());
+
 }
 
 /////////// MAIN FUNCTION ///////////
@@ -396,6 +475,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
    wxDisableAsserts();
    wxLog::SetLogLevel(wxLOG_Info);
    new MyApp();
-   return wxEntry(hInstance, hPrevInstance, lpCmdLine, nShowCmd);
+   int result = wxEntry(hInstance, hPrevInstance, lpCmdLine, nShowCmd);
+   if (Launcher::EntryThread.joinable()) {
+      Launcher::EntryThread.join();
+   }
+   return result;
 }
 
