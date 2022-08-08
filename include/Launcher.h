@@ -21,7 +21,7 @@ struct VersionParser {
 
 class Launcher {
    public:  // constructors
-   Launcher(int argc, char* argv[]);
+   Launcher();
    ~Launcher();
 
    public:  // available functions
@@ -61,6 +61,9 @@ class Launcher {
    void ListenIPC();
    void Abort();
 
+   public: // variables
+   static inline std::thread EntryThread{};
+
    private:  // variables
    uint32_t GamePID{0};
    bool EnableUI = true;
@@ -91,3 +94,4 @@ class ShutdownException : public std::runtime_error {
    explicit ShutdownException(const std::string& message) :
        runtime_error(message){};
 };
+void entry();
