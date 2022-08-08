@@ -14,7 +14,7 @@
 #include <wx/webview.h>
 #include <wx/wx.h>
 #include <wx/wxhtml.h.>
-
+#include <wx/tipwin.h>
 #include "Launcher.h"
 #include "Logger.h"
 #endif
@@ -68,6 +68,18 @@ class MySettingsFrame : public wxFrame {
    wxDECLARE_EVENT_TABLE();
 };
 
+/////////// PopupFrame class ///////////
+class MyPopupFrame : public wxFrame {
+   public:
+   MyPopupFrame();
+
+   private:
+   // Here you put the frame functions:
+   bool DarkMode = wxSystemSettings::GetAppearance().IsDark();
+   void OnClickOk(wxCommandEvent& event);
+   wxDECLARE_EVENT_TABLE();
+};
+
 /////////// TestFrame class ///////////
 class MyTestFrame : public wxFrame {
    public:
@@ -99,10 +111,15 @@ wxBEGIN_EVENT_TABLE(MySettingsFrame, wxFrame)
         EVT_CHECKBOX(45, MySettingsFrame::OnClickConsole)
 wxEND_EVENT_TABLE()
 
+    /////////// MainFrame Event Table ///////////
+wxBEGIN_EVENT_TABLE(MyPopupFrame, wxFrame)
+        EVT_BUTTON(46, MyPopupFrame::OnClickOk)
+wxEND_EVENT_TABLE()
+
 /////////// OnInit function to show frame ///////////
 bool MyApp::OnInit() {
    auto* MainFrame = new MyMainFrame();
-   MainFrame->SetIcon(wxIcon("beammp_original.png",wxBITMAP_TYPE_PNG));
+   MainFrame->SetIcon(wxIcon("icons/BeamMP_black.png",wxBITMAP_TYPE_PNG));
 
    // Set MainFrame properties:
    MainFrame->SetSize(1000, 650);
@@ -121,7 +138,7 @@ bool MyApp::OnInit() {
 
    //Test Frame Properties:
 /*   auto* TestFrame = new MyTestFrame();
-   TestFrame->SetIcon(wxIcon("beammp_original.png",wxBITMAP_TYPE_PNG));
+   TestFrame->SetIcon(wxIcon("icons/BeamMP_black.png",wxBITMAP_TYPE_PNG));
    TestFrame->SetSize(1000, 650);
    TestFrame->Center();
 
@@ -186,6 +203,7 @@ void WindowsConsole (bool isChecked) {
 MyMainFrame::MyMainFrame() :
     wxFrame(nullptr, wxID_ANY, "BeamMP Launcher V3", wxDefaultPosition,wxDefaultSize,
             wxMINIMIZE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLOSE_BOX) {
+
    //News:
    wxWebView::New() ->Create(this, wxID_ANY, "https://beammp.com", wxPoint(10, 70), wxSize(950, 400));
    auto* txtNews = new wxStaticText(this, wxID_ANY, wxT("News"), wxPoint(10, 40));
@@ -236,12 +254,12 @@ MyMainFrame::MyMainFrame() :
    auto* HorizontalLine3 = new wxStaticLine(this, wxID_ANY, wxPoint(10, 550), wxSize(950, 1));
 
    //Account:
-   auto* bitmap = new wxBitmapButton(this, 39, wxBitmapBundle(wxImage("deer.png", wxBITMAP_TYPE_PNG).Scale(45,45, wxIMAGE_QUALITY_HIGH)), wxPoint(20, 560), wxSize(45,45));
+   auto* bitmap = new wxBitmapButton(this, 39, wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(45,45, wxIMAGE_QUALITY_HIGH)), wxPoint(20, 560), wxSize(45,45));
 
    if (isSignedIn())
-   bitmap->SetBitmap(wxBitmapBundle(wxImage("deer.png", wxBITMAP_TYPE_PNG).Scale(45,45, wxIMAGE_QUALITY_HIGH)));
+   bitmap->SetBitmap(wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(45,45, wxIMAGE_QUALITY_HIGH)));
    else
-   bitmap->SetBitmap(wxBitmapBundle(wxImage("default.png", wxBITMAP_TYPE_PNG).Scale(45,45, wxIMAGE_QUALITY_HIGH)));
+   bitmap->SetBitmap(wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(45,45, wxIMAGE_QUALITY_HIGH)));
 
    //Buttons:
    auto btnSettings = new wxButton(this, 40, wxT("Settings"), wxPoint(730,570), wxSize(110, 25));
@@ -271,12 +289,12 @@ MyMainFrame::MyMainFrame() :
       HorizontalLine3->SetForegroundColour("white");
 
       //Logo:
-      auto* logo = new wxBitmapButton(this, 42, wxBitmapBundle(wxImage("beammp_original.png", wxBITMAP_TYPE_PNG).Scale(100,100, wxIMAGE_QUALITY_HIGH)), wxPoint(850, -15), wxSize(100,100), wxBORDER_NONE);
+      auto* logo = new wxBitmapButton(this, 42, wxBitmapBundle(wxImage("icons/BeamMP_white.png", wxBITMAP_TYPE_PNG).Scale(100,100, wxIMAGE_QUALITY_HIGH)), wxPoint(850, -15), wxSize(100,100), wxBORDER_NONE);
       logo->SetBackgroundColour(wxColour(40, 40, 40));
    }
    else {
       //Logo:
-      auto* logo = new wxBitmapButton(this, 42, wxBitmapBundle(wxImage("BeamMP.png", wxBITMAP_TYPE_PNG).Scale(100,100, wxIMAGE_QUALITY_HIGH)), wxPoint(850, -15), wxSize(100,100), wxBORDER_NONE);
+      auto* logo = new wxBitmapButton(this, 42, wxBitmapBundle(wxImage("icons/BeamMP_black.png", wxBITMAP_TYPE_PNG).Scale(100,100, wxIMAGE_QUALITY_HIGH)), wxPoint(850, -15), wxSize(100,100), wxBORDER_NONE);
       logo->SetBackgroundColour("white");
    }
    txtStatusResult->SetForegroundColour("green");
@@ -289,10 +307,10 @@ MyAccountFrame::MyAccountFrame() : wxFrame(nullptr, wxID_ANY, "Account Manager",
    auto *handler = new wxPNGHandler;
    wxImage::AddHandler(handler);
    wxStaticBitmap *image;
-   image = new wxStaticBitmap( this, wxID_ANY, wxBitmapBundle(wxImage("default.png", wxBITMAP_TYPE_PNG).Scale(120,120, wxIMAGE_QUALITY_HIGH)), wxPoint(180,20), wxSize(120, 120));
+   image = new wxStaticBitmap( this, wxID_ANY, wxBitmapBundle(wxImage("icons/BeamMP_black.png", wxBITMAP_TYPE_PNG).Scale(120,120, wxIMAGE_QUALITY_HIGH)), wxPoint(180,20), wxSize(120, 120));
 
-   if (isSignedIn()) {
-      image->SetBitmap(wxBitmapBundle(wxImage("deer.png", wxBITMAP_TYPE_PNG).Scale(120,120, wxIMAGE_QUALITY_HIGH)));
+   if (!isSignedIn()) {
+      image->SetBitmap(wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(120,120, wxIMAGE_QUALITY_HIGH)));
 
       auto* txtName = new wxStaticText(this, wxID_ANY, wxT("Username: BeamMP"), wxPoint(180, 200));
       auto* txtEmail = new wxStaticText(this, wxID_ANY, wxT("Email: beamMP@gmail.com"), wxPoint(180, 250));
@@ -306,7 +324,7 @@ MyAccountFrame::MyAccountFrame() : wxFrame(nullptr, wxID_ANY, "Account Manager",
       }
    }
    else {
-      image->SetBitmap(wxBitmapBundle(wxImage("default.png", wxBITMAP_TYPE_PNG).Scale(120,120, wxIMAGE_QUALITY_HIGH)));
+      image->SetBitmap(wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(120,120, wxIMAGE_QUALITY_HIGH)));
 
       auto* txtLogin = new wxStaticText(this, wxID_ANY, wxT("Login with your BeamMP account."), wxPoint(150, 200));
 
@@ -336,17 +354,15 @@ MySettingsFrame::MySettingsFrame() :
    MySettingsFrame::SetFocus();
    auto btnGame = new wxButton(this, 40, wxT("Change Directory"), wxPoint(185,140), wxSize(110, 25));
 
-   //auto* bitmapGame = new wxBitmapButton(this, wxID_ANY, wxBitmapBundle(wxImage("explorer.png", wxBITMAP_TYPE_PNG).Scale(15,15, wxIMAGE_QUALITY_HIGH)), wxPoint(350, 100), wxSize(15,15), wxBORDER_NONE);
 
    auto* txtProfileDirectory = new wxStaticText(this, wxID_ANY, wxT("Profile Directory: "), wxPoint(30, 200));
    auto* ctrlProfileDirectory = new wxTextCtrl (this, wxID_ANY, wxT("D:/PATH/BeamNG.exe"), wxPoint(130, 200), wxSize(220,-1));
    auto btnProfile = new wxButton(this, 40, wxT("Change Directory"), wxPoint(185,240), wxSize(110, 25));
-   //auto* bitmapProfile = new wxBitmapButton(this, wxID_ANY, wxBitmapBundle(wxImage("explorer.png", wxBITMAP_TYPE_PNG).Scale(20,20, wxIMAGE_QUALITY_HIGH)), wxPoint(350, 175), wxSize(25,25));
 
    auto* txtCacheDirectory = new wxStaticText(this, wxID_ANY, wxT("Cache Directory: "), wxPoint(30, 300));
    auto* ctrlCacheDirectory = new wxTextCtrl (this, wxID_ANY, wxT("D:/PATH/Cache"), wxPoint(130, 300), wxSize(220,-1));
    auto btnCache = new wxButton(this, 40, wxT("Change Directory"), wxPoint(185,340), wxSize(110, 25));
-   //auto* bitmapCache = new wxBitmapButton(this, wxID_ANY, wxBitmapBundle(wxImage("explorer.png", wxBITMAP_TYPE_PNG).Scale(20,20, wxIMAGE_QUALITY_HIGH)), wxPoint(350, 250), wxSize(20,20), wxBORDER_NONE);
+
 
    auto* txtBranch = new wxStaticText(this, wxID_ANY, wxT("Branch: "), wxPoint(30, 400));
    wxArrayString BranchChoices;
@@ -374,12 +390,29 @@ MySettingsFrame::MySettingsFrame() :
    }
 }
 
+/////////// Popup Frame Content ///////////
+MyPopupFrame::MyPopupFrame() :
+    wxFrame(nullptr, wxID_ANY, "Alert", wxDefaultPosition,wxDefaultSize,
+            wxSYSTEM_MENU | wxCAPTION | wxCLOSE_BOX | wxSTAY_ON_TOP ) {
+   auto* txtAlert = new wxStaticText(this, wxID_ANY, wxT("Please launch BeamNG.drive manually in case of\nSteam issues."), wxPoint(10, 10), wxSize(-1,-1));
+   auto* btnOk = new wxButton(this, wxID_ANY, wxT("ok"), wxPoint(100, 70));
+   //UI Colors:
+   if (DarkMode) {
+      //Text:
+      txtAlert->SetForegroundColour("white");
+   }
+}
+/////////// OnClick Account Event ///////////
+void MyPopupFrame::OnClickOk(wxCommandEvent& event WXUNUSED(event)) {
+
+
+}
 /////////// OnClick Account Event ///////////
 void MyMainFrame::OnClickAccount(wxCommandEvent& event WXUNUSED(event)) {
    auto* AccountFrame = new MyAccountFrame();
    AccountFrame->SetSize(500, 650);
    AccountFrame->Center();
-   AccountFrame->SetIcon(wxIcon("beammp_original.png",wxBITMAP_TYPE_PNG));
+   AccountFrame->SetIcon(wxIcon("icons/BeamMP_black.png",wxBITMAP_TYPE_PNG));
 
    if (wxSystemSettings::GetAppearance().IsDark()) {
       AccountFrame->SetBackgroundColour(wxColour(40, 40, 40));
@@ -397,7 +430,7 @@ void MyMainFrame::OnClickSettings(wxCommandEvent& event WXUNUSED(event)) {
    auto* SettingsFrame = new MySettingsFrame();
    SettingsFrame->SetSize(500, 650);
    SettingsFrame->Center();
-   SettingsFrame->SetIcon(wxIcon("beammp_original.png",wxBITMAP_TYPE_PNG));
+   SettingsFrame->SetIcon(wxIcon("icons/BeamMP_black.png",wxBITMAP_TYPE_PNG));
 
    if (wxSystemSettings::GetAppearance().IsDark()) {
       SettingsFrame->SetBackgroundColour(wxColour(40, 40, 40));
@@ -429,7 +462,8 @@ void MyAccountFrame::OnClickLogout(wxCommandEvent& event WXUNUSED(event)) {
 
 /////////// OnClick Launch Event ///////////
 void MyMainFrame::OnClickLaunch(wxCommandEvent& event WXUNUSED(event)) {
-   if (Launcher::EntryThread.joinable()) Launcher::EntryThread.join();
+   static bool FirstTime = true;
+/*   if (Launcher::EntryThread.joinable()) Launcher::EntryThread.join();
    Launcher::EntryThread = std::thread([&]() {
       entry();
       txtStatusResult->SetLabelText(wxT("Online"));
@@ -438,7 +472,25 @@ void MyMainFrame::OnClickLaunch(wxCommandEvent& event WXUNUSED(event)) {
    });
    txtStatusResult->SetLabelText(wxT("In-Game"));
    txtStatusResult->SetForegroundColour("purple");
-   btnLaunch->Disable();
+   btnLaunch->Disable();*/
+
+   if(FirstTime) {
+      auto* PopupFrame = new MyPopupFrame();
+      PopupFrame->SetSize(300, 150);
+      PopupFrame->Center();
+      PopupFrame->SetIcon(wxIcon("icons/BeamMP_black.png",wxBITMAP_TYPE_PNG));
+
+      if (wxSystemSettings::GetAppearance().IsDark()) {
+         PopupFrame->SetBackgroundColour(wxColour(40, 40, 40));
+         PopupFrame->SetForegroundColour(wxColour(255, 255, 255));
+      }
+      else {
+         PopupFrame->SetBackgroundColour(wxColour("white"));
+         PopupFrame->SetForegroundColour(wxColour("white"));
+      }
+      PopupFrame->Show(true);
+      FirstTime = false;
+   }
 }
 
 /////////// OnClick Console Event ///////////
