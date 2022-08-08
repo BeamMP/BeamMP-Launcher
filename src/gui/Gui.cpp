@@ -99,7 +99,7 @@ wxEND_EVENT_TABLE()
 
     /////////// SettingsFrame Event Table ///////////
 wxBEGIN_EVENT_TABLE(MySettingsFrame, wxFrame)
-        EVT_BUTTON(45, MySettingsFrame::OnClickConsole)
+        EVT_CHECKBOX(45, MySettingsFrame::OnClickConsole)
 wxEND_EVENT_TABLE()
 
 
@@ -149,16 +149,24 @@ bool MyApp::OnInit() {
 bool isSignedIn () {
    return false;
 }
-void WindowsConsole () {
-   AllocConsole();
-   FILE * pNewStdout = nullptr;
-   FILE * pNewStderr = nullptr;
-   FILE * pNewStdin = nullptr;
+void WindowsConsole (bool isChecked) {
+   if (isChecked) {
+      AllocConsole();
+      FILE* pNewStdout = nullptr;
+      FILE* pNewStderr = nullptr;
+      FILE* pNewStdin  = nullptr;
 
-   ::freopen_s(&pNewStdout, "CONOUT$", "w", stdout);
-   ::freopen_s(&pNewStderr, "CONOUT$", "w", stderr);
-   ::freopen_s(&pNewStdin, "CONIN$", "r", stdin);
+      ::freopen_s(&pNewStdout, "CONOUT$", "w", stdout);
+      ::freopen_s(&pNewStderr, "CONOUT$", "w", stderr);
+      ::freopen_s(&pNewStdin, "CONIN$", "r", stdin);
+   }
 
+   else {
+      FreeConsole();
+      ::fclose(stdout);
+      ::fclose(stderr);
+      ::fclose(stdin);
+   }
    // Clear the error state for all of the C++ standard streams. Attempting to accessing the streams before they refer
    // to a valid target causes the stream to enter an error state. Clearing the error state will fix this problem,
    // which seems to occur in newer version of Visual Studio even when the console has not been read from or written
@@ -458,13 +466,8 @@ void MyMainFrame::OnClickLaunch(wxCommandEvent& event WXUNUSED(event)) {
 
 /////////// OnClick Console Event ///////////
 void MySettingsFrame::OnClickConsole(wxCommandEvent& event WXUNUSED(event)) {
-   if (checkConsole->IsChecked()) {
-      WindowsConsole();
-   }
+      WindowsConsole(checkConsole->IsChecked());
 
-   else {
-      FreeConsole();
-   }
 }
 
 /////////// MAIN FUNCTION ///////////
@@ -476,9 +479,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
    if (Launcher::EntryThread.joinable()) {
       Launcher::EntryThread.join();
    }
-
-
-
    return result;
 }
 
