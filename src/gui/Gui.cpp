@@ -17,6 +17,7 @@
 #include <wx/tipwin.h>
 #include "Launcher.h"
 #include "Logger.h"
+#include <thread>
 #endif
 
 /////////// Inherit App class ///////////
@@ -293,7 +294,7 @@ MyAccountFrame::MyAccountFrame() : wxFrame(nullptr, wxID_ANY, "Account Manager",
    wxStaticBitmap *image;
    image = new wxStaticBitmap( this, wxID_ANY, wxBitmapBundle(wxImage("icons/BeamMP_black.png", wxBITMAP_TYPE_PNG).Scale(120,120, wxIMAGE_QUALITY_HIGH)), wxPoint(180,20), wxSize(120, 120));
 
-   if (!isSignedIn()) {
+   if (isSignedIn()) {
       image->SetBitmap(wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(120,120, wxIMAGE_QUALITY_HIGH)));
 
       auto* txtName = new wxStaticText(this, wxID_ANY, wxT("Username: BeamMP"), wxPoint(180, 200));
@@ -430,16 +431,17 @@ void MyAccountFrame::OnClickLogout(wxCommandEvent& event WXUNUSED(event)) {
 /////////// OnClick Launch Event ///////////
 void MyMainFrame::OnClickLaunch(wxCommandEvent& event WXUNUSED(event)) {
    static bool FirstTime = true;
-/*   if (Launcher::EntryThread.joinable()) Launcher::EntryThread.join();
+   if (Launcher::EntryThread.joinable()) Launcher::EntryThread.join();
    Launcher::EntryThread = std::thread([&]() {
       entry();
+      std::this_thread::sleep_for(std::chrono::seconds(2));
       txtStatusResult->SetLabelText(wxT("Online"));
       txtStatusResult->SetForegroundColour("green");
       btnLaunch->Enable();
    });
    txtStatusResult->SetLabelText(wxT("In-Game"));
    txtStatusResult->SetForegroundColour("purple");
-   btnLaunch->Disable();*/
+   btnLaunch->Disable();
 
    if(FirstTime) {
       wxMessageBox("Please launch BeamNG.drive manually in case of Steam issues.", "Alert");

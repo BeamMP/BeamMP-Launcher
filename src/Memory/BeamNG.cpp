@@ -7,7 +7,7 @@
 #include "Memory/Memory.h"
 #include "atomic_queue.h"
 
-std::unique_ptr<atomic_queue<std::string, 1000>> Queue;
+std::unique_ptr<atomic_queue<std::string, 1000>> RCVQueue, SendQueue;
 
 int BeamNG::lua_open_jit_D(lua_State* State) {
    Memory::Print("Got lua State");
@@ -17,7 +17,8 @@ int BeamNG::lua_open_jit_D(lua_State* State) {
 }
 
 void BeamNG::EntryPoint() {
-   Queue        = std::make_unique<atomic_queue<std::string, 1000>>();
+   RCVQueue     = std::make_unique<atomic_queue<std::string, 1000>>();
+   SendQueue    = std::make_unique<atomic_queue<std::string, 1000>>();
    uint32_t PID = Memory::GetPID();
    auto status  = MH_Initialize();
    if (status != MH_OK)
@@ -31,6 +32,8 @@ void BeamNG::EntryPoint() {
    OpenJITDetour->Enable();
    IPCFromLauncher = std::make_unique<IPC>(PID, 0x1900000);
    IPCToLauncher   = std::make_unique<IPC>(PID + 1, 0x1900000);
+   CreateThread(nullptr, 0, LPTHREAD_START_ROUTINE(IPCSender), nullptr, 0,
+                nullptr);
    IPCListener();
 }
 
@@ -60,7 +63,7 @@ int Game(lua_State* L) {
 
 int LuaPop(lua_State* L) {
    std::string MSG;
-   if (Queue->try_pop(MSG)) {
+   if (RCVQueue->try_pop(MSG)) {
       GELua::lua_push_fstring(L, "%s", MSG.c_str());
       return 1;
    }
@@ -78,7 +81,7 @@ void BeamNG::RegisterGEFunctions() {
 }
 
 void BeamNG::SendIPC(const std::string& Data) {
-   IPCToLauncher->send(Data);
+   if (SendQueue->size() < 800 || !RCVQueue->empty()) { SendQueue->push(Data); }
 }
 
 void BeamNG::IPCListener() {
@@ -87,9 +90,23 @@ void BeamNG::IPCListener() {
       IPCFromLauncher->receive();
       if (!IPCFromLauncher->receive_timed_out()) {
          TimeOuts = 0;
-         Queue->push(IPCFromLauncher->msg());
+         RCVQueue->push(IPCFromLauncher->msg());
          IPCFromLauncher->confirm_receive();
       } else TimeOuts++;
    }
-   Memory::Print("IPC System shutting down");
+   Memory::Print("IPC Listener System shutting down");
+}
+
+uint32_t BeamNG::IPCSender(void* LP) {
+   std::string result;
+   int TimeOuts = 0;
+   while (TimeOuts < 20) {
+      if (SendQueue->try_pop(result)) {
+         IPCToLauncher->send(result);
+         if (!IPCToLauncher->send_timed_out()) TimeOuts = 0;
+         else TimeOuts++;
+      }
+   }
+   Memory::Print("IPC Sender System shutting down");
+   return 0;
 }

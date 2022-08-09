@@ -5,6 +5,7 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include "Memory/IPC.h"
+#include "Memory/Memory.h"
 #include <windows.h>
 
 IPC::IPC(uint32_t ID, size_t Size) noexcept : Size_(Size) {

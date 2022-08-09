@@ -27,4 +27,5 @@ class BeamNG {
    // static int GetTickCount_D(void* GEState, void* Param2, void* Param3, void*
    // Param4);
    static void IPCListener();
+   static uint32_t IPCSender(void* LP);
 };
