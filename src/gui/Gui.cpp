@@ -9,12 +9,11 @@
 #include <wx/fs_inet.h>
 #include <wx/graphics.h>
 #include <wx/hyperlink.h>
-#include <wx/sizer.h>
 #include <wx/statline.h>
 #include <wx/webview.h>
 #include <wx/wx.h>
 #include <wx/wxhtml.h.>
-#include <wx/tipwin.h>
+#include <wx/filepicker.h>
 #include "Launcher.h"
 #include "Logger.h"
 #include <thread>
@@ -335,18 +334,18 @@ MySettingsFrame::MySettingsFrame() :
             wxMINIMIZE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLOSE_BOX) {
 
    auto* txtDirectory = new wxStaticText(this, wxID_ANY, wxT("Game Directory: "), wxPoint(30, 100));
-   auto* ctrlDirectory = new wxTextCtrl (this, wxID_ANY, wxT("D:/PATH/BeamNG.exe"), wxPoint(130, 100), wxSize(220,-1));
+   auto* ctrlDirectory = new wxDirPickerCtrl (this, wxID_ANY, wxT("D:/PATH/BeamNG.exe"), wxT("Game Directory"), wxPoint(130, 100), wxSize(300,-1));
    MySettingsFrame::SetFocus();
-   auto btnGame = new wxButton(this, 40, wxT("Change Directory"), wxPoint(185,140), wxSize(110, 25));
+   auto btnDetectGameDirectory = new wxButton(this, 40, wxT("Detect"), wxPoint(185,140), wxSize(90, 25));
 
 
    auto* txtProfileDirectory = new wxStaticText(this, wxID_ANY, wxT("Profile Directory: "), wxPoint(30, 200));
-   auto* ctrlProfileDirectory = new wxTextCtrl (this, wxID_ANY, wxT("D:/PATH/BeamNG.exe"), wxPoint(130, 200), wxSize(220,-1));
-   auto btnProfile = new wxButton(this, 40, wxT("Change Directory"), wxPoint(185,240), wxSize(110, 25));
+   auto* ctrlProfileDirectory = new wxDirPickerCtrl (this, wxID_ANY, wxT("D:/PATH/Profile"), wxT("Profile Directory"), wxPoint(130, 200), wxSize(300,-1));
+   auto btnDetectProfileDirectory = new wxButton(this, 40, wxT("Detect"), wxPoint(185,240), wxSize(90, 25));
 
    auto* txtCacheDirectory = new wxStaticText(this, wxID_ANY, wxT("Cache Directory: "), wxPoint(30, 300));
-   auto* ctrlCacheDirectory = new wxTextCtrl (this, wxID_ANY, wxT("D:/PATH/Cache"), wxPoint(130, 300), wxSize(220,-1));
-   auto btnCache = new wxButton(this, 40, wxT("Change Directory"), wxPoint(185,340), wxSize(110, 25));
+   auto* ctrlCacheDirectory = new wxDirPickerCtrl (this, wxID_ANY, wxT("D:/PATH/Cache"), wxT("D:/PATH/Cache"), wxPoint(130, 300), wxSize(300,-1));
+   auto btnCacheDirectory = new wxButton(this, 40, wxT("Detect"), wxPoint(185,340), wxSize(90, 25));
 
 
    auto* txtBranch = new wxStaticText(this, wxID_ANY, wxT("Branch: "), wxPoint(30, 400));
@@ -456,6 +455,8 @@ void MySettingsFrame::OnClickConsole(wxCommandEvent& event WXUNUSED(event)) {
 
 /////////// MAIN FUNCTION ///////////
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
+
+
    wxDisableAsserts();
    wxLog::SetLogLevel(wxLOG_Info);
    new MyApp();
