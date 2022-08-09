@@ -68,18 +68,6 @@ class MySettingsFrame : public wxFrame {
    wxDECLARE_EVENT_TABLE();
 };
 
-/////////// PopupFrame class ///////////
-class MyPopupFrame : public wxFrame {
-   public:
-   MyPopupFrame();
-
-   private:
-   // Here you put the frame functions:
-   bool DarkMode = wxSystemSettings::GetAppearance().IsDark();
-   void OnClickOk(wxCommandEvent& event);
-   wxDECLARE_EVENT_TABLE();
-};
-
 /////////// TestFrame class ///////////
 class MyTestFrame : public wxFrame {
    public:
@@ -109,11 +97,6 @@ wxEND_EVENT_TABLE()
     /////////// SettingsFrame Event Table ///////////
 wxBEGIN_EVENT_TABLE(MySettingsFrame, wxFrame)
         EVT_CHECKBOX(45, MySettingsFrame::OnClickConsole)
-wxEND_EVENT_TABLE()
-
-    /////////// MainFrame Event Table ///////////
-wxBEGIN_EVENT_TABLE(MyPopupFrame, wxFrame)
-        EVT_BUTTON(46, MyPopupFrame::OnClickOk)
 wxEND_EVENT_TABLE()
 
 /////////// OnInit function to show frame ///////////
@@ -160,6 +143,7 @@ bool isSignedIn () {
    return false;
 }
 
+/////////// Windows Console Function ///////////
 void WindowsConsole (bool isChecked) {
    if (isChecked) {
       AllocConsole();
@@ -390,23 +374,6 @@ MySettingsFrame::MySettingsFrame() :
    }
 }
 
-/////////// Popup Frame Content ///////////
-MyPopupFrame::MyPopupFrame() :
-    wxFrame(nullptr, wxID_ANY, "Alert", wxDefaultPosition,wxDefaultSize,
-            wxSYSTEM_MENU | wxCAPTION | wxCLOSE_BOX | wxSTAY_ON_TOP ) {
-   auto* txtAlert = new wxStaticText(this, wxID_ANY, wxT("Please launch BeamNG.drive manually in case of\nSteam issues."), wxPoint(10, 10), wxSize(-1,-1));
-   auto* btnOk = new wxButton(this, wxID_ANY, wxT("ok"), wxPoint(100, 70));
-   //UI Colors:
-   if (DarkMode) {
-      //Text:
-      txtAlert->SetForegroundColour("white");
-   }
-}
-/////////// OnClick Account Event ///////////
-void MyPopupFrame::OnClickOk(wxCommandEvent& event WXUNUSED(event)) {
-
-
-}
 /////////// OnClick Account Event ///////////
 void MyMainFrame::OnClickAccount(wxCommandEvent& event WXUNUSED(event)) {
    auto* AccountFrame = new MyAccountFrame();
@@ -475,20 +442,7 @@ void MyMainFrame::OnClickLaunch(wxCommandEvent& event WXUNUSED(event)) {
    btnLaunch->Disable();*/
 
    if(FirstTime) {
-      auto* PopupFrame = new MyPopupFrame();
-      PopupFrame->SetSize(300, 150);
-      PopupFrame->Center();
-      PopupFrame->SetIcon(wxIcon("icons/BeamMP_black.png",wxBITMAP_TYPE_PNG));
-
-      if (wxSystemSettings::GetAppearance().IsDark()) {
-         PopupFrame->SetBackgroundColour(wxColour(40, 40, 40));
-         PopupFrame->SetForegroundColour(wxColour(255, 255, 255));
-      }
-      else {
-         PopupFrame->SetBackgroundColour(wxColour("white"));
-         PopupFrame->SetForegroundColour(wxColour("white"));
-      }
-      PopupFrame->Show(true);
+      wxMessageBox("Please launch BeamNG.drive manually in case of Steam issues.", "Alert");
       FirstTime = false;
    }
 }
