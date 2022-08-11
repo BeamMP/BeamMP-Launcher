@@ -12,6 +12,9 @@ void Launcher::LoadConfig() {
       toml::parse_result config = toml::parse_file("Launcher.toml");
       auto ui                   = config["UI"];
       auto build                = config["Build"];
+      auto GamePath             = config["GamePath"];
+      auto ProfilePath          = config["ProfilePath"];
+      auto CachePath            = config["CachePath"];
       if (ui.is_boolean()) {
          EnableUI = ui.as_boolean()->get();
       } else LOG(ERROR) << "Failed to get 'UI' boolean from config";
@@ -22,14 +25,17 @@ void Launcher::LoadConfig() {
          for (char& c : TargetBuild) c = char(tolower(c));
       } else LOG(ERROR) << "Failed to get 'Build' string from config";
 
+      if (GamePath.is_string()) GameConfigPath = GamePath.as_string()->get();
+      else LOG(ERROR) << "Failed to get 'GamePath' string from config";
+
+      if (ProfilePath.is_string()) ProfileConfigPath = ProfilePath.as_string()->get();
+      else LOG(ERROR) << "Failed to get 'ProfilePath' string from config";
+
+      if (CachePath.is_string()) CacheConfigPath = CachePath.as_string()->get();
+      else LOG(ERROR) << "Failed to get 'CachePath' string from config";
+
    } else {
-      std::ofstream tml("Launcher.toml");
-      if (tml.is_open()) {
-         tml << "UI = true\n Build = \"Default\"";
-         tml.close();
-      } else {
-         LOG(FATAL) << "Failed to write config on disk!";
-         throw ShutdownException("Fatal Error");
-      }
+      LOG(FATAL) << "Failed to find config on disk!";
+      throw ShutdownException("Fatal Error");
    }
 }

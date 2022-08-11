@@ -14,6 +14,7 @@
 #include <wx/wx.h>
 #include <wx/wxhtml.h.>
 #include <wx/filepicker.h>
+#include <tomlplusplus/toml.hpp>
 #include "Launcher.h"
 #include "Logger.h"
 #include <thread>
@@ -49,6 +50,7 @@ class MyAccountFrame : public wxFrame {
 
    private:
    // Here you put the frame functions:
+
    bool DarkMode = wxSystemSettings::GetAppearance().IsDark();
    void OnClickRegister(wxCommandEvent& event);
    void OnClickLogout(wxCommandEvent& event);
@@ -59,12 +61,17 @@ class MyAccountFrame : public wxFrame {
 class MySettingsFrame : public wxFrame {
    public:
    MySettingsFrame();
+   void LoadConfig();
 
    private:
    // Here you put the frame functions:
+   wxDirPickerCtrl* ctrlGameDirectory, *ctrlProfileDirectory, *ctrlCacheDirectory;
    wxCheckBox* checkConsole;
+   wxChoice* choiceController;
    bool DarkMode = wxSystemSettings::GetAppearance().IsDark();
    void OnClickConsole(wxCommandEvent& event);
+   void OnChangedGameDir (wxFileDirPickerEvent& event);
+   void OnChangedBuild (wxCommandEvent& event);
    wxDECLARE_EVENT_TABLE();
 };
 
@@ -97,6 +104,8 @@ wxEND_EVENT_TABLE()
     /////////// SettingsFrame Event Table ///////////
 wxBEGIN_EVENT_TABLE(MySettingsFrame, wxFrame)
         EVT_CHECKBOX(45, MySettingsFrame::OnClickConsole)
+        EVT_DIRPICKER_CHANGED(46, MySettingsFrame::OnChangedGameDir)
+        EVT_CHOICE(47, MySettingsFrame::OnChangedBuild)
 wxEND_EVENT_TABLE()
 
 /////////// OnInit function to show frame ///////////
@@ -143,6 +152,44 @@ bool isSignedIn () {
    return false;
 }
 
+
+/////////// Load Config function ///////////
+void MySettingsFrame:: LoadConfig() {
+   if (fs::exists("Launcher.toml")) {
+      toml::parse_result config = toml::parse_file("Launcher.toml");
+      auto ui                   = config["UI"];
+      auto build                = config["Build"];
+      auto GamePath             = config["GamePath"];
+      auto ProfilePath          = config["ProfilePath"];
+      auto CachePath            = config["CachePath"];
+
+      if (GamePath.is_string()) {
+         ctrlGameDirectory->SetPath(GamePath.as_string()->get());
+      } else wxMessageBox("Game path not found!", "Error");
+
+      if (ProfilePath.is_string()) {
+         ctrlProfileDirectory->SetPath(ProfilePath.as_string()->get());
+      } else wxMessageBox("Profile path not found!", "Error");
+
+      if (CachePath.is_string()) {
+         ctrlCacheDirectory->SetPath(CachePath.as_string()->get());
+      } else wxMessageBox("Cache path not found!", "Error");
+
+   } else {
+      std::ofstream tml("Launcher.toml");
+      if (tml.is_open()) {
+         tml << "UI = true\n"
+                "Build = 'Default'\n"
+                "GamePath = 'C:\\Program Files'\n"
+                "ProfilePath = 'C:\\Program Files'\n"
+                "CachePath = 'Resources'\n"
+                "Console = false";
+         tml.close();
+         LoadConfig();
+      } else wxMessageBox("Failed to create config file", "Error");
+   }
+}
+
 /////////// Windows Console Function ///////////
 void WindowsConsole (bool isChecked) {
    if (isChecked) {
@@ -187,38 +234,39 @@ void WindowsConsole (bool isChecked) {
 MyMainFrame::MyMainFrame() :
     wxFrame(nullptr, wxID_ANY, "BeamMP Launcher V3", wxDefaultPosition,wxDefaultSize,
             wxMINIMIZE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLOSE_BOX) {
+   auto* panel = new wxPanel(this, wxID_ANY, wxPoint(), wxSize(1000,650));
 
    //News:
-   wxWebView::New() ->Create(this, wxID_ANY, "https://beammp.com", wxPoint(10, 70), wxSize(950, 400));
-   auto* txtNews = new wxStaticText(this, wxID_ANY, wxT("News"), wxPoint(10, 40));
+   wxWebView::New() ->Create(panel, wxID_ANY, "https://beammp.com", wxPoint(10, 70), wxSize(950, 400));
+   auto* txtNews = new wxStaticText(panel, wxID_ANY, wxT("News"), wxPoint(10, 40));
    MyMainFrame::SetFocus();
 
-   auto* HorizontalLine1 = new wxStaticLine(this, wxID_ANY, wxPoint(10, 60), wxSize(950, 1));
-   auto* HorizontalLine2 = new wxStaticLine(this, wxID_ANY, wxPoint(10, 480), wxSize(950, 1));
+   auto* HorizontalLine1 = new wxStaticLine(panel, wxID_ANY, wxPoint(10, 60), wxSize(950, 1));
+   auto* HorizontalLine2 = new wxStaticLine(panel, wxID_ANY, wxPoint(10, 480), wxSize(950, 1));
 
    //PNG Handler:
    auto *handler = new wxPNGHandler;
    wxImage::AddHandler(handler);
 
    //Hyperlinks:
-   auto* HyperForum = new wxHyperlinkCtrl(this, wxID_ANY, wxT("Forum"), wxT("https://forum.beammp.com"), wxPoint(10, 10));
-   auto* txtSeparator1 = new wxStaticText(this, wxID_ANY, wxT("|"), wxPoint(55, 10));
+   auto* HyperForum = new wxHyperlinkCtrl(panel, wxID_ANY, wxT("Forum"), wxT("https://forum.beammp.com"), wxPoint(10, 10));
+   auto* txtSeparator1 = new wxStaticText(panel, wxID_ANY, wxT("|"), wxPoint(55, 10));
 
-   auto* HyperDiscord = new wxHyperlinkCtrl(this, wxID_ANY, wxT("Discord"), wxT("https://discord.gg/beammp"), wxPoint(70, 10));
-   auto* txtSeparator2 = new wxStaticText(this, wxID_ANY, wxT("|"), wxPoint(120, 10));
+   auto* HyperDiscord = new wxHyperlinkCtrl(panel, wxID_ANY, wxT("Discord"), wxT("https://discord.gg/beammp"), wxPoint(70, 10));
+   auto* txtSeparator2 = new wxStaticText(panel, wxID_ANY, wxT("|"), wxPoint(120, 10));
 
-   auto* HyperGithub = new wxHyperlinkCtrl(this, wxID_ANY, wxT("GitHub"), wxT("https://github.com/BeamMP"), wxPoint(130, 10));
-   auto* txtSeparator3 = new wxStaticText(this, wxID_ANY, wxT("|"), wxPoint(180, 10));
+   auto* HyperGithub = new wxHyperlinkCtrl(panel, wxID_ANY, wxT("GitHub"), wxT("https://github.com/BeamMP"), wxPoint(130, 10));
+   auto* txtSeparator3 = new wxStaticText(panel, wxID_ANY, wxT("|"), wxPoint(180, 10));
 
-   auto* HyperWiki = new wxHyperlinkCtrl(this, wxID_ANY, wxT("Wiki"), wxT("https://wiki.beammp.com"), wxPoint(195, 10));
-   auto* txtSeparator4 = new wxStaticText(this, wxID_ANY, wxT("|"), wxPoint(230, 10));
+   auto* HyperWiki = new wxHyperlinkCtrl(panel, wxID_ANY, wxT("Wiki"), wxT("https://wiki.beammp.com"), wxPoint(195, 10));
+   auto* txtSeparator4 = new wxStaticText(panel, wxID_ANY, wxT("|"), wxPoint(230, 10));
 
-   auto* HyperPatreon = new wxHyperlinkCtrl(this, wxID_ANY, wxT("Patreon"), wxT("https://www.patreon.com/BeamMP"), wxPoint(240, 10));
+   auto* HyperPatreon = new wxHyperlinkCtrl(panel, wxID_ANY, wxT("Patreon"), wxT("https://www.patreon.com/BeamMP"), wxPoint(240, 10));
 
    //Update:
-   auto* txtUpdate = new wxStaticText(this, wxID_ANY, wxT("Updating BeamMP "), wxPoint(10, 490));
+   auto* txtUpdate = new wxStaticText(panel, wxID_ANY, wxT("Updating BeamMP "), wxPoint(10, 490));
 
-   auto* UpdateBar = new wxGauge(this, wxID_ANY, 100, wxPoint(10, 520), wxSize(127, -1));
+   auto* UpdateBar = new wxGauge(panel, wxID_ANY, 100, wxPoint(10, 520), wxSize(127, -1));
    UpdateBar->SetValue(0);
    while (UpdateBar->GetValue() <76) {
       txtUpdate->SetLabel(wxT("Updating BeamMP: " + std::to_string(UpdateBar->GetValue()) + "%"));
@@ -226,19 +274,19 @@ MyMainFrame::MyMainFrame() :
    }
 
    //Information:
-   auto* txtGameVersion = new wxStaticText(this, wxID_ANY, wxT("Game Version: NA"), wxPoint(160, 490));
-   auto* txtPlayers = new wxStaticText(this, wxID_ANY, wxT("Currently Playing: NA"), wxPoint(300, 490));
-   auto* txtPatreon = new wxStaticText(this, wxID_ANY, wxT("Special thanks to our Patreon Members!"), wxPoint(570, 490));
+   auto* txtGameVersion = new wxStaticText(panel, wxID_ANY, wxT("Game Version: NA"), wxPoint(160, 490));
+   auto* txtPlayers = new wxStaticText(panel, wxID_ANY, wxT("Currently Playing: NA"), wxPoint(300, 490));
+   auto* txtPatreon = new wxStaticText(panel, wxID_ANY, wxT("Special thanks to our Patreon Members!"), wxPoint(570, 490));
 
-   auto* txtModVersion = new wxStaticText(this, wxID_ANY, wxT("Mod Version: NA"), wxPoint(160, 520));
-   auto* txtServers = new wxStaticText(this, wxID_ANY, wxT("Available Servers: NA"), wxPoint(300, 520));
-   auto* txtStatus = new wxStaticText(this, wxID_ANY, wxT("Status: "), wxPoint(880, 520));
-   txtStatusResult = new wxStaticText(this, wxID_ANY, wxT("Online"), wxPoint(920, 520));
+   auto* txtModVersion = new wxStaticText(panel, wxID_ANY, wxT("Mod Version: NA"), wxPoint(160, 520));
+   auto* txtServers = new wxStaticText(panel, wxID_ANY, wxT("Available Servers: NA"), wxPoint(300, 520));
+   auto* txtStatus = new wxStaticText(panel, wxID_ANY, wxT("Status: "), wxPoint(880, 520));
+   txtStatusResult = new wxStaticText(panel, wxID_ANY, wxT("Online"), wxPoint(920, 520));
 
-   auto* HorizontalLine3 = new wxStaticLine(this, wxID_ANY, wxPoint(10, 550), wxSize(950, 1));
+   auto* HorizontalLine3 = new wxStaticLine(panel, wxID_ANY, wxPoint(10, 550), wxSize(950, 1));
 
    //Account:
-   auto* bitmap = new wxBitmapButton(this, 39, wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(45,45, wxIMAGE_QUALITY_HIGH)), wxPoint(20, 560), wxSize(45,45));
+   auto* bitmap = new wxBitmapButton(panel, 39, wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(45,45, wxIMAGE_QUALITY_HIGH)), wxPoint(20, 560), wxSize(45,45));
 
    if (isSignedIn())
    bitmap->SetBitmap(wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(45,45, wxIMAGE_QUALITY_HIGH)));
@@ -246,8 +294,8 @@ MyMainFrame::MyMainFrame() :
    bitmap->SetBitmap(wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(45,45, wxIMAGE_QUALITY_HIGH)));
 
    //Buttons:
-   auto btnSettings = new wxButton(this, 40, wxT("Settings"), wxPoint(730,570), wxSize(110, 25));
-   btnLaunch = new wxButton(this, 41, wxT("Launch"), wxPoint(850,570), wxSize(110, 25));
+   auto btnSettings = new wxButton(panel, 40, wxT("Settings"), wxPoint(730,570), wxSize(110, 25));
+   btnLaunch = new wxButton(panel, 41, wxT("Launch"), wxPoint(850,570), wxSize(110, 25));
 
    //UI Colors:
    if (DarkMode) {
@@ -273,12 +321,12 @@ MyMainFrame::MyMainFrame() :
       HorizontalLine3->SetForegroundColour("white");
 
       //Logo:
-      auto* logo = new wxBitmapButton(this, 42, wxBitmapBundle(wxImage("icons/BeamMP_white.png", wxBITMAP_TYPE_PNG).Scale(100,100, wxIMAGE_QUALITY_HIGH)), wxPoint(850, -15), wxSize(100,100), wxBORDER_NONE);
+      auto* logo = new wxBitmapButton(panel, 42, wxBitmapBundle(wxImage("icons/BeamMP_white.png", wxBITMAP_TYPE_PNG).Scale(100,100, wxIMAGE_QUALITY_HIGH)), wxPoint(850, -15), wxSize(100,100), wxBORDER_NONE);
       logo->SetBackgroundColour(wxColour(40, 40, 40));
    }
    else {
       //Logo:
-      auto* logo = new wxBitmapButton(this, 42, wxBitmapBundle(wxImage("icons/BeamMP_black.png", wxBITMAP_TYPE_PNG).Scale(100,100, wxIMAGE_QUALITY_HIGH)), wxPoint(850, -15), wxSize(100,100), wxBORDER_NONE);
+      auto* logo = new wxBitmapButton(panel, 42, wxBitmapBundle(wxImage("icons/BeamMP_black.png", wxBITMAP_TYPE_PNG).Scale(100,100, wxIMAGE_QUALITY_HIGH)), wxPoint(850, -15), wxSize(100,100), wxBORDER_NONE);
       logo->SetBackgroundColour("white");
    }
    txtStatusResult->SetForegroundColour("green");
@@ -308,17 +356,18 @@ MyAccountFrame::MyAccountFrame() : wxFrame(nullptr, wxID_ANY, "Account Manager",
       }
    }
    else {
+      auto* panel = new wxPanel(this, wxID_ANY, wxPoint(), wxSize(500,650));
       image->SetBitmap(wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(120,120, wxIMAGE_QUALITY_HIGH)));
 
-      auto* txtLogin = new wxStaticText(this, wxID_ANY, wxT("Login with your BeamMP account."), wxPoint(150, 200));
+      auto* txtLogin = new wxStaticText(panel, wxID_ANY, wxT("Login with your BeamMP account."), wxPoint(150, 200));
 
-      auto* ctrlUsername = new wxTextCtrl (this, wxID_ANY, wxT(""), wxPoint(131, 230), wxSize(220,25));
-      auto* ctrlPassword = new wxTextCtrl (this, wxID_ANY, wxT(""), wxPoint(131, 300), wxSize(220,25), wxTE_PASSWORD);
+      auto* ctrlUsername = new wxTextCtrl (panel, wxID_ANY, wxT(""), wxPoint(131, 230), wxSize(220,25));
+      auto* ctrlPassword = new wxTextCtrl (panel, wxID_ANY, wxT(""), wxPoint(131, 300), wxSize(220,25), wxTE_PASSWORD);
       ctrlUsername->SetHint("Username / Email");
       ctrlPassword->SetHint("Password");
 
-      auto btnLogin = new wxButton(this, wxID_ANY, wxT("Login"), wxPoint(120,375), wxSize(110, 25));
-      auto btnRegister = new wxButton(this, 43, wxT("Register"), wxPoint(250,375), wxSize(110, 25));
+      auto btnLogin = new wxButton(panel, wxID_ANY, wxT("Login"), wxPoint(120,375), wxSize(110, 25));
+      auto btnRegister = new wxButton(panel, 43, wxT("Register"), wxPoint(250,375), wxSize(110, 25));
 
       //UI Colors:
       if (DarkMode) {
@@ -332,45 +381,49 @@ MyAccountFrame::MyAccountFrame() : wxFrame(nullptr, wxID_ANY, "Account Manager",
 MySettingsFrame::MySettingsFrame() :
     wxFrame(nullptr, wxID_ANY, "Settings", wxDefaultPosition,wxDefaultSize,
             wxMINIMIZE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLOSE_BOX) {
+   auto* panel = new wxPanel(this, wxID_ANY, wxPoint(), wxSize(500,650));
 
-   auto* txtDirectory = new wxStaticText(this, wxID_ANY, wxT("Game Directory: "), wxPoint(30, 100));
-   auto* ctrlDirectory = new wxDirPickerCtrl (this, wxID_ANY, wxT("D:/PATH/BeamNG.exe"), wxT("Game Directory"), wxPoint(130, 100), wxSize(300,-1));
+   auto* txtGameDirectory = new wxStaticText(panel, wxID_ANY, wxT("Game Directory: "), wxPoint(30, 100));
+   ctrlGameDirectory = new wxDirPickerCtrl (panel, 46, wxEmptyString, wxT("Game Directory"), wxPoint(130, 100), wxSize(300,-1));
+   ctrlGameDirectory->SetLabel("GamePath");
    MySettingsFrame::SetFocus();
-   auto btnDetectGameDirectory = new wxButton(this, 40, wxT("Detect"), wxPoint(185,140), wxSize(90, 25));
+   auto btnDetectGameDirectory = new wxButton(panel, 40, wxT("Detect"), wxPoint(185,140), wxSize(90, 25));
+
+   auto* txtProfileDirectory = new wxStaticText(panel, wxID_ANY, wxT("Profile Directory: "), wxPoint(30, 200));
+   ctrlProfileDirectory = new wxDirPickerCtrl (panel, 46, wxEmptyString, wxT("Profile Directory"), wxPoint(130, 200), wxSize(300,-1));
+   ctrlProfileDirectory->SetLabel("ProfilePath");
+   auto btnDetectProfileDirectory = new wxButton(panel, 40, wxT("Detect"), wxPoint(185,240), wxSize(90, 25));
+
+   auto* txtCacheDirectory = new wxStaticText(panel, wxID_ANY, wxT("Cache Directory: "), wxPoint(30, 300));
+   ctrlCacheDirectory = new wxDirPickerCtrl (panel, 46, wxEmptyString, wxT("Cache Directory"), wxPoint(130, 300), wxSize(300,-1));
+   ctrlCacheDirectory->SetLabel("CachePath");
+   auto btnCacheDirectory = new wxButton(panel, 40, wxT("Detect"), wxPoint(185,340), wxSize(90, 25));
 
 
-   auto* txtProfileDirectory = new wxStaticText(this, wxID_ANY, wxT("Profile Directory: "), wxPoint(30, 200));
-   auto* ctrlProfileDirectory = new wxDirPickerCtrl (this, wxID_ANY, wxT("D:/PATH/Profile"), wxT("Profile Directory"), wxPoint(130, 200), wxSize(300,-1));
-   auto btnDetectProfileDirectory = new wxButton(this, 40, wxT("Detect"), wxPoint(185,240), wxSize(90, 25));
-
-   auto* txtCacheDirectory = new wxStaticText(this, wxID_ANY, wxT("Cache Directory: "), wxPoint(30, 300));
-   auto* ctrlCacheDirectory = new wxDirPickerCtrl (this, wxID_ANY, wxT("D:/PATH/Cache"), wxT("D:/PATH/Cache"), wxPoint(130, 300), wxSize(300,-1));
-   auto btnCacheDirectory = new wxButton(this, 40, wxT("Detect"), wxPoint(185,340), wxSize(90, 25));
-
-
-   auto* txtBranch = new wxStaticText(this, wxID_ANY, wxT("Branch: "), wxPoint(30, 400));
-   wxArrayString BranchChoices;
-   BranchChoices.Add("Public");
-   BranchChoices.Add("Development");
-   BranchChoices.Add("Early Access");
-   auto* choiceController = new wxChoice (this, wxID_ANY, wxPoint(85, 400), wxSize(120, 20), BranchChoices);
+   auto* txtBuild = new wxStaticText(panel, wxID_ANY, wxT("Build: "), wxPoint(30, 400));
+   wxArrayString BuildChoices;
+   BuildChoices.Add("Default");
+   BuildChoices.Add("Release");
+   BuildChoices.Add("EA");
+   BuildChoices.Add("Dev");
+   choiceController = new wxChoice (panel, 47, wxPoint(85, 400), wxSize(120, 20), BuildChoices);
    choiceController->Select(0);
 
-   checkConsole = new wxCheckBox (this, 45, " Show Console", wxPoint(30, 450));
+   checkConsole = new wxCheckBox (panel, 45, " Show Console", wxPoint(30, 450));
 
    //UI Colors:
    if (DarkMode) {
       //Text:
-      txtDirectory->SetForegroundColour("white");
+      txtGameDirectory->SetForegroundColour("white");
       txtProfileDirectory->SetForegroundColour("white");
       txtCacheDirectory->SetForegroundColour("white");
-      txtBranch->SetForegroundColour("white");
+      txtBuild->SetForegroundColour("white");
       checkConsole->SetForegroundColour("white");
 
       //Style:
       ctrlCacheDirectory->SetWindowStyle(wxBORDER_NONE);
       ctrlProfileDirectory->SetWindowStyle(wxBORDER_NONE);
-      ctrlDirectory->SetWindowStyle(wxBORDER_NONE);
+      ctrlGameDirectory->SetWindowStyle(wxBORDER_NONE);
    }
 }
 
@@ -408,6 +461,7 @@ void MyMainFrame::OnClickSettings(wxCommandEvent& event WXUNUSED(event)) {
       SettingsFrame->SetForegroundColour(wxColour("white"));
    }
    SettingsFrame->Show(true);
+   SettingsFrame->LoadConfig();
 }
 
 /////////// OnClick Logo Event ///////////
@@ -449,14 +503,59 @@ void MyMainFrame::OnClickLaunch(wxCommandEvent& event WXUNUSED(event)) {
 }
 
 /////////// OnClick Console Event ///////////
-void MySettingsFrame::OnClickConsole(wxCommandEvent& event WXUNUSED(event)) {
+void MySettingsFrame::OnClickConsole(wxCommandEvent& event) {
       WindowsConsole(checkConsole->IsChecked());
+      bool status = event.IsChecked();
+
+      if (fs::exists("Launcher.toml")) {
+         toml::parse_result config = toml::parse_file("Launcher.toml");
+         config.insert_or_assign("Console", status);
+
+         std::ofstream tml("Launcher.toml");
+         if (tml.is_open()) {
+            tml << config;
+            tml.close();
+         } else wxMessageBox("Failed to modify config file", "Error");
+      }
+}
+
+
+/////////// OnChanged Game Path Event ///////////
+void MySettingsFrame::OnChangedGameDir(wxFileDirPickerEvent& event) {
+   std::string NewPath = event.GetPath().utf8_string();
+
+   std::string key = reinterpret_cast<wxDirPickerCtrl*> (event.GetEventObject())->GetLabel();
+
+   if (fs::exists("Launcher.toml")) {
+      toml::parse_result config = toml::parse_file("Launcher.toml");
+      config.insert_or_assign(key, NewPath);
+
+      std::ofstream tml("Launcher.toml");
+      if (tml.is_open()) {
+         tml << config;
+         tml.close();
+      } else wxMessageBox("Failed to modify config file", "Error");
+   }
+}
+
+/////////// OnChanged Build Event ///////////
+void MySettingsFrame::OnChangedBuild(wxCommandEvent& event) {
+   std::string key = reinterpret_cast<wxChoice*> (event.GetEventObject())->GetString(event.GetSelection());
+
+   if (fs::exists("Launcher.toml")) {
+      toml::parse_result config = toml::parse_file("Launcher.toml");
+      config.insert_or_assign("Build", key);
+
+      std::ofstream tml("Launcher.toml");
+      if (tml.is_open()) {
+         tml << config;
+         tml.close();
+      } else wxMessageBox("Failed to modify config file", "Error");
+   }
 }
 
 /////////// MAIN FUNCTION ///////////
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
-
-
    wxDisableAsserts();
    wxLog::SetLogLevel(wxLOG_Info);
    new MyApp();

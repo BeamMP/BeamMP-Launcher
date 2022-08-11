@@ -82,6 +82,9 @@ class Launcher {
    std::string Version{"2.0"};
    Server ServerHandler{this};
    std::string TargetBuild{"default"};
+   std::string GameConfigPath{""};
+   std::string ProfileConfigPath{""};
+   std::string CacheConfigPath{""};
    static inline std::atomic<bool> Shutdown{false}, Exit{false};
    std::string FullVersion{Version + ".99"};
    VersionParser SupportedVersion{"0.25.4.0"};
