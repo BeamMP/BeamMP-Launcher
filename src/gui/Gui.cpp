@@ -17,15 +17,28 @@
 #include <tomlplusplus/toml.hpp>
 #include <comutil.h>
 #include <ShlObj.h>
+#include <fstream>
+#include <nlohmann/json.hpp>
 #include "Launcher.h"
 #include "Logger.h"
 #include <thread>
 #endif
 
+/*/////////// TestFrame class ///////////
+class MyTestFrame : public wxFrame {
+   public:
+   MyTestFrame();
+
+   private:
+   // Here you put the frame functions:
+   bool DarkMode = wxSystemSettings::GetAppearance().IsDark();
+};*/
+
 /////////// Inherit App class ///////////
 class MyApp : public wxApp {
    public:
    bool OnInit() override;
+   //static inline MyTestFrame* TestFrame;
 };
 
 /////////// MainFrame class ///////////
@@ -80,15 +93,7 @@ class MySettingsFrame : public wxFrame {
    wxDECLARE_EVENT_TABLE();
 };
 
-/////////// TestFrame class ///////////
-class MyTestFrame : public wxFrame {
-   public:
-   MyTestFrame();
 
-   private:
-   // Here you put the frame functions:
-   bool DarkMode = wxSystemSettings::GetAppearance().IsDark();
-};
 
 enum { ID_Hello = 1 };
 
@@ -137,7 +142,8 @@ bool MyApp::OnInit() {
    MainFrame->Show(true);
 
    //Test Frame Properties:
-/*   auto* TestFrame = new MyTestFrame();
+   /*TestFrame = new MyTestFrame();
+
    TestFrame->SetIcon(wxIcon("icons/BeamMP_black.png",wxBITMAP_TYPE_PNG));
    TestFrame->SetSize(1000, 650);
    TestFrame->Center();
@@ -150,8 +156,7 @@ bool MyApp::OnInit() {
    else {
       TestFrame->SetBackgroundColour(wxColour("white"));
       TestFrame->SetForegroundColour(wxColour("white"));
-   }
-   TestFrame->Show(true);*/
+   }*/
 
    return true;
 }
@@ -237,6 +242,15 @@ void WindowsConsole (bool isChecked) {
    file->SetForegroundColour("white");
 }*/
 
+/////////// Read json function ///////////
+std::string jsonRead () {
+
+   std::ifstream ifs(R"(D:\BeamNG.Drive.v0.25.4.0.14071\Game\integrity.json)");
+   nlohmann::json jf = nlohmann::json::parse(ifs);
+   if (!jf.empty()) return jf["version"];
+   else return "Game Version: NA";
+}
+
 /////////// MainFrame Function ///////////
 MyMainFrame::MyMainFrame() :
     wxFrame(nullptr, wxID_ANY, "BeamMP Launcher V3", wxDefaultPosition,wxDefaultSize,
@@ -281,7 +295,8 @@ MyMainFrame::MyMainFrame() :
    }
 
    //Information:
-   auto* txtGameVersion = new wxStaticText(panel, wxID_ANY, wxT("Game Version: NA"), wxPoint(160, 490));
+   auto* txtGameVersionTitle = new wxStaticText(panel, wxID_ANY, wxT("Game Version: "), wxPoint(160, 490));
+   auto* txtGameVersion = new wxStaticText(panel, wxID_ANY, jsonRead(), wxPoint(240, 490));
    auto* txtPlayers = new wxStaticText(panel, wxID_ANY, wxT("Currently Playing: NA"), wxPoint(300, 490));
    auto* txtPatreon = new wxStaticText(panel, wxID_ANY, wxT("Special thanks to our Patreon Members!"), wxPoint(570, 490));
 
@@ -315,7 +330,15 @@ MyMainFrame::MyMainFrame() :
       //Texts:
       txtNews->SetForegroundColour("white");
       txtUpdate->SetForegroundColour("white");
-      txtGameVersion->SetForegroundColour("white");
+      txtGameVersionTitle->SetForegroundColour("white");
+
+      if (jsonRead() > "0.25.4.0")
+      txtGameVersion->SetForegroundColour("orange");
+      else if (jsonRead() < "0.25.4.0")
+         txtGameVersion->SetForegroundColour("red");
+      else
+         txtGameVersion->SetForegroundColour("green");
+
       txtPlayers->SetForegroundColour("white");
       txtModVersion->SetForegroundColour("white");
       txtServers->SetForegroundColour("white");
@@ -463,7 +486,7 @@ void MyMainFrame::OnClickAccount(wxCommandEvent& event WXUNUSED(event)) {
       AccountFrame->SetBackgroundColour(wxColour("white"));
       AccountFrame->SetForegroundColour(wxColour("white"));
    }
-   AccountFrame->Show(true);
+   AccountFrame->Show();
 }
 
 /////////// OnClick Settings Event ///////////
