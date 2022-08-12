@@ -18,6 +18,8 @@ struct VersionParser {
    std::vector<std::string> split;
    std::vector<size_t> data;
 };
+struct HKEY__;
+typedef HKEY__ *HKEY;
 
 class Launcher {
    public:  // constructors
@@ -35,6 +37,7 @@ class Launcher {
    void LaunchGame();
    void CheckKey();
    void SetupMOD();
+   static std::string QueryValue(HKEY& hKey, const char* Name);
 
    public:  // Getters and Setters
    void setDiscordMessage(const std::string& message);
@@ -82,9 +85,9 @@ class Launcher {
    std::string Version{"2.0"};
    Server ServerHandler{this};
    std::string TargetBuild{"default"};
-   std::string GameConfigPath{""};
-   std::string ProfileConfigPath{""};
-   std::string CacheConfigPath{""};
+   std::string GameConfigPath{};
+   std::string ProfileConfigPath{};
+   std::string CacheConfigPath{};
    static inline std::atomic<bool> Shutdown{false}, Exit{false};
    std::string FullVersion{Version + ".99"};
    VersionParser SupportedVersion{"0.25.4.0"};

@@ -15,6 +15,8 @@
 #include <wx/wxhtml.h.>
 #include <wx/filepicker.h>
 #include <tomlplusplus/toml.hpp>
+#include <comutil.h>
+#include <ShlObj.h>
 #include "Launcher.h"
 #include "Logger.h"
 #include <thread>
@@ -72,6 +74,9 @@ class MySettingsFrame : public wxFrame {
    void OnClickConsole(wxCommandEvent& event);
    void OnChangedGameDir (wxFileDirPickerEvent& event);
    void OnChangedBuild (wxCommandEvent& event);
+   void OnAutoDetectGame(wxCommandEvent& event);
+   void OnAutoDetectProfile(wxCommandEvent& event);
+   void OnResetCache(wxCommandEvent& event);
    wxDECLARE_EVENT_TABLE();
 };
 
@@ -106,6 +111,9 @@ wxBEGIN_EVENT_TABLE(MySettingsFrame, wxFrame)
         EVT_CHECKBOX(45, MySettingsFrame::OnClickConsole)
         EVT_DIRPICKER_CHANGED(46, MySettingsFrame::OnChangedGameDir)
         EVT_CHOICE(47, MySettingsFrame::OnChangedBuild)
+        EVT_BUTTON(10, MySettingsFrame::OnAutoDetectGame)
+        EVT_BUTTON(11, MySettingsFrame::OnAutoDetectProfile)
+        EVT_BUTTON(12, MySettingsFrame::OnResetCache)
 wxEND_EVENT_TABLE()
 
 /////////// OnInit function to show frame ///////////
@@ -151,7 +159,6 @@ bool MyApp::OnInit() {
 bool isSignedIn () {
    return false;
 }
-
 
 /////////// Load Config function ///////////
 void MySettingsFrame:: LoadConfig() {
@@ -387,18 +394,17 @@ MySettingsFrame::MySettingsFrame() :
    ctrlGameDirectory = new wxDirPickerCtrl (panel, 46, wxEmptyString, wxT("Game Directory"), wxPoint(130, 100), wxSize(300,-1));
    ctrlGameDirectory->SetLabel("GamePath");
    MySettingsFrame::SetFocus();
-   auto btnDetectGameDirectory = new wxButton(panel, 40, wxT("Detect"), wxPoint(185,140), wxSize(90, 25));
+   auto btnDetectGameDirectory = new wxButton(panel, 10, wxT("Detect"), wxPoint(185,140), wxSize(90, 25));
 
    auto* txtProfileDirectory = new wxStaticText(panel, wxID_ANY, wxT("Profile Directory: "), wxPoint(30, 200));
    ctrlProfileDirectory = new wxDirPickerCtrl (panel, 46, wxEmptyString, wxT("Profile Directory"), wxPoint(130, 200), wxSize(300,-1));
    ctrlProfileDirectory->SetLabel("ProfilePath");
-   auto btnDetectProfileDirectory = new wxButton(panel, 40, wxT("Detect"), wxPoint(185,240), wxSize(90, 25));
+   auto btnDetectProfileDirectory = new wxButton(panel, 11, wxT("Detect"), wxPoint(185,240), wxSize(90, 25));
 
    auto* txtCacheDirectory = new wxStaticText(panel, wxID_ANY, wxT("Cache Directory: "), wxPoint(30, 300));
    ctrlCacheDirectory = new wxDirPickerCtrl (panel, 46, wxEmptyString, wxT("Cache Directory"), wxPoint(130, 300), wxSize(300,-1));
    ctrlCacheDirectory->SetLabel("CachePath");
-   auto btnCacheDirectory = new wxButton(panel, 40, wxT("Detect"), wxPoint(185,340), wxSize(90, 25));
-
+   auto btnCacheDirectory = new wxButton(panel, 12, wxT("Reset"), wxPoint(185,340), wxSize(90, 25));
 
    auto* txtBuild = new wxStaticText(panel, wxID_ANY, wxT("Build: "), wxPoint(30, 400));
    wxArrayString BuildChoices;
@@ -424,6 +430,21 @@ MySettingsFrame::MySettingsFrame() :
       ctrlCacheDirectory->SetWindowStyle(wxBORDER_NONE);
       ctrlProfileDirectory->SetWindowStyle(wxBORDER_NONE);
       ctrlGameDirectory->SetWindowStyle(wxBORDER_NONE);
+   }
+}
+
+/////////// UpdateConfig function ///////////
+template <typename ValueType>
+void UpdateConfig (const std::string& key, ValueType&& value) {
+   if (fs::exists("Launcher.toml")) {
+      toml::parse_result config = toml::parse_file("Launcher.toml");
+      config.insert_or_assign(key, value);
+
+      std::ofstream tml("Launcher.toml");
+      if (tml.is_open()) {
+         tml << config;
+         tml.close();
+      } else wxMessageBox("Failed to modify config file", "Error");
    }
 }
 
@@ -506,52 +527,80 @@ void MyMainFrame::OnClickLaunch(wxCommandEvent& event WXUNUSED(event)) {
 void MySettingsFrame::OnClickConsole(wxCommandEvent& event) {
       WindowsConsole(checkConsole->IsChecked());
       bool status = event.IsChecked();
-
-      if (fs::exists("Launcher.toml")) {
-         toml::parse_result config = toml::parse_file("Launcher.toml");
-         config.insert_or_assign("Console", status);
-
-         std::ofstream tml("Launcher.toml");
-         if (tml.is_open()) {
-            tml << config;
-            tml.close();
-         } else wxMessageBox("Failed to modify config file", "Error");
-      }
+      UpdateConfig("Console", status);
 }
-
 
 /////////// OnChanged Game Path Event ///////////
 void MySettingsFrame::OnChangedGameDir(wxFileDirPickerEvent& event) {
    std::string NewPath = event.GetPath().utf8_string();
-
    std::string key = reinterpret_cast<wxDirPickerCtrl*> (event.GetEventObject())->GetLabel();
-
-   if (fs::exists("Launcher.toml")) {
-      toml::parse_result config = toml::parse_file("Launcher.toml");
-      config.insert_or_assign(key, NewPath);
-
-      std::ofstream tml("Launcher.toml");
-      if (tml.is_open()) {
-         tml << config;
-         tml.close();
-      } else wxMessageBox("Failed to modify config file", "Error");
-   }
+   UpdateConfig(key, NewPath);
 }
 
 /////////// OnChanged Build Event ///////////
 void MySettingsFrame::OnChangedBuild(wxCommandEvent& event) {
    std::string key = reinterpret_cast<wxChoice*> (event.GetEventObject())->GetString(event.GetSelection());
+   UpdateConfig("Build", key);
+}
 
-   if (fs::exists("Launcher.toml")) {
-      toml::parse_result config = toml::parse_file("Launcher.toml");
-      config.insert_or_assign("Build", key);
-
-      std::ofstream tml("Launcher.toml");
-      if (tml.is_open()) {
-         tml << config;
-         tml.close();
-      } else wxMessageBox("Failed to modify config file", "Error");
+/////////// AutoDetect Game Function ///////////
+void MySettingsFrame::OnAutoDetectGame (wxCommandEvent& event) {
+   HKEY BeamNG;
+   std::string GamePath;
+   LONG RegRes =
+       RegOpenKeyExA(HKEY_CURRENT_USER, R"(Software\BeamNG\BeamNG.drive)", 0,
+                     KEY_READ, &BeamNG);
+   if (RegRes == ERROR_SUCCESS) {
+      GamePath = Launcher::QueryValue(BeamNG, "rootpath");
+      RegCloseKey(BeamNG);
    }
+   if (!GamePath.empty()) {
+      if (GamePath.ends_with('\\')) GamePath.pop_back();
+      UpdateConfig("GamePath", GamePath);
+      ctrlGameDirectory->SetPath(GamePath);
+   }
+   else
+   wxMessageBox("Please launch the game at least once, failed to read registry key Software\\BeamNG\\BeamNG.drive", "Error");
+}
+
+/////////// AutoDetect Profile Function ///////////
+void MySettingsFrame::OnAutoDetectProfile(wxCommandEvent& event){
+   HKEY BeamNG;
+   std::string ProfilePath;
+   LONG RegRes =
+       RegOpenKeyExA(HKEY_CURRENT_USER, R"(Software\BeamNG\BeamNG.drive)", 0,
+                     KEY_READ, &BeamNG);
+   if (RegRes == ERROR_SUCCESS) {
+      ProfilePath = Launcher::QueryValue(BeamNG, "userpath_override");
+      RegCloseKey(BeamNG);
+   }
+   if (ProfilePath.empty()) {
+      PWSTR folderPath = nullptr;
+      HRESULT hr =
+          SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, nullptr, &folderPath);
+
+      if (!SUCCEEDED(hr)) {
+         wxMessageBox(
+             "Please launch the game at least once, failed to read registry key Software\\BeamNG\\BeamNG.drive",
+             "Error");
+         return;
+      }
+      else {
+         _bstr_t bstrPath(folderPath);
+         std::string Path((char*)bstrPath);
+         CoTaskMemFree(folderPath);
+         ProfilePath = Path + "\\BeamNG.drive";
+      }
+   }
+   UpdateConfig("ProfilePath", ProfilePath);
+   ctrlProfileDirectory->SetPath(ProfilePath);
+}
+
+/////////// Reset Cache Function ///////////
+void MySettingsFrame::OnResetCache(wxCommandEvent& event) {
+   std::string CachePath = fs::current_path().append("Resources").string();
+   UpdateConfig("CachePath", CachePath);
+   ctrlCacheDirectory->SetPath(CachePath);
 }
 
 /////////// MAIN FUNCTION ///////////
