@@ -21,6 +21,7 @@
 #include <nlohmann/json.hpp>
 #include "Launcher.h"
 #include "Logger.h"
+#include "HttpAPI.h"
 #include <thread>
 #endif
 
@@ -45,12 +46,15 @@ class MyApp : public wxApp {
 class MyMainFrame : public wxFrame {
    public:
    MyMainFrame();
+   static void GameVersionLabel();
 
    private:
    // Here you put the frame functions:
    wxStaticText* txtStatusResult;
+   static inline wxStaticText* txtGameVersion, *txtPlayers, *txtModVersion, *txtServers;
    wxButton* btnLaunch;
    bool DarkMode = wxSystemSettings::GetAppearance().IsDark();
+   void GetStats();
    void OnClickAccount(wxCommandEvent& event);
    void OnClickSettings(wxCommandEvent& event);
    void OnClickLaunch(wxCommandEvent& event);
@@ -76,7 +80,8 @@ class MyAccountFrame : public wxFrame {
 class MySettingsFrame : public wxFrame {
    public:
    MySettingsFrame();
-   void LoadConfig();
+   void UpdateInfo();
+   void UpdateGameDirectory(const std::string& path);
 
    private:
    // Here you put the frame functions:
@@ -93,9 +98,63 @@ class MySettingsFrame : public wxFrame {
    wxDECLARE_EVENT_TABLE();
 };
 
+void MyMainFrame::GetStats () {
+   std::string results = HTTP::Get("https://backend.beammp.com/stats_raw");
 
+   nlohmann::json jf = nlohmann::json::parse(results);
+   if (!jf.empty()) {
+      txtPlayers->SetLabel(to_string(jf["Players"]));
+      txtServers->SetLabel(to_string(jf["PublicServers"]));
+   } else {
+      txtPlayers->SetLabel("NA");
+      txtServers->SetLabel("NA");
+      wxMessageBox("Couldn't get game stats", "Error");
+   }
+}
 
-enum { ID_Hello = 1 };
+/////////// Update Info Function ///////////
+void MySettingsFrame::UpdateInfo() {
+   ctrlGameDirectory->SetPath(UIData::GamePath);
+   ctrlProfileDirectory->SetPath(UIData::ProfilePath);
+   ctrlCacheDirectory->SetPath(UIData::CachePath);
+}
+
+/////////// Load Config function ///////////
+void LoadConfig() {
+   if (fs::exists("Launcher.toml")) {
+      toml::parse_result config = toml::parse_file("Launcher.toml");
+      auto ui                   = config["UI"];
+      auto build                = config["Build"];
+      auto GamePath             = config["GamePath"];
+      auto ProfilePath          = config["ProfilePath"];
+      auto CachePath            = config["CachePath"];
+
+      if (GamePath.is_string()) {
+         UIData::GamePath = GamePath.as_string()->get();
+      } else wxMessageBox("Game path not found!", "Error");
+
+      if (ProfilePath.is_string()) {
+         UIData::ProfilePath = ProfilePath.as_string()->get();
+      } else wxMessageBox("Profile path not found!", "Error");
+
+      if (CachePath.is_string()) {
+         UIData::CachePath = CachePath.as_string()->get();
+      } else wxMessageBox("Cache path not found!", "Error");
+
+   } else {
+      std::ofstream tml("Launcher.toml");
+      if (tml.is_open()) {
+         tml << "UI = true\n"
+                "Build = 'Default'\n"
+                "GamePath = 'C:\\Program Files'\n"
+                "ProfilePath = 'C:\\Program Files'\n"
+                "CachePath = 'Resources'\n"
+                "Console = false";
+         tml.close();
+         LoadConfig();
+      } else wxMessageBox("Failed to create config file", "Error");
+   }
+}
 
 /////////// MainFrame Event Table ///////////
 wxBEGIN_EVENT_TABLE(MyMainFrame, wxFrame)
@@ -123,6 +182,7 @@ wxEND_EVENT_TABLE()
 
 /////////// OnInit function to show frame ///////////
 bool MyApp::OnInit() {
+   LoadConfig();
    auto* MainFrame = new MyMainFrame();
    MainFrame->SetIcon(wxIcon("icons/BeamMP_black.png",wxBITMAP_TYPE_PNG));
 
@@ -163,43 +223,6 @@ bool MyApp::OnInit() {
 
 bool isSignedIn () {
    return false;
-}
-
-/////////// Load Config function ///////////
-void MySettingsFrame:: LoadConfig() {
-   if (fs::exists("Launcher.toml")) {
-      toml::parse_result config = toml::parse_file("Launcher.toml");
-      auto ui                   = config["UI"];
-      auto build                = config["Build"];
-      auto GamePath             = config["GamePath"];
-      auto ProfilePath          = config["ProfilePath"];
-      auto CachePath            = config["CachePath"];
-
-      if (GamePath.is_string()) {
-         ctrlGameDirectory->SetPath(GamePath.as_string()->get());
-      } else wxMessageBox("Game path not found!", "Error");
-
-      if (ProfilePath.is_string()) {
-         ctrlProfileDirectory->SetPath(ProfilePath.as_string()->get());
-      } else wxMessageBox("Profile path not found!", "Error");
-
-      if (CachePath.is_string()) {
-         ctrlCacheDirectory->SetPath(CachePath.as_string()->get());
-      } else wxMessageBox("Cache path not found!", "Error");
-
-   } else {
-      std::ofstream tml("Launcher.toml");
-      if (tml.is_open()) {
-         tml << "UI = true\n"
-                "Build = 'Default'\n"
-                "GamePath = 'C:\\Program Files'\n"
-                "ProfilePath = 'C:\\Program Files'\n"
-                "CachePath = 'Resources'\n"
-                "Console = false";
-         tml.close();
-         LoadConfig();
-      } else wxMessageBox("Failed to create config file", "Error");
-   }
 }
 
 /////////// Windows Console Function ///////////
@@ -244,11 +267,15 @@ void WindowsConsole (bool isChecked) {
 
 /////////// Read json function ///////////
 std::string jsonRead () {
+   fs::path path = fs::path (UIData::GamePath).append("integrity.json");
+   if (fs::exists(path)) {
+      std::ifstream ifs(path);
+      nlohmann::json jf = nlohmann::json::parse(ifs);
+      if (!jf.empty()) return jf["version"];
+   }
 
-   std::ifstream ifs(R"(D:\BeamNG.Drive.v0.25.4.0.14071\Game\integrity.json)");
-   nlohmann::json jf = nlohmann::json::parse(ifs);
-   if (!jf.empty()) return jf["version"];
-   else return "Game Version: NA";
+   else wxMessageBox("Couldn't read game version, check game path in settings", "Error");
+   return "";
 }
 
 /////////// MainFrame Function ///////////
@@ -296,12 +323,19 @@ MyMainFrame::MyMainFrame() :
 
    //Information:
    auto* txtGameVersionTitle = new wxStaticText(panel, wxID_ANY, wxT("Game Version: "), wxPoint(160, 490));
-   auto* txtGameVersion = new wxStaticText(panel, wxID_ANY, jsonRead(), wxPoint(240, 490));
-   auto* txtPlayers = new wxStaticText(panel, wxID_ANY, wxT("Currently Playing: NA"), wxPoint(300, 490));
+   txtGameVersion = new wxStaticText(panel, wxID_ANY, "NA", wxPoint(240, 490));
+
+   auto* txtPlayersTitle = new wxStaticText(panel, wxID_ANY, wxT("Currently Playing:"), wxPoint(300, 490));
+   txtPlayers = new wxStaticText(panel, wxID_ANY, wxT("NA"), wxPoint(400, 490));
+
    auto* txtPatreon = new wxStaticText(panel, wxID_ANY, wxT("Special thanks to our Patreon Members!"), wxPoint(570, 490));
 
-   auto* txtModVersion = new wxStaticText(panel, wxID_ANY, wxT("Mod Version: NA"), wxPoint(160, 520));
-   auto* txtServers = new wxStaticText(panel, wxID_ANY, wxT("Available Servers: NA"), wxPoint(300, 520));
+   auto* txtModVersionTitle = new wxStaticText(panel, wxID_ANY, wxT("Mod Version:"), wxPoint(160, 520));
+   txtModVersion = new wxStaticText(panel, wxID_ANY, wxT("NA"), wxPoint(235, 520));
+
+   auto* txtServersTitle = new wxStaticText(panel, wxID_ANY, wxT("Available Servers:"), wxPoint(300, 520));
+   txtServers = new wxStaticText(panel, wxID_ANY, wxT("NA"), wxPoint(395, 520));
+
    auto* txtStatus = new wxStaticText(panel, wxID_ANY, wxT("Status: "), wxPoint(880, 520));
    txtStatusResult = new wxStaticText(panel, wxID_ANY, wxT("Online"), wxPoint(920, 520));
 
@@ -319,7 +353,10 @@ MyMainFrame::MyMainFrame() :
    auto btnSettings = new wxButton(panel, 40, wxT("Settings"), wxPoint(730,570), wxSize(110, 25));
    btnLaunch = new wxButton(panel, 41, wxT("Launch"), wxPoint(850,570), wxSize(110, 25));
 
+   GetStats();
+
    //UI Colors:
+   GameVersionLabel();
    if (DarkMode) {
       //Text Separators:
       txtSeparator1->SetForegroundColour("white");
@@ -331,16 +368,12 @@ MyMainFrame::MyMainFrame() :
       txtNews->SetForegroundColour("white");
       txtUpdate->SetForegroundColour("white");
       txtGameVersionTitle->SetForegroundColour("white");
-
-      if (jsonRead() > "0.25.4.0")
-      txtGameVersion->SetForegroundColour("orange");
-      else if (jsonRead() < "0.25.4.0")
-         txtGameVersion->SetForegroundColour("red");
-      else
-         txtGameVersion->SetForegroundColour("green");
-
+      txtGameVersion->SetForegroundColour("white");
+      txtPlayersTitle->SetForegroundColour("white");
       txtPlayers->SetForegroundColour("white");
+      txtModVersionTitle->SetForegroundColour("white");
       txtModVersion->SetForegroundColour("white");
+      txtServersTitle->SetForegroundColour("white");
       txtServers->SetForegroundColour("white");
       txtPatreon->SetForegroundColour("white");
       txtStatus->SetForegroundColour("white");
@@ -360,6 +393,23 @@ MyMainFrame::MyMainFrame() :
       logo->SetBackgroundColour("white");
    }
    txtStatusResult->SetForegroundColour("green");
+}
+
+/////////// Game Version Label function ///////////
+void MyMainFrame::GameVersionLabel()  {
+   std::string read = jsonRead();
+   if (!read.empty()) {
+      txtGameVersion->SetLabel(read);
+      VersionParser CurrentVersion(read);
+      if (CurrentVersion > Launcher::SupportedVersion)
+         txtGameVersion->SetForegroundColour("orange");
+      else if (CurrentVersion < Launcher::SupportedVersion)
+         txtGameVersion->SetForegroundColour("red");
+      else txtGameVersion->SetForegroundColour("green");
+   } else {
+      txtGameVersion->SetLabel(wxT("NA"));
+      txtGameVersion->SetForegroundColour("red");
+   }
 }
 
 /////////// Account Frame Content ///////////
@@ -504,8 +554,8 @@ void MyMainFrame::OnClickSettings(wxCommandEvent& event WXUNUSED(event)) {
       SettingsFrame->SetBackgroundColour(wxColour("white"));
       SettingsFrame->SetForegroundColour(wxColour("white"));
    }
+   SettingsFrame->UpdateInfo();
    SettingsFrame->Show(true);
-   SettingsFrame->LoadConfig();
 }
 
 /////////// OnClick Logo Event ///////////
@@ -553,11 +603,19 @@ void MySettingsFrame::OnClickConsole(wxCommandEvent& event) {
       UpdateConfig("Console", status);
 }
 
+/////////// Update Game Directory Function ///////////
+void MySettingsFrame::UpdateGameDirectory(const std::string& path) {
+   ctrlGameDirectory->SetPath(path);
+   UIData::GamePath = path;
+   MyMainFrame::GameVersionLabel();
+}
+
 /////////// OnChanged Game Path Event ///////////
 void MySettingsFrame::OnChangedGameDir(wxFileDirPickerEvent& event) {
    std::string NewPath = event.GetPath().utf8_string();
    std::string key = reinterpret_cast<wxDirPickerCtrl*> (event.GetEventObject())->GetLabel();
    UpdateConfig(key, NewPath);
+   UpdateGameDirectory(NewPath);
 }
 
 /////////// OnChanged Build Event ///////////
@@ -565,6 +623,8 @@ void MySettingsFrame::OnChangedBuild(wxCommandEvent& event) {
    std::string key = reinterpret_cast<wxChoice*> (event.GetEventObject())->GetString(event.GetSelection());
    UpdateConfig("Build", key);
 }
+
+
 
 /////////// AutoDetect Game Function ///////////
 void MySettingsFrame::OnAutoDetectGame (wxCommandEvent& event) {
@@ -580,7 +640,7 @@ void MySettingsFrame::OnAutoDetectGame (wxCommandEvent& event) {
    if (!GamePath.empty()) {
       if (GamePath.ends_with('\\')) GamePath.pop_back();
       UpdateConfig("GamePath", GamePath);
-      ctrlGameDirectory->SetPath(GamePath);
+      UpdateGameDirectory(GamePath);
    }
    else
    wxMessageBox("Please launch the game at least once, failed to read registry key Software\\BeamNG\\BeamNG.drive", "Error");

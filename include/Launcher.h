@@ -66,6 +66,7 @@ class Launcher {
 
    public: // variables
    static inline std::thread EntryThread{};
+   static inline VersionParser SupportedVersion{"0.25.4.0"};
 
    private:  // variables
    uint32_t GamePID{0};
@@ -90,7 +91,6 @@ class Launcher {
    std::string CacheConfigPath{};
    static inline std::atomic<bool> Shutdown{false}, Exit{false};
    std::string FullVersion{Version + ".99"};
-   VersionParser SupportedVersion{"0.25.4.0"};
    std::unique_ptr<IPC> IPCToGame{};
    std::unique_ptr<IPC> IPCFromGame{};
 };
@@ -100,4 +100,11 @@ class ShutdownException : public std::runtime_error {
    explicit ShutdownException(const std::string& message) :
        runtime_error(message){};
 };
+
+struct UIData {
+   static inline std::string GamePath, ProfilePath, CachePath;
+
+
+};
+
 void entry();
