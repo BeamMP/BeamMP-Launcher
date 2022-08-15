@@ -49,12 +49,13 @@ class MyMainFrame : public wxFrame {
    static void GameVersionLabel();
 
    private:
-   // Here you put the frame functions:
    wxStaticText* txtStatusResult;
    static inline wxStaticText* txtGameVersion, *txtPlayers, *txtModVersion, *txtServers;
    wxButton* btnLaunch;
+
    bool DarkMode = wxSystemSettings::GetAppearance().IsDark();
    void GetStats();
+
    void OnClickAccount(wxCommandEvent& event);
    void OnClickSettings(wxCommandEvent& event);
    void OnClickLaunch(wxCommandEvent& event);
@@ -68,8 +69,6 @@ class MyAccountFrame : public wxFrame {
    MyAccountFrame();
 
    private:
-   // Here you put the frame functions:
-
    bool DarkMode = wxSystemSettings::GetAppearance().IsDark();
    void OnClickRegister(wxCommandEvent& event);
    void OnClickLogout(wxCommandEvent& event);
@@ -84,11 +83,12 @@ class MySettingsFrame : public wxFrame {
    void UpdateGameDirectory(const std::string& path);
 
    private:
-   // Here you put the frame functions:
    wxDirPickerCtrl* ctrlGameDirectory, *ctrlProfileDirectory, *ctrlCacheDirectory;
    wxCheckBox* checkConsole;
    wxChoice* choiceController;
+
    bool DarkMode = wxSystemSettings::GetAppearance().IsDark();
+
    void OnClickConsole(wxCommandEvent& event);
    void OnChangedGameDir (wxFileDirPickerEvent& event);
    void OnChangedBuild (wxCommandEvent& event);
@@ -98,17 +98,30 @@ class MySettingsFrame : public wxFrame {
    wxDECLARE_EVENT_TABLE();
 };
 
+/////////// Get Stats Function ///////////
 void MyMainFrame::GetStats () {
    std::string results = HTTP::Get("https://backend.beammp.com/stats_raw");
 
-   nlohmann::json jf = nlohmann::json::parse(results);
-   if (!jf.empty()) {
+   nlohmann::json jf = nlohmann::json::parse(results, nullptr, false);
+   if (!jf.is_discarded() && !jf.empty()) {
       txtPlayers->SetLabel(to_string(jf["Players"]));
       txtServers->SetLabel(to_string(jf["PublicServers"]));
+
+      if (jf["Players"].get<int>() < 699)
+         txtPlayers->SetForegroundColour("green");
+      else
+         txtPlayers->SetForegroundColour(wxColour(255,173,0));
+
+      if (jf["PublicServers"].get<int>() < 749)
+         txtServers->SetForegroundColour("green");
+      else
+         txtServers->SetForegroundColour(wxColour(255,173,0));
+
    } else {
       txtPlayers->SetLabel("NA");
+      txtPlayers->SetForegroundColour("red");
       txtServers->SetLabel("NA");
-      wxMessageBox("Couldn't get game stats", "Error");
+      txtServers->SetForegroundColour("red");
    }
 }
 
@@ -119,7 +132,7 @@ void MySettingsFrame::UpdateInfo() {
    ctrlCacheDirectory->SetPath(UIData::CachePath);
 }
 
-/////////// Load Config function ///////////
+/////////// Load Config Function ///////////
 void LoadConfig() {
    if (fs::exists("Launcher.toml")) {
       toml::parse_result config = toml::parse_file("Launcher.toml");
@@ -156,7 +169,8 @@ void LoadConfig() {
    }
 }
 
-/////////// MainFrame Event Table ///////////
+/////////// Event Tables ///////////
+//MainFrame:
 wxBEGIN_EVENT_TABLE(MyMainFrame, wxFrame)
    EVT_BUTTON(39, MyMainFrame::OnClickAccount)
    EVT_BUTTON(40, MyMainFrame::OnClickSettings)
@@ -164,13 +178,13 @@ wxBEGIN_EVENT_TABLE(MyMainFrame, wxFrame)
    EVT_BUTTON(42, MyMainFrame::OnClickLogo)
 wxEND_EVENT_TABLE()
 
-/////////// AccountFrame Event Table ///////////
+//AccountFrame:
 wxBEGIN_EVENT_TABLE(MyAccountFrame, wxFrame)
    EVT_BUTTON(43, MyAccountFrame::OnClickRegister)
    EVT_BUTTON(44, MyAccountFrame::OnClickLogout)
 wxEND_EVENT_TABLE()
 
-    /////////// SettingsFrame Event Table ///////////
+//SettingsFrame:
 wxBEGIN_EVENT_TABLE(MySettingsFrame, wxFrame)
         EVT_CHECKBOX(45, MySettingsFrame::OnClickConsole)
         EVT_DIRPICKER_CHANGED(46, MySettingsFrame::OnChangedGameDir)
@@ -180,7 +194,7 @@ wxBEGIN_EVENT_TABLE(MySettingsFrame, wxFrame)
         EVT_BUTTON(12, MySettingsFrame::OnResetCache)
 wxEND_EVENT_TABLE()
 
-/////////// OnInit function to show frame ///////////
+/////////// OnInit Function ///////////
 bool MyApp::OnInit() {
    LoadConfig();
    auto* MainFrame = new MyMainFrame();
@@ -243,7 +257,7 @@ void WindowsConsole (bool isChecked) {
       ::fclose(stderr);
       ::fclose(stdin);
    }
-   // Clear the error state for all of the C++ standard streams. Attempting to accessing the streams before they refer
+   // Clear the error state for all the C++ standard streams. Attempting to accessing the streams before they refer
    // to a valid target causes the stream to enter an error state. Clearing the error state will fix this problem,
    // which seems to occur in newer version of Visual Studio even when the console has not been read from or written
    // to yet.
@@ -265,15 +279,14 @@ void WindowsConsole (bool isChecked) {
    file->SetForegroundColour("white");
 }*/
 
-/////////// Read json function ///////////
+/////////// Read json Function ///////////
 std::string jsonRead () {
    fs::path path = fs::path (UIData::GamePath).append("integrity.json");
    if (fs::exists(path)) {
       std::ifstream ifs(path);
-      nlohmann::json jf = nlohmann::json::parse(ifs);
-      if (!jf.empty()) return jf["version"];
+      nlohmann::json jf = nlohmann::json::parse(ifs, nullptr, false);
+      if (!jf.is_discarded() && !jf.empty()) return jf["version"];
    }
-
    else wxMessageBox("Couldn't read game version, check game path in settings", "Error");
    return "";
 }
@@ -368,13 +381,10 @@ MyMainFrame::MyMainFrame() :
       txtNews->SetForegroundColour("white");
       txtUpdate->SetForegroundColour("white");
       txtGameVersionTitle->SetForegroundColour("white");
-      txtGameVersion->SetForegroundColour("white");
       txtPlayersTitle->SetForegroundColour("white");
-      txtPlayers->SetForegroundColour("white");
       txtModVersionTitle->SetForegroundColour("white");
       txtModVersion->SetForegroundColour("white");
       txtServersTitle->SetForegroundColour("white");
-      txtServers->SetForegroundColour("white");
       txtPatreon->SetForegroundColour("white");
       txtStatus->SetForegroundColour("white");
 
@@ -393,23 +403,6 @@ MyMainFrame::MyMainFrame() :
       logo->SetBackgroundColour("white");
    }
    txtStatusResult->SetForegroundColour("green");
-}
-
-/////////// Game Version Label function ///////////
-void MyMainFrame::GameVersionLabel()  {
-   std::string read = jsonRead();
-   if (!read.empty()) {
-      txtGameVersion->SetLabel(read);
-      VersionParser CurrentVersion(read);
-      if (CurrentVersion > Launcher::SupportedVersion)
-         txtGameVersion->SetForegroundColour("orange");
-      else if (CurrentVersion < Launcher::SupportedVersion)
-         txtGameVersion->SetForegroundColour("red");
-      else txtGameVersion->SetForegroundColour("green");
-   } else {
-      txtGameVersion->SetLabel(wxT("NA"));
-      txtGameVersion->SetForegroundColour("red");
-   }
 }
 
 /////////// Account Frame Content ///////////
@@ -506,7 +499,7 @@ MySettingsFrame::MySettingsFrame() :
    }
 }
 
-/////////// UpdateConfig function ///////////
+/////////// UpdateConfig Function ///////////
 template <typename ValueType>
 void UpdateConfig (const std::string& key, ValueType&& value) {
    if (fs::exists("Launcher.toml")) {
@@ -519,6 +512,30 @@ void UpdateConfig (const std::string& key, ValueType&& value) {
          tml.close();
       } else wxMessageBox("Failed to modify config file", "Error");
    }
+}
+
+/////////// Game Version Label Function ///////////
+void MyMainFrame::GameVersionLabel() {
+   std::string read = jsonRead();
+   if (!read.empty()) {
+      txtGameVersion->SetLabel(read);
+      VersionParser CurrentVersion(read);
+      if (CurrentVersion > Launcher::SupportedVersion)
+         txtGameVersion->SetForegroundColour(wxColour(255,173,0));
+      else if (CurrentVersion < Launcher::SupportedVersion)
+         txtGameVersion->SetForegroundColour("red");
+      else txtGameVersion->SetForegroundColour("green");
+   } else {
+      txtGameVersion->SetLabel(wxT("NA"));
+      txtGameVersion->SetForegroundColour("red");
+   }
+}
+
+/////////// Update Game Directory Function ///////////
+void MySettingsFrame::UpdateGameDirectory(const std::string& path) {
+   ctrlGameDirectory->SetPath(path);
+   UIData::GamePath = path;
+   MyMainFrame::GameVersionLabel();
 }
 
 /////////// OnClick Account Event ///////////
@@ -603,13 +620,6 @@ void MySettingsFrame::OnClickConsole(wxCommandEvent& event) {
       UpdateConfig("Console", status);
 }
 
-/////////// Update Game Directory Function ///////////
-void MySettingsFrame::UpdateGameDirectory(const std::string& path) {
-   ctrlGameDirectory->SetPath(path);
-   UIData::GamePath = path;
-   MyMainFrame::GameVersionLabel();
-}
-
 /////////// OnChanged Game Path Event ///////////
 void MySettingsFrame::OnChangedGameDir(wxFileDirPickerEvent& event) {
    std::string NewPath = event.GetPath().utf8_string();
@@ -623,8 +633,6 @@ void MySettingsFrame::OnChangedBuild(wxCommandEvent& event) {
    std::string key = reinterpret_cast<wxChoice*> (event.GetEventObject())->GetString(event.GetSelection());
    UpdateConfig("Build", key);
 }
-
-
 
 /////////// AutoDetect Game Function ///////////
 void MySettingsFrame::OnAutoDetectGame (wxCommandEvent& event) {
