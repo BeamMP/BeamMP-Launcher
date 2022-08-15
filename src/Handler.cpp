@@ -18,7 +18,7 @@ void Launcher::HandleIPC(const std::string& Data) {
          break;
       case 'B':
          ServerHandler.Close();
-         SendIPC(Code + HTTP::Post("https://backend.beammp.com/servers", ""));
+         SendIPC(Code + HTTP::Get("https://backend.beammp.com/servers-info"));
          LOG(INFO) << "Sent Server List";
          break;
       case 'C':
