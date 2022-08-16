@@ -17,7 +17,7 @@ notice how we specify the target being windows-static you need to install the `s
 
 # Copyright
 
-Copyright (c) 2019-present Anonymous275 (@Anonymous-275), 
+Copyright (c) 2019-present BeamMP LTD, 
 BeamMP-Launcher code is not in the public domain and is not free software. 
 One must be granted explicit permission by the copyright holder(s) in order to modify or distribute any part of the source or binaries. 
 Special permission to modify the source-code is implicitly granted only for the purpose of upstreaming those changes directly to github.com/BeamMP/BeamMP-Launcher via a GitHub pull-request.
