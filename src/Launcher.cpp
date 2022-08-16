@@ -28,7 +28,6 @@ Launcher::Launcher() :
    Exit.store(false);
    Launcher::StaticAbort(this);
    DiscordTime = std::time(nullptr);
-   Log::Init();
    WindowsInit();
    SetUnhandledExceptionFilter(CrashHandler);
    LOG(INFO) << "Starting Launcher V" << FullVersion;

@@ -18,7 +18,7 @@
 #include <comutil.h>
 #include <ShlObj.h>
 #include <fstream>
-#include <nlohmann/json.hpp>
+#include "Json.h"
 #include "Launcher.h"
 #include "Logger.h"
 #include "HttpAPI.h"
@@ -42,11 +42,28 @@ class MyApp : public wxApp {
    //static inline MyTestFrame* TestFrame;
 };
 
+/////////// AccountFrame class ///////////
+class MyAccountFrame : public wxFrame {
+   public:
+   MyAccountFrame();
+
+   private:
+   static inline wxTextCtrl* ctrlUsername, *ctrlPassword;
+   bool DarkMode = wxSystemSettings::GetAppearance().IsDark();
+   void OnClickRegister(wxCommandEvent& event);
+   void OnClickLogout(wxCommandEvent& event);
+   void OnClickLogin(wxCommandEvent& event);
+   wxDECLARE_EVENT_TABLE();
+};
+
 /////////// MainFrame class ///////////
 class MyMainFrame : public wxFrame {
    public:
    MyMainFrame();
    static void GameVersionLabel();
+   static inline MyAccountFrame* AccountFrame;
+   static inline MyMainFrame* MainFrameInstance;
+   void OnClickAccount(wxCommandEvent& event);
 
    private:
    wxStaticText* txtStatusResult;
@@ -56,23 +73,9 @@ class MyMainFrame : public wxFrame {
    bool DarkMode = wxSystemSettings::GetAppearance().IsDark();
    void GetStats();
 
-   void OnClickAccount(wxCommandEvent& event);
    void OnClickSettings(wxCommandEvent& event);
    void OnClickLaunch(wxCommandEvent& event);
    void OnClickLogo(wxCommandEvent& event);
-   wxDECLARE_EVENT_TABLE();
-};
-
-/////////// AccountFrame class ///////////
-class MyAccountFrame : public wxFrame {
-   public:
-   MyAccountFrame();
-
-   private:
-   bool DarkMode = wxSystemSettings::GetAppearance().IsDark();
-   void OnClickRegister(wxCommandEvent& event);
-   void OnClickLogout(wxCommandEvent& event);
-   void OnClickLogin(wxCommandEvent& event);
    wxDECLARE_EVENT_TABLE();
 };
 
@@ -203,10 +206,80 @@ void LoadConfig() {
    }
 }
 
+/////////// Login Function ///////////
+bool Login(const std::string& fields) {
+   if (fields == "LO") {
+      UIData::LoginAuth = false;
+      UpdateKey("");
+      return false;
+   }
+   std::string Buffer = HTTP::Post("https://auth.beammp.com/userlogin", fields);
+   Json d             = Json::parse(Buffer, nullptr, false);
+
+   if (Buffer == "-1") {
+      wxMessageBox("Failed to communicate with the auth system!", "Error");
+      return false;
+   }
+
+   if (Buffer.at(0) != '{' || d.is_discarded()) {
+      wxMessageBox(
+          "Invalid answer from authentication servers, please try again later!",
+          "Error");
+      return false;
+   }
+
+   if (!d["success"].is_null() && d["success"].get<bool>()) {
+      UIData::LoginAuth = true;
+      if (!d["private_key"].is_null()) {
+         UpdateKey(d["private_key"].get<std::string>());
+      }
+      if (!d["public_key"].is_null()) {
+         UIData::PublicKey = d["public_key"].get<std::string>();
+      }
+      if (!d["username"].is_null()) {
+         UIData::Username = d["username"].get<std::string>();
+      }
+      return true;
+   } else if (!d["message"].is_null()) wxMessageBox(d["message"].get<std::string>(), "Error");
+   return false;
+}
+
+/////////// Check Key Function ///////////
+void CheckKey() {
+   if (fs::exists("key") && fs::file_size("key") < 100) {
+      std::ifstream Key("key");
+      if (Key.is_open()) {
+         auto Size = fs::file_size("key");
+         std::string Buffer(Size, 0);
+         Key.read(&Buffer[0], std::streamsize(Size));
+         Key.close();
+
+         Buffer = HTTP::Post("https://auth.beammp.com/userlogin",
+                             R"({"pk":")" + Buffer + "\"}");
+
+         Json d = Json::parse(Buffer, nullptr, false);
+         if (Buffer == "-1" || Buffer.at(0) != '{' || d.is_discarded()) {
+            wxMessageBox( "Couldn't connect to auth server, you might be offline!", "Warning", wxICON_WARNING);
+            return;
+         }
+         if (d["success"].get<bool>()) {
+            UIData::LoginAuth = true;
+            UpdateKey(d["private_key"].get<std::string>());
+            UIData::PublicKey = d["public_key"].get<std::string>();
+            UIData::UserRole  = d["role"].get<std::string>();
+            UIData::Username = d["username"].get<std::string>();
+         } else UpdateKey("");
+      } else UpdateKey("");
+   } else UpdateKey("");
+}
+
 /////////// OnInit Function ///////////
 bool MyApp::OnInit() {
+   Log::Init();
    LoadConfig();
+   CheckKey();
    auto* MainFrame = new MyMainFrame();
+   MyMainFrame::MainFrameInstance = MainFrame;
    MainFrame->SetIcon(wxIcon("icons/BeamMP_black.png",wxBITMAP_TYPE_PNG));
 
    // Set MainFrame properties:
@@ -242,10 +315,6 @@ bool MyApp::OnInit() {
    }*/
 
    return true;
-}
-
-bool isSignedIn () {
-   return false;
 }
 
 /////////// Windows Console Function ///////////
@@ -366,10 +435,10 @@ MyMainFrame::MyMainFrame() :
    //Account:
    auto* bitmap = new wxBitmapButton(panel, 1, wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(45,45, wxIMAGE_QUALITY_HIGH)), wxPoint(20, 560), wxSize(45,45));
 
-   if (isSignedIn())
-   bitmap->SetBitmap(wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(45,45, wxIMAGE_QUALITY_HIGH)));
+   if (UIData::LoginAuth && fs::exists( "icons/" + UIData::Username + ".png"))
+      bitmap->SetBitmap(wxBitmapBundle(wxImage( "icons/" + UIData::Username + ".png", wxBitmapType (wxBITMAP_TYPE_PNG | wxBITMAP_TYPE_JPEG)).Scale(45, 45, wxIMAGE_QUALITY_HIGH)));
    else
-   bitmap->SetBitmap(wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(45,45, wxIMAGE_QUALITY_HIGH)));
+      bitmap->SetBitmap(wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(45,45, wxIMAGE_QUALITY_HIGH)));
 
    //Buttons:
    auto btnSettings = new wxButton(panel, 2, wxT("Settings"), wxPoint(730,570), wxSize(110, 25));
@@ -424,18 +493,19 @@ MyAccountFrame::MyAccountFrame() : wxFrame(nullptr, wxID_ANY, "Account Manager",
    image = new wxStaticBitmap( this, wxID_ANY, wxBitmapBundle(wxImage("icons/BeamMP_black.png", wxBITMAP_TYPE_PNG).Scale(120,120, wxIMAGE_QUALITY_HIGH)), wxPoint(180,20), wxSize(120, 120));
    auto* panel = new wxPanel(this, wxID_ANY, wxPoint(), wxSize(500,650));
 
-   if (isSignedIn()) {
-      image->SetBitmap(wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(120,120, wxIMAGE_QUALITY_HIGH)));
+   if (UIData::LoginAuth) {
+      if (fs::exists( "icons/" + UIData::Username + ".png"))
+         image->SetBitmap(wxBitmapBundle(wxImage( "icons/" + UIData::Username + ".png", wxBITMAP_TYPE_PNG).Scale(120, 120, wxIMAGE_QUALITY_HIGH)));
+      else
+         image->SetBitmap(wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(120,120, wxIMAGE_QUALITY_HIGH)));
 
-      auto* txtName = new wxStaticText(panel, wxID_ANY, wxT("Username: BeamMP"), wxPoint(180, 200));
-      auto* txtEmail = new wxStaticText(panel, wxID_ANY, wxT("Email: beamMP@gmail.com"), wxPoint(180, 250));
+      auto* txtName = new wxStaticText(panel, wxID_ANY, wxT("Username: " + UIData::Username), wxPoint(180, 200));
       auto btnLogout = new wxButton(panel, 100, wxT("Logout"), wxPoint(185,550), wxSize(110, 25));
 
       //UI Colors:
       if (DarkMode) {
          //Text:
          txtName->SetForegroundColour("white");
-         txtEmail->SetForegroundColour("white");
       }
    }
    else {
@@ -443,8 +513,8 @@ MyAccountFrame::MyAccountFrame() : wxFrame(nullptr, wxID_ANY, "Account Manager",
 
       auto* txtLogin = new wxStaticText(panel, wxID_ANY, wxT("Login with your BeamMP account."), wxPoint(150, 200));
 
-      auto* ctrlUsername = new wxTextCtrl (panel, wxID_ANY, wxT(""), wxPoint(131, 230), wxSize(220,25));
-      auto* ctrlPassword = new wxTextCtrl (panel, wxID_ANY, wxT(""), wxPoint(131, 300), wxSize(220,25), wxTE_PASSWORD);
+      ctrlUsername = new wxTextCtrl (panel, wxID_ANY, wxT(""), wxPoint(131, 230), wxSize(220,25));
+      ctrlPassword = new wxTextCtrl (panel, wxID_ANY, wxT(""), wxPoint(131, 300), wxSize(220,25), wxTE_PASSWORD);
       ctrlUsername->SetHint("Username / Email");
       ctrlPassword->SetHint("Password");
 
@@ -542,7 +612,7 @@ void MyMainFrame::GameVersionLabel() {
 
 /////////// OnClick Account Event ///////////
 void MyMainFrame::OnClickAccount(wxCommandEvent& event WXUNUSED(event)) {
-   auto* AccountFrame = new MyAccountFrame();
+   AccountFrame = new MyAccountFrame();
    AccountFrame->SetSize(500, 650);
    AccountFrame->Center();
    AccountFrame->SetIcon(wxIcon("icons/BeamMP_black.png",wxBITMAP_TYPE_PNG));
@@ -611,15 +681,23 @@ void MyAccountFrame::OnClickRegister(wxCommandEvent& event WXUNUSED(event)) {
 /////////// OnClick Login Event ///////////
 void MyAccountFrame::OnClickLogin(wxCommandEvent& event WXUNUSED(event)) {
 
+   Json json;
+   json ["password"] = ctrlPassword->GetValue().utf8_string();
+   json ["username"] = ctrlUsername->GetValue().utf8_string();
 
+   if (Login(json.dump())) {
+      HTTP::Download("https://forum.beammp.com/user_avatar/forum.beammp.com/" + UIData::Username + "/240/4411_2.png", "icons/" + UIData::Username + ".png");
+      MyMainFrame::AccountFrame->Destroy();
+      MyMainFrame::MainFrameInstance->OnClickAccount(event);
+   }
 
 }
 
 /////////// OnClick Logout Event ///////////
 void MyAccountFrame::OnClickLogout(wxCommandEvent& event WXUNUSED(event)) {
-
-
-
+   Login("LO");
+   MyMainFrame::AccountFrame->Destroy();
+   MyMainFrame::MainFrameInstance->OnClickAccount(event);
 }
 
 /////////// OnClick Console Event ///////////

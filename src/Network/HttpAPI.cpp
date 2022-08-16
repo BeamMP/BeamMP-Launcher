@@ -23,10 +23,12 @@ std::string HTTP::Get(const std::string& IP) {
    httplib::Client cli(IP.substr(0, pos));
    CliRef.store(&cli);
    cli.set_connection_timeout(std::chrono::seconds(5));
+   cli.set_follow_location(true);
    auto res = cli.Get(IP.substr(pos).c_str(), ProgressBar);
    std::string Ret;
 
    if (res.error() == httplib::Error::Success) {
+      LOG(INFO) << res->status;
       if (res->status == 200) {
          Ret = res->body;
       } else LOG(ERROR) << res->reason;
