@@ -63,6 +63,7 @@ class MyMainFrame : public wxFrame {
    static void GameVersionLabel();
    static inline MyAccountFrame* AccountFrame;
    static inline MyMainFrame* MainFrameInstance;
+   wxBitmapButton* BitAccount;
    void OnClickAccount(wxCommandEvent& event);
 
    private:
@@ -359,6 +360,27 @@ std::string jsonRead () {
    return "";
 }
 
+/////////// Picture Type Function ///////////
+// JPG 0 / PNG 1
+std::string PictureType (const std::string& picture) {
+   for (int i = 0; i < 15; i++) {
+      if(picture[i] == 'J')
+         return ".jpg";
+      else if (picture[i] == 'P' && picture[i+1] == 'N')
+         return ".png";
+   }
+   return "";
+}
+
+/////////// Get Picture Name Function ///////////
+std::string GetPictureName () {
+   for (const auto& entry : fs::recursive_directory_iterator("icons")) {
+      if (entry.path().filename().string().find(UIData::Username) != std::string::npos) {
+         return entry.path().string();
+      }
+   }
+}
+
 /////////// TestFrame Function ///////////
 /*MyTestFrame::MyTestFrame() :
     wxFrame(nullptr, wxID_ANY, "BeamMP Launcher V3", wxDefaultPosition,wxDefaultSize,
@@ -382,10 +404,6 @@ MyMainFrame::MyMainFrame() :
 
    auto* HorizontalLine1 = new wxStaticLine(panel, wxID_ANY, wxPoint(10, 60), wxSize(950, 1));
    auto* HorizontalLine2 = new wxStaticLine(panel, wxID_ANY, wxPoint(10, 480), wxSize(950, 1));
-
-   //PNG Handler:
-   auto *handler = new wxPNGHandler;
-   wxImage::AddHandler(handler);
 
    //Hyperlinks:
    auto* HyperForum = new wxHyperlinkCtrl(panel, wxID_ANY, wxT("Forum"), wxT("https://forum.beammp.com"), wxPoint(10, 10));
@@ -432,13 +450,15 @@ MyMainFrame::MyMainFrame() :
 
    auto* HorizontalLine3 = new wxStaticLine(panel, wxID_ANY, wxPoint(10, 550), wxSize(950, 1));
 
-   //Account:
-   auto* bitmap = new wxBitmapButton(panel, 1, wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(45,45, wxIMAGE_QUALITY_HIGH)), wxPoint(20, 560), wxSize(45,45));
+   wxInitAllImageHandlers();
 
-   if (UIData::LoginAuth && fs::exists( "icons/" + UIData::Username + ".png"))
-      bitmap->SetBitmap(wxBitmapBundle(wxImage( "icons/" + UIData::Username + ".png", wxBitmapType (wxBITMAP_TYPE_PNG | wxBITMAP_TYPE_JPEG)).Scale(45, 45, wxIMAGE_QUALITY_HIGH)));
+   //Account:
+   BitAccount = new wxBitmapButton(panel, 1, wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(45,45, wxIMAGE_QUALITY_HIGH)), wxPoint(20, 560), wxSize(45,45));
+   std::string PictureString = GetPictureName();
+   if (UIData::LoginAuth && fs::exists( PictureString))
+      BitAccount->SetBitmap(wxBitmapBundle(wxImage( PictureString).Scale(45, 45, wxIMAGE_QUALITY_HIGH)));
    else
-      bitmap->SetBitmap(wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(45,45, wxIMAGE_QUALITY_HIGH)));
+      BitAccount->SetBitmap(wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(45,45, wxIMAGE_QUALITY_HIGH)));
 
    //Buttons:
    auto btnSettings = new wxButton(panel, 2, wxT("Settings"), wxPoint(730,570), wxSize(110, 25));
@@ -492,10 +512,10 @@ MyAccountFrame::MyAccountFrame() : wxFrame(nullptr, wxID_ANY, "Account Manager",
    wxStaticBitmap *image;
    image = new wxStaticBitmap( this, wxID_ANY, wxBitmapBundle(wxImage("icons/BeamMP_black.png", wxBITMAP_TYPE_PNG).Scale(120,120, wxIMAGE_QUALITY_HIGH)), wxPoint(180,20), wxSize(120, 120));
    auto* panel = new wxPanel(this, wxID_ANY, wxPoint(), wxSize(500,650));
-
+   std::string PictureString = GetPictureName();
    if (UIData::LoginAuth) {
-      if (fs::exists( "icons/" + UIData::Username + ".png"))
-         image->SetBitmap(wxBitmapBundle(wxImage( "icons/" + UIData::Username + ".png", wxBITMAP_TYPE_PNG).Scale(120, 120, wxIMAGE_QUALITY_HIGH)));
+      if (fs::exists( PictureString))
+         image->SetBitmap(wxBitmapBundle(wxImage( PictureString).Scale(120, 120, wxIMAGE_QUALITY_HIGH)));
       else
          image->SetBitmap(wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(120,120, wxIMAGE_QUALITY_HIGH)));
 
@@ -680,23 +700,28 @@ void MyAccountFrame::OnClickRegister(wxCommandEvent& event WXUNUSED(event)) {
 
 /////////// OnClick Login Event ///////////
 void MyAccountFrame::OnClickLogin(wxCommandEvent& event WXUNUSED(event)) {
-
    Json json;
    json ["password"] = ctrlPassword->GetValue().utf8_string();
    json ["username"] = ctrlUsername->GetValue().utf8_string();
 
    if (Login(json.dump())) {
-      HTTP::Download("https://forum.beammp.com/user_avatar/forum.beammp.com/" + UIData::Username + "/240/4411_2.png", "icons/" + UIData::Username + ".png");
+      std::string picture = HTTP::Get("https://forum.beammp.com/user_avatar/forum.beammp.com/" + UIData::Username + "/240/4411_2.png");
+      std::ofstream File("icons/" + UIData::Username + PictureType(picture), std::ios::binary);
+      if (File.is_open()) {
+         File << picture;
+         File.close();
+         MyMainFrame::MainFrameInstance->BitAccount->SetBitmap(wxBitmapBundle(wxImage(GetPictureName()).Scale(45, 45, wxIMAGE_QUALITY_HIGH)));
+      }
       MyMainFrame::AccountFrame->Destroy();
       MyMainFrame::MainFrameInstance->OnClickAccount(event);
    }
-
 }
 
 /////////// OnClick Logout Event ///////////
 void MyAccountFrame::OnClickLogout(wxCommandEvent& event WXUNUSED(event)) {
    Login("LO");
    MyMainFrame::AccountFrame->Destroy();
+   MyMainFrame::MainFrameInstance->BitAccount->SetBitmap(wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(45, 45, wxIMAGE_QUALITY_HIGH)));
    MyMainFrame::MainFrameInstance->OnClickAccount(event);
 }
 

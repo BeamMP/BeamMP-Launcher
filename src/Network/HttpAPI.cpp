@@ -28,7 +28,6 @@ std::string HTTP::Get(const std::string& IP) {
    std::string Ret;
 
    if (res.error() == httplib::Error::Success) {
-      LOG(INFO) << res->status;
       if (res->status == 200) {
          Ret = res->body;
       } else LOG(ERROR) << res->reason;
