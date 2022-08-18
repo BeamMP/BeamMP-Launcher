@@ -308,6 +308,11 @@ void WindowsConsole (bool isChecked);
 
 /////////// OnInit Function ///////////
 bool MyApp::OnInit() {
+
+   if(!fs::exists("icons")) {
+      fs::create_directory("icons");
+   }
+
    Log::Init();
    LoadConfig();
    CheckKey();
