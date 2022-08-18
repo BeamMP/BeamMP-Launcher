@@ -28,7 +28,6 @@ Launcher::Launcher() :
    Exit.store(false);
    Launcher::StaticAbort(this);
    DiscordTime = std::time(nullptr);
-   Log::Init();
    WindowsInit();
    SetUnhandledExceptionFilter(CrashHandler);
    LOG(INFO) << "Starting Launcher V" << FullVersion;
@@ -176,7 +175,7 @@ void Launcher::SendIPC(const std::string& Data, bool core) {
    }
 }
 
-std::string QueryValue(HKEY& hKey, const char* Name) {
+std::string Launcher::QueryValue(HKEY& hKey, const char* Name) {
    DWORD keySize;
    BYTE buffer[16384];
    if (RegQueryValueExA(hKey, Name, nullptr, nullptr, buffer, &keySize) ==

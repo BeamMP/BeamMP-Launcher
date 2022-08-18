@@ -15,32 +15,31 @@
 #include <wx/wxhtml.h.>
 #include <wx/filepicker.h>
 #include <tomlplusplus/toml.hpp>
+#include <comutil.h>
+#include <ShlObj.h>
+#include <fstream>
+#include "Json.h"
 #include "Launcher.h"
 #include "Logger.h"
+#include "HttpAPI.h"
 #include <thread>
 #endif
+
+/*/////////// TestFrame class ///////////
+class MyTestFrame : public wxFrame {
+   public:
+   MyTestFrame();
+
+   private:
+   // Here you put the frame functions:
+   bool DarkMode = wxSystemSettings::GetAppearance().IsDark();
+};*/
 
 /////////// Inherit App class ///////////
 class MyApp : public wxApp {
    public:
    bool OnInit() override;
-};
-
-/////////// MainFrame class ///////////
-class MyMainFrame : public wxFrame {
-   public:
-   MyMainFrame();
-
-   private:
-   // Here you put the frame functions:
-   wxStaticText* txtStatusResult;
-   wxButton* btnLaunch;
-   bool DarkMode = wxSystemSettings::GetAppearance().IsDark();
-   void OnClickAccount(wxCommandEvent& event);
-   void OnClickSettings(wxCommandEvent& event);
-   void OnClickLaunch(wxCommandEvent& event);
-   void OnClickLogo(wxCommandEvent& event);
-   wxDECLARE_EVENT_TABLE();
+   //static inline MyTestFrame* TestFrame;
 };
 
 /////////// AccountFrame class ///////////
@@ -49,11 +48,35 @@ class MyAccountFrame : public wxFrame {
    MyAccountFrame();
 
    private:
-   // Here you put the frame functions:
-
+   static inline wxTextCtrl* ctrlUsername, *ctrlPassword;
    bool DarkMode = wxSystemSettings::GetAppearance().IsDark();
    void OnClickRegister(wxCommandEvent& event);
    void OnClickLogout(wxCommandEvent& event);
+   void OnClickLogin(wxCommandEvent& event);
+   wxDECLARE_EVENT_TABLE();
+};
+
+/////////// MainFrame class ///////////
+class MyMainFrame : public wxFrame {
+   public:
+   MyMainFrame();
+   static void GameVersionLabel();
+   static inline MyAccountFrame* AccountFrame;
+   static inline MyMainFrame* MainFrameInstance;
+   wxBitmapButton* BitAccount;
+   void OnClickAccount(wxCommandEvent& event);
+
+   private:
+   wxStaticText* txtStatusResult;
+   static inline wxStaticText* txtGameVersion, *txtPlayers, *txtModVersion, *txtServers;
+   wxButton* btnLaunch;
+
+   bool DarkMode = wxSystemSettings::GetAppearance().IsDark();
+   void GetStats();
+
+   void OnClickSettings(wxCommandEvent& event);
+   void OnClickLaunch(wxCommandEvent& event);
+   void OnClickLogo(wxCommandEvent& event);
    wxDECLARE_EVENT_TABLE();
 };
 
@@ -61,56 +84,238 @@ class MyAccountFrame : public wxFrame {
 class MySettingsFrame : public wxFrame {
    public:
    MySettingsFrame();
-   void LoadConfig();
+   void UpdateInfo();
+   void UpdateGameDirectory(const std::string& path);
+   void UpdateProfileDirectory(const std::string& path);
+   void UpdateCacheDirectory(const std::string& path);
+
 
    private:
-   // Here you put the frame functions:
-   wxDirPickerCtrl* ctrlGameDirectory, *ctrlProfileDirectory, *ctrlCacheDirectory;
    wxCheckBox* checkConsole;
+   wxDirPickerCtrl* ctrlGameDirectory, *ctrlProfileDirectory, *ctrlCacheDirectory;
    wxChoice* choiceController;
+
    bool DarkMode = wxSystemSettings::GetAppearance().IsDark();
+
    void OnClickConsole(wxCommandEvent& event);
    void OnChangedGameDir (wxFileDirPickerEvent& event);
+   void OnChangedProfileDir (wxFileDirPickerEvent& event);
+   void OnChangedCacheDir (wxFileDirPickerEvent& event);
    void OnChangedBuild (wxCommandEvent& event);
+   void OnAutoDetectGame(wxCommandEvent& event);
+   void OnAutoDetectProfile(wxCommandEvent& event);
+   void OnResetCache(wxCommandEvent& event);
    wxDECLARE_EVENT_TABLE();
 };
 
-/////////// TestFrame class ///////////
-class MyTestFrame : public wxFrame {
-   public:
-   MyTestFrame();
-
-   private:
-   // Here you put the frame functions:
-   bool DarkMode = wxSystemSettings::GetAppearance().IsDark();
-};
-
-enum { ID_Hello = 1 };
-
-/////////// MainFrame Event Table ///////////
+/////////// Event Tables ///////////
+//MainFrame (ID range 1 to 99):
 wxBEGIN_EVENT_TABLE(MyMainFrame, wxFrame)
-   EVT_BUTTON(39, MyMainFrame::OnClickAccount)
-   EVT_BUTTON(40, MyMainFrame::OnClickSettings)
-   EVT_BUTTON(41, MyMainFrame::OnClickLaunch)
-   EVT_BUTTON(42, MyMainFrame::OnClickLogo)
-wxEND_EVENT_TABLE()
+    EVT_BUTTON(1, MyMainFrame::OnClickAccount)
+        EVT_BUTTON(2, MyMainFrame::OnClickSettings)
+            EVT_BUTTON(3, MyMainFrame::OnClickLaunch)
+                EVT_BUTTON(4, MyMainFrame::OnClickLogo)
+                    wxEND_EVENT_TABLE()
 
-/////////// AccountFrame Event Table ///////////
-wxBEGIN_EVENT_TABLE(MyAccountFrame, wxFrame)
-   EVT_BUTTON(43, MyAccountFrame::OnClickRegister)
-   EVT_BUTTON(44, MyAccountFrame::OnClickLogout)
-wxEND_EVENT_TABLE()
+    //AccountFrame (ID range 100 to 199):
+    wxBEGIN_EVENT_TABLE(MyAccountFrame, wxFrame)
+        EVT_BUTTON(100, MyAccountFrame::OnClickLogout)
+            EVT_BUTTON(101, MyAccountFrame::OnClickRegister)
+                EVT_BUTTON(102, MyAccountFrame::OnClickLogin)
+                    wxEND_EVENT_TABLE()
 
-    /////////// SettingsFrame Event Table ///////////
-wxBEGIN_EVENT_TABLE(MySettingsFrame, wxFrame)
-        EVT_CHECKBOX(45, MySettingsFrame::OnClickConsole)
-        EVT_DIRPICKER_CHANGED(46, MySettingsFrame::OnChangedGameDir)
-        EVT_CHOICE(47, MySettingsFrame::OnChangedBuild)
-wxEND_EVENT_TABLE()
+    //SettingsFrame (ID range 200 to 299):
+    wxBEGIN_EVENT_TABLE(MySettingsFrame, wxFrame)
+        EVT_DIRPICKER_CHANGED(200, MySettingsFrame::OnChangedGameDir)
+            EVT_DIRPICKER_CHANGED(201, MySettingsFrame::OnChangedProfileDir)
+                EVT_DIRPICKER_CHANGED(202, MySettingsFrame::OnChangedCacheDir)
+                    EVT_BUTTON(203, MySettingsFrame::OnAutoDetectGame)
+                        EVT_BUTTON(204, MySettingsFrame::OnAutoDetectProfile)
+                            EVT_BUTTON(205, MySettingsFrame::OnResetCache)
+                                EVT_CHOICE(206, MySettingsFrame::OnChangedBuild)
+                                    EVT_CHECKBOX(207, MySettingsFrame::OnClickConsole)
+                                        wxEND_EVENT_TABLE()
 
-/////////// OnInit function to show frame ///////////
+    /////////// Get Stats Function ///////////
+    void MyMainFrame::GetStats () {
+   std::string results = HTTP::Get("https://backend.beammp.com/stats_raw");
+
+   nlohmann::json jf = nlohmann::json::parse(results, nullptr, false);
+   if (!jf.is_discarded() && !jf.empty()) {
+      txtPlayers->SetLabel(to_string(jf["Players"]));
+      txtServers->SetLabel(to_string(jf["PublicServers"]));
+
+      if (jf["Players"].get<int>() < 559)
+         txtPlayers->SetForegroundColour("green");
+      else
+         txtPlayers->SetForegroundColour(wxColour(255,173,0));
+
+      if (jf["PublicServers"].get<int>() > 679)
+         txtServers->SetForegroundColour("green");
+      else
+         txtServers->SetForegroundColour(wxColour(255,173,0));
+
+   } else {
+      txtPlayers->SetLabel("NA");
+      txtPlayers->SetForegroundColour("red");
+      txtServers->SetLabel("NA");
+      txtServers->SetForegroundColour("red");
+   }
+}
+
+/////////// Update Info Function ///////////
+void MySettingsFrame::UpdateInfo() {
+   ctrlGameDirectory->SetPath(UIData::GamePath);
+   ctrlProfileDirectory->SetPath(UIData::ProfilePath);
+   ctrlCacheDirectory->SetPath(UIData::CachePath);
+   checkConsole->SetValue(UIData::Console);
+   choiceController->SetStringSelection(UIData::Build);
+}
+
+/////////// Update Game Directory Function ///////////
+void MySettingsFrame::UpdateGameDirectory(const std::string& path) {
+   ctrlGameDirectory->SetPath(path);
+   UIData::GamePath = path;
+   MyMainFrame::GameVersionLabel();
+}
+
+/////////// Update Profile Directory Function ///////////
+void MySettingsFrame::UpdateProfileDirectory(const std::string& path) {
+   ctrlProfileDirectory->SetPath(path);
+   UIData::ProfilePath = path;
+}
+
+/////////// Update Cache Directory Function ///////////
+void MySettingsFrame::UpdateCacheDirectory(const std::string& path) {
+   ctrlCacheDirectory->SetPath(path);
+   UIData::CachePath = path;
+}
+
+/////////// Load Config Function ///////////
+void LoadConfig() {
+   if (fs::exists("Launcher.toml")) {
+      toml::parse_result config = toml::parse_file("Launcher.toml");
+      auto ui                   = config["UI"];
+      auto Build                = config["Build"];
+      auto GamePath             = config["GamePath"];
+      auto ProfilePath          = config["ProfilePath"];
+      auto CachePath            = config["CachePath"];
+      auto Console              = config["Console"];
+
+      if (GamePath.is_string()) {
+         UIData::GamePath = GamePath.as_string()->get();
+      } else wxMessageBox("Game path not found!", "Error");
+
+      if (ProfilePath.is_string()) {
+         UIData::ProfilePath = ProfilePath.as_string()->get();
+      } else wxMessageBox("Profile path not found!", "Error");
+
+      if (CachePath.is_string()) {
+         UIData::CachePath = CachePath.as_string()->get();
+      } else wxMessageBox("Cache path not found!", "Error");
+
+      if (Console.is_boolean()) {
+         UIData::Console = Console.as_boolean()->get();
+      } else wxMessageBox("Unable to retrieve console state!", "Error");
+
+      if (Build.is_string()) {
+         UIData::Build = Build.as_string()->get();
+      } else wxMessageBox("Unable to retrieve build state!", "Error");
+
+   } else {
+      std::ofstream tml("Launcher.toml");
+      if (tml.is_open()) {
+         tml << "UI = true\n"
+                "Build = 'Default'\n"
+                "GamePath = 'C:\\Program Files'\n"
+                "ProfilePath = 'C:\\Program Files'\n"
+                "CachePath = 'Resources'\n"
+                "Console = false";
+         tml.close();
+         LoadConfig();
+      } else wxMessageBox("Failed to create config file", "Error");
+   }
+}
+
+/////////// Login Function ///////////
+bool Login(const std::string& fields) {
+   if (fields == "LO") {
+      UIData::LoginAuth = false;
+      UpdateKey("");
+      return false;
+   }
+   std::string Buffer = HTTP::Post("https://auth.beammp.com/userlogin", fields);
+   Json d             = Json::parse(Buffer, nullptr, false);
+
+   if (Buffer == "-1") {
+      wxMessageBox("Failed to communicate with the auth system!", "Error");
+      return false;
+   }
+
+   if (Buffer.at(0) != '{' || d.is_discarded()) {
+      wxMessageBox(
+          "Invalid answer from authentication servers, please try again later!",
+          "Error");
+      return false;
+   }
+
+   if (!d["success"].is_null() && d["success"].get<bool>()) {
+      UIData::LoginAuth = true;
+      if (!d["private_key"].is_null()) {
+         UpdateKey(d["private_key"].get<std::string>());
+      }
+      if (!d["public_key"].is_null()) {
+         UIData::PublicKey = d["public_key"].get<std::string>();
+      }
+      if (!d["username"].is_null()) {
+         UIData::Username = d["username"].get<std::string>();
+      }
+      return true;
+   } else if (!d["message"].is_null()) wxMessageBox(d["message"].get<std::string>(), "Error");
+   return false;
+}
+
+/////////// Check Key Function ///////////
+void CheckKey() {
+   if (fs::exists("key") && fs::file_size("key") < 100) {
+      std::ifstream Key("key");
+      if (Key.is_open()) {
+         auto Size = fs::file_size("key");
+         std::string Buffer(Size, 0);
+         Key.read(&Buffer[0], std::streamsize(Size));
+         Key.close();
+
+         Buffer = HTTP::Post("https://auth.beammp.com/userlogin",
+                             R"({"pk":")" + Buffer + "\"}");
+
+         Json d = Json::parse(Buffer, nullptr, false);
+         if (Buffer == "-1" || Buffer.at(0) != '{' || d.is_discarded()) {
+            wxMessageBox( "Couldn't connect to auth server, you might be offline!", "Warning", wxICON_WARNING);
+            return;
+         }
+         if (d["success"].get<bool>()) {
+            UIData::LoginAuth = true;
+            UpdateKey(d["private_key"].get<std::string>());
+            UIData::PublicKey = d["public_key"].get<std::string>();
+            UIData::UserRole  = d["role"].get<std::string>();
+            UIData::Username = d["username"].get<std::string>();
+         } else UpdateKey("");
+      } else UpdateKey("");
+   } else UpdateKey("");
+}
+
+void WindowsConsole (bool isChecked);
+
+/////////// OnInit Function ///////////
 bool MyApp::OnInit() {
+   Log::Init();
+   LoadConfig();
+   CheckKey();
+
+   WindowsConsole(UIData::Console);
+
    auto* MainFrame = new MyMainFrame();
+   MyMainFrame::MainFrameInstance = MainFrame;
    MainFrame->SetIcon(wxIcon("icons/BeamMP_black.png",wxBITMAP_TYPE_PNG));
 
    // Set MainFrame properties:
@@ -129,7 +334,8 @@ bool MyApp::OnInit() {
    MainFrame->Show(true);
 
    //Test Frame Properties:
-/*   auto* TestFrame = new MyTestFrame();
+   /*TestFrame = new MyTestFrame();
+
    TestFrame->SetIcon(wxIcon("icons/BeamMP_black.png",wxBITMAP_TYPE_PNG));
    TestFrame->SetSize(1000, 650);
    TestFrame->Center();
@@ -142,52 +348,9 @@ bool MyApp::OnInit() {
    else {
       TestFrame->SetBackgroundColour(wxColour("white"));
       TestFrame->SetForegroundColour(wxColour("white"));
-   }
-   TestFrame->Show(true);*/
+   }*/
 
    return true;
-}
-
-bool isSignedIn () {
-   return false;
-}
-
-
-/////////// Load Config function ///////////
-void MySettingsFrame:: LoadConfig() {
-   if (fs::exists("Launcher.toml")) {
-      toml::parse_result config = toml::parse_file("Launcher.toml");
-      auto ui                   = config["UI"];
-      auto build                = config["Build"];
-      auto GamePath             = config["GamePath"];
-      auto ProfilePath          = config["ProfilePath"];
-      auto CachePath            = config["CachePath"];
-
-      if (GamePath.is_string()) {
-         ctrlGameDirectory->SetPath(GamePath.as_string()->get());
-      } else wxMessageBox("Game path not found!", "Error");
-
-      if (ProfilePath.is_string()) {
-         ctrlProfileDirectory->SetPath(ProfilePath.as_string()->get());
-      } else wxMessageBox("Profile path not found!", "Error");
-
-      if (CachePath.is_string()) {
-         ctrlCacheDirectory->SetPath(CachePath.as_string()->get());
-      } else wxMessageBox("Cache path not found!", "Error");
-
-   } else {
-      std::ofstream tml("Launcher.toml");
-      if (tml.is_open()) {
-         tml << "UI = true\n"
-                "Build = 'Default'\n"
-                "GamePath = 'C:\\Program Files'\n"
-                "ProfilePath = 'C:\\Program Files'\n"
-                "CachePath = 'Resources'\n"
-                "Console = false";
-         tml.close();
-         LoadConfig();
-      } else wxMessageBox("Failed to create config file", "Error");
-   }
 }
 
 /////////// Windows Console Function ///////////
@@ -208,7 +371,7 @@ void WindowsConsole (bool isChecked) {
       ::fclose(stderr);
       ::fclose(stdin);
    }
-   // Clear the error state for all of the C++ standard streams. Attempting to accessing the streams before they refer
+   // Clear the error state for all the C++ standard streams. Attempting to accessing the streams before they refer
    // to a valid target causes the stream to enter an error state. Clearing the error state will fix this problem,
    // which seems to occur in newer version of Visual Studio even when the console has not been read from or written
    // to yet.
@@ -220,17 +383,50 @@ void WindowsConsole (bool isChecked) {
    std::wcin.clear();
 }
 
+/////////// Read json Function ///////////
+std::string jsonRead () {
+   fs::path path = fs::path (UIData::GamePath).append("integrity.json");
+   if (fs::exists(path)) {
+      std::ifstream ifs(path);
+      nlohmann::json jf = nlohmann::json::parse(ifs, nullptr, false);
+      if (!jf.is_discarded() && !jf.empty()) return jf["version"];
+   }
+   else wxMessageBox("Couldn't read game version, check game path in settings", "Error");
+   return "";
+}
+
+/////////// Picture Type Function ///////////
+// JPG 0 / PNG 1
+std::string PictureType (const std::string& picture) {
+   for (int i = 0; i < 15; i++) {
+      if(picture[i] == 'J')
+         return ".jpg";
+      else if (picture[i] == 'P' && picture[i+1] == 'N')
+         return ".png";
+   }
+   return "";
+}
+
+/////////// Get Picture Name Function ///////////
+std::string GetPictureName () {
+   for (const auto& entry : fs::recursive_directory_iterator("icons")) {
+      if (entry.path().filename().string().find(UIData::Username) != std::string::npos) {
+         return entry.path().string();
+      }
+   }
+}
+
 /////////// TestFrame Function ///////////
 /*MyTestFrame::MyTestFrame() :
     wxFrame(nullptr, wxID_ANY, "BeamMP Launcher V3", wxDefaultPosition,wxDefaultSize,
             wxMINIMIZE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLOSE_BOX) {
 
-   auto* file = new wxFileDialog (this, wxT("Test"), wxT(""),wxT(""));
-   file->SetPosition(wxPoint(250,250));
-   file->SetForegroundColour("white");
+auto* file = new wxFileDialog (this, wxT("Test"), wxT(""),wxT(""));
+file->SetPosition(wxPoint(250,250));
+file->SetForegroundColour("white");
 }*/
 
-/////////// MainFrame Function ///////////
+/////////// Main Frame Content ///////////
 MyMainFrame::MyMainFrame() :
     wxFrame(nullptr, wxID_ANY, "BeamMP Launcher V3", wxDefaultPosition,wxDefaultSize,
             wxMINIMIZE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLOSE_BOX) {
@@ -243,10 +439,6 @@ MyMainFrame::MyMainFrame() :
 
    auto* HorizontalLine1 = new wxStaticLine(panel, wxID_ANY, wxPoint(10, 60), wxSize(950, 1));
    auto* HorizontalLine2 = new wxStaticLine(panel, wxID_ANY, wxPoint(10, 480), wxSize(950, 1));
-
-   //PNG Handler:
-   auto *handler = new wxPNGHandler;
-   wxImage::AddHandler(handler);
 
    //Hyperlinks:
    auto* HyperForum = new wxHyperlinkCtrl(panel, wxID_ANY, wxT("Forum"), wxT("https://forum.beammp.com"), wxPoint(10, 10));
@@ -274,30 +466,43 @@ MyMainFrame::MyMainFrame() :
    }
 
    //Information:
-   auto* txtGameVersion = new wxStaticText(panel, wxID_ANY, wxT("Game Version: NA"), wxPoint(160, 490));
-   auto* txtPlayers = new wxStaticText(panel, wxID_ANY, wxT("Currently Playing: NA"), wxPoint(300, 490));
+   auto* txtGameVersionTitle = new wxStaticText(panel, wxID_ANY, wxT("Game Version: "), wxPoint(160, 490));
+   txtGameVersion = new wxStaticText(panel, wxID_ANY, "NA", wxPoint(240, 490));
+
+   auto* txtPlayersTitle = new wxStaticText(panel, wxID_ANY, wxT("Currently Playing:"), wxPoint(300, 490));
+   txtPlayers = new wxStaticText(panel, wxID_ANY, wxT("NA"), wxPoint(400, 490));
+
    auto* txtPatreon = new wxStaticText(panel, wxID_ANY, wxT("Special thanks to our Patreon Members!"), wxPoint(570, 490));
 
-   auto* txtModVersion = new wxStaticText(panel, wxID_ANY, wxT("Mod Version: NA"), wxPoint(160, 520));
-   auto* txtServers = new wxStaticText(panel, wxID_ANY, wxT("Available Servers: NA"), wxPoint(300, 520));
+   auto* txtModVersionTitle = new wxStaticText(panel, wxID_ANY, wxT("Mod Version:"), wxPoint(160, 520));
+   txtModVersion = new wxStaticText(panel, wxID_ANY, wxT("NA"), wxPoint(235, 520));
+
+   auto* txtServersTitle = new wxStaticText(panel, wxID_ANY, wxT("Available Servers:"), wxPoint(300, 520));
+   txtServers = new wxStaticText(panel, wxID_ANY, wxT("NA"), wxPoint(395, 520));
+
    auto* txtStatus = new wxStaticText(panel, wxID_ANY, wxT("Status: "), wxPoint(880, 520));
    txtStatusResult = new wxStaticText(panel, wxID_ANY, wxT("Online"), wxPoint(920, 520));
 
    auto* HorizontalLine3 = new wxStaticLine(panel, wxID_ANY, wxPoint(10, 550), wxSize(950, 1));
 
-   //Account:
-   auto* bitmap = new wxBitmapButton(panel, 39, wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(45,45, wxIMAGE_QUALITY_HIGH)), wxPoint(20, 560), wxSize(45,45));
+   wxInitAllImageHandlers();
 
-   if (isSignedIn())
-   bitmap->SetBitmap(wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(45,45, wxIMAGE_QUALITY_HIGH)));
+   //Account:
+   BitAccount = new wxBitmapButton(panel, 1, wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(45,45, wxIMAGE_QUALITY_HIGH)), wxPoint(20, 560), wxSize(45,45));
+   std::string PictureString = GetPictureName();
+   if (UIData::LoginAuth && fs::exists( PictureString))
+      BitAccount->SetBitmap(wxBitmapBundle(wxImage( PictureString).Scale(45, 45, wxIMAGE_QUALITY_HIGH)));
    else
-   bitmap->SetBitmap(wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(45,45, wxIMAGE_QUALITY_HIGH)));
+      BitAccount->SetBitmap(wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(45,45, wxIMAGE_QUALITY_HIGH)));
 
    //Buttons:
-   auto btnSettings = new wxButton(panel, 40, wxT("Settings"), wxPoint(730,570), wxSize(110, 25));
-   btnLaunch = new wxButton(panel, 41, wxT("Launch"), wxPoint(850,570), wxSize(110, 25));
+   auto btnSettings = new wxButton(panel, 2, wxT("Settings"), wxPoint(730,570), wxSize(110, 25));
+   btnLaunch = new wxButton(panel, 3, wxT("Launch"), wxPoint(850,570), wxSize(110, 25));
+
+   GetStats();
 
    //UI Colors:
+   GameVersionLabel();
    if (DarkMode) {
       //Text Separators:
       txtSeparator1->SetForegroundColour("white");
@@ -308,10 +513,11 @@ MyMainFrame::MyMainFrame() :
       //Texts:
       txtNews->SetForegroundColour("white");
       txtUpdate->SetForegroundColour("white");
-      txtGameVersion->SetForegroundColour("white");
-      txtPlayers->SetForegroundColour("white");
+      txtGameVersionTitle->SetForegroundColour("white");
+      txtPlayersTitle->SetForegroundColour("white");
+      txtModVersionTitle->SetForegroundColour("white");
       txtModVersion->SetForegroundColour("white");
-      txtServers->SetForegroundColour("white");
+      txtServersTitle->SetForegroundColour("white");
       txtPatreon->SetForegroundColour("white");
       txtStatus->SetForegroundColour("white");
 
@@ -321,12 +527,12 @@ MyMainFrame::MyMainFrame() :
       HorizontalLine3->SetForegroundColour("white");
 
       //Logo:
-      auto* logo = new wxBitmapButton(panel, 42, wxBitmapBundle(wxImage("icons/BeamMP_white.png", wxBITMAP_TYPE_PNG).Scale(100,100, wxIMAGE_QUALITY_HIGH)), wxPoint(850, -15), wxSize(100,100), wxBORDER_NONE);
+      auto* logo = new wxBitmapButton(panel, 4, wxBitmapBundle(wxImage("icons/BeamMP_white.png", wxBITMAP_TYPE_PNG).Scale(100,100, wxIMAGE_QUALITY_HIGH)), wxPoint(850, -15), wxSize(100,100), wxBORDER_NONE);
       logo->SetBackgroundColour(wxColour(40, 40, 40));
    }
    else {
       //Logo:
-      auto* logo = new wxBitmapButton(panel, 42, wxBitmapBundle(wxImage("icons/BeamMP_black.png", wxBITMAP_TYPE_PNG).Scale(100,100, wxIMAGE_QUALITY_HIGH)), wxPoint(850, -15), wxSize(100,100), wxBORDER_NONE);
+      auto* logo = new wxBitmapButton(panel, 4, wxBitmapBundle(wxImage("icons/BeamMP_black.png", wxBITMAP_TYPE_PNG).Scale(100,100, wxIMAGE_QUALITY_HIGH)), wxPoint(850, -15), wxSize(100,100), wxBORDER_NONE);
       logo->SetBackgroundColour("white");
    }
    txtStatusResult->SetForegroundColour("green");
@@ -340,34 +546,35 @@ MyAccountFrame::MyAccountFrame() : wxFrame(nullptr, wxID_ANY, "Account Manager",
    wxImage::AddHandler(handler);
    wxStaticBitmap *image;
    image = new wxStaticBitmap( this, wxID_ANY, wxBitmapBundle(wxImage("icons/BeamMP_black.png", wxBITMAP_TYPE_PNG).Scale(120,120, wxIMAGE_QUALITY_HIGH)), wxPoint(180,20), wxSize(120, 120));
+   auto* panel = new wxPanel(this, wxID_ANY, wxPoint(), wxSize(500,650));
+   std::string PictureString = GetPictureName();
+   if (UIData::LoginAuth) {
+      if (fs::exists( PictureString))
+         image->SetBitmap(wxBitmapBundle(wxImage( PictureString).Scale(120, 120, wxIMAGE_QUALITY_HIGH)));
+      else
+         image->SetBitmap(wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(120,120, wxIMAGE_QUALITY_HIGH)));
 
-   if (isSignedIn()) {
-      image->SetBitmap(wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(120,120, wxIMAGE_QUALITY_HIGH)));
-
-      auto* txtName = new wxStaticText(this, wxID_ANY, wxT("Username: BeamMP"), wxPoint(180, 200));
-      auto* txtEmail = new wxStaticText(this, wxID_ANY, wxT("Email: beamMP@gmail.com"), wxPoint(180, 250));
-      auto btnLogout = new wxButton(this, 44, wxT("Logout"), wxPoint(185,550), wxSize(110, 25));
+      auto* txtName = new wxStaticText(panel, wxID_ANY, wxT("Username: " + UIData::Username), wxPoint(180, 200));
+      auto btnLogout = new wxButton(panel, 100, wxT("Logout"), wxPoint(185,550), wxSize(110, 25));
 
       //UI Colors:
       if (DarkMode) {
          //Text:
          txtName->SetForegroundColour("white");
-         txtEmail->SetForegroundColour("white");
       }
    }
    else {
-      auto* panel = new wxPanel(this, wxID_ANY, wxPoint(), wxSize(500,650));
       image->SetBitmap(wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(120,120, wxIMAGE_QUALITY_HIGH)));
 
       auto* txtLogin = new wxStaticText(panel, wxID_ANY, wxT("Login with your BeamMP account."), wxPoint(150, 200));
 
-      auto* ctrlUsername = new wxTextCtrl (panel, wxID_ANY, wxT(""), wxPoint(131, 230), wxSize(220,25));
-      auto* ctrlPassword = new wxTextCtrl (panel, wxID_ANY, wxT(""), wxPoint(131, 300), wxSize(220,25), wxTE_PASSWORD);
+      ctrlUsername = new wxTextCtrl (panel, wxID_ANY, wxT(""), wxPoint(131, 230), wxSize(220,25));
+      ctrlPassword = new wxTextCtrl (panel, wxID_ANY, wxT(""), wxPoint(131, 300), wxSize(220,25), wxTE_PASSWORD);
       ctrlUsername->SetHint("Username / Email");
       ctrlPassword->SetHint("Password");
 
-      auto btnLogin = new wxButton(panel, wxID_ANY, wxT("Login"), wxPoint(120,375), wxSize(110, 25));
-      auto btnRegister = new wxButton(panel, 43, wxT("Register"), wxPoint(250,375), wxSize(110, 25));
+      auto btnRegister = new wxButton(panel, 101, wxT("Register"), wxPoint(250,375), wxSize(110, 25));
+      auto btnLogin = new wxButton(panel, 102, wxT("Login"), wxPoint(120,375), wxSize(110, 25));
 
       //UI Colors:
       if (DarkMode) {
@@ -384,21 +591,20 @@ MySettingsFrame::MySettingsFrame() :
    auto* panel = new wxPanel(this, wxID_ANY, wxPoint(), wxSize(500,650));
 
    auto* txtGameDirectory = new wxStaticText(panel, wxID_ANY, wxT("Game Directory: "), wxPoint(30, 100));
-   ctrlGameDirectory = new wxDirPickerCtrl (panel, 46, wxEmptyString, wxT("Game Directory"), wxPoint(130, 100), wxSize(300,-1));
+   ctrlGameDirectory = new wxDirPickerCtrl (panel, 200, wxEmptyString, wxT("Game Directory"), wxPoint(130, 100), wxSize(300,-1));
    ctrlGameDirectory->SetLabel("GamePath");
    MySettingsFrame::SetFocus();
-   auto btnDetectGameDirectory = new wxButton(panel, 40, wxT("Detect"), wxPoint(185,140), wxSize(90, 25));
+   auto btnDetectGameDirectory = new wxButton(panel, 203, wxT("Detect"), wxPoint(185,140), wxSize(90, 25));
 
    auto* txtProfileDirectory = new wxStaticText(panel, wxID_ANY, wxT("Profile Directory: "), wxPoint(30, 200));
-   ctrlProfileDirectory = new wxDirPickerCtrl (panel, 46, wxEmptyString, wxT("Profile Directory"), wxPoint(130, 200), wxSize(300,-1));
+   ctrlProfileDirectory = new wxDirPickerCtrl (panel, 201, wxEmptyString, wxT("Profile Directory"), wxPoint(130, 200), wxSize(300,-1));
    ctrlProfileDirectory->SetLabel("ProfilePath");
-   auto btnDetectProfileDirectory = new wxButton(panel, 40, wxT("Detect"), wxPoint(185,240), wxSize(90, 25));
+   auto btnDetectProfileDirectory = new wxButton(panel, 204, wxT("Detect"), wxPoint(185,240), wxSize(90, 25));
 
    auto* txtCacheDirectory = new wxStaticText(panel, wxID_ANY, wxT("Cache Directory: "), wxPoint(30, 300));
-   ctrlCacheDirectory = new wxDirPickerCtrl (panel, 46, wxEmptyString, wxT("Cache Directory"), wxPoint(130, 300), wxSize(300,-1));
+   ctrlCacheDirectory = new wxDirPickerCtrl (panel, 202, wxEmptyString, wxT("Cache Directory"), wxPoint(130, 300), wxSize(300,-1));
    ctrlCacheDirectory->SetLabel("CachePath");
-   auto btnCacheDirectory = new wxButton(panel, 40, wxT("Detect"), wxPoint(185,340), wxSize(90, 25));
-
+   auto btnCacheDirectory = new wxButton(panel, 205, wxT("Reset"), wxPoint(185,340), wxSize(90, 25));
 
    auto* txtBuild = new wxStaticText(panel, wxID_ANY, wxT("Build: "), wxPoint(30, 400));
    wxArrayString BuildChoices;
@@ -406,10 +612,10 @@ MySettingsFrame::MySettingsFrame() :
    BuildChoices.Add("Release");
    BuildChoices.Add("EA");
    BuildChoices.Add("Dev");
-   choiceController = new wxChoice (panel, 47, wxPoint(85, 400), wxSize(120, 20), BuildChoices);
+   choiceController = new wxChoice (panel, 206, wxPoint(85, 400), wxSize(120, 20), BuildChoices);
    choiceController->Select(0);
 
-   checkConsole = new wxCheckBox (panel, 45, " Show Console", wxPoint(30, 450));
+   checkConsole = new wxCheckBox (panel, 207, " Show Console", wxPoint(30, 450));
 
    //UI Colors:
    if (DarkMode) {
@@ -427,9 +633,41 @@ MySettingsFrame::MySettingsFrame() :
    }
 }
 
+/////////// UpdateConfig Function ///////////
+template <typename ValueType>
+void UpdateConfig (const std::string& key, ValueType&& value) {
+   if (fs::exists("Launcher.toml")) {
+      toml::parse_result config = toml::parse_file("Launcher.toml");
+      config.insert_or_assign(key, value);
+
+      std::ofstream tml("Launcher.toml");
+      if (tml.is_open()) {
+         tml << config;
+         tml.close();
+      } else wxMessageBox("Failed to modify config file", "Error");
+   }
+}
+
+/////////// Game Version Label Function ///////////
+void MyMainFrame::GameVersionLabel() {
+   std::string read = jsonRead();
+   if (!read.empty()) {
+      txtGameVersion->SetLabel(read);
+      VersionParser CurrentVersion(read);
+      if (CurrentVersion > Launcher::SupportedVersion)
+         txtGameVersion->SetForegroundColour(wxColour(255,173,0));
+      else if (CurrentVersion < Launcher::SupportedVersion)
+         txtGameVersion->SetForegroundColour("red");
+      else txtGameVersion->SetForegroundColour("green");
+   } else {
+      txtGameVersion->SetLabel(wxT("NA"));
+      txtGameVersion->SetForegroundColour("red");
+   }
+}
+
 /////////// OnClick Account Event ///////////
 void MyMainFrame::OnClickAccount(wxCommandEvent& event WXUNUSED(event)) {
-   auto* AccountFrame = new MyAccountFrame();
+   AccountFrame = new MyAccountFrame();
    AccountFrame->SetSize(500, 650);
    AccountFrame->Center();
    AccountFrame->SetIcon(wxIcon("icons/BeamMP_black.png",wxBITMAP_TYPE_PNG));
@@ -442,7 +680,7 @@ void MyMainFrame::OnClickAccount(wxCommandEvent& event WXUNUSED(event)) {
       AccountFrame->SetBackgroundColour(wxColour("white"));
       AccountFrame->SetForegroundColour(wxColour("white"));
    }
-   AccountFrame->Show(true);
+   AccountFrame->Show();
 }
 
 /////////// OnClick Settings Event ///////////
@@ -460,25 +698,8 @@ void MyMainFrame::OnClickSettings(wxCommandEvent& event WXUNUSED(event)) {
       SettingsFrame->SetBackgroundColour(wxColour("white"));
       SettingsFrame->SetForegroundColour(wxColour("white"));
    }
+   SettingsFrame->UpdateInfo();
    SettingsFrame->Show(true);
-   SettingsFrame->LoadConfig();
-}
-
-/////////// OnClick Logo Event ///////////
-void MyMainFrame::OnClickLogo(wxCommandEvent& event WXUNUSED(event)) {
-   wxLaunchDefaultApplication("https://beammp.com");
-}
-
-/////////// OnClick Register Event ///////////
-void MyAccountFrame::OnClickRegister(wxCommandEvent& event WXUNUSED(event)) {
-   wxLaunchDefaultApplication("https://forum.beammp.com/signup");
-}
-
-/////////// OnClick Logout Event ///////////
-void MyAccountFrame::OnClickLogout(wxCommandEvent& event WXUNUSED(event)) {
-
-
-
 }
 
 /////////// OnClick Launch Event ///////////
@@ -502,56 +723,140 @@ void MyMainFrame::OnClickLaunch(wxCommandEvent& event WXUNUSED(event)) {
    }
 }
 
-/////////// OnClick Console Event ///////////
-void MySettingsFrame::OnClickConsole(wxCommandEvent& event) {
-      WindowsConsole(checkConsole->IsChecked());
-      bool status = event.IsChecked();
-
-      if (fs::exists("Launcher.toml")) {
-         toml::parse_result config = toml::parse_file("Launcher.toml");
-         config.insert_or_assign("Console", status);
-
-         std::ofstream tml("Launcher.toml");
-         if (tml.is_open()) {
-            tml << config;
-            tml.close();
-         } else wxMessageBox("Failed to modify config file", "Error");
-      }
+/////////// OnClick Logo Event ///////////
+void MyMainFrame::OnClickLogo(wxCommandEvent& event WXUNUSED(event)) {
+   wxLaunchDefaultApplication("https://beammp.com");
 }
 
+/////////// OnClick Register Event ///////////
+void MyAccountFrame::OnClickRegister(wxCommandEvent& event WXUNUSED(event)) {
+   wxLaunchDefaultApplication("https://forum.beammp.com/signup");
+}
+
+/////////// OnClick Login Event ///////////
+void MyAccountFrame::OnClickLogin(wxCommandEvent& event WXUNUSED(event)) {
+   Json json;
+   json ["password"] = ctrlPassword->GetValue().utf8_string();
+   json ["username"] = ctrlUsername->GetValue().utf8_string();
+
+   if (Login(json.dump())) {
+      std::string picture = HTTP::Get("https://forum.beammp.com/user_avatar/forum.beammp.com/" + UIData::Username + "/240/4411_2.png");
+      std::ofstream File("icons/" + UIData::Username + PictureType(picture), std::ios::binary);
+      if (File.is_open()) {
+         File << picture;
+         File.close();
+         MyMainFrame::MainFrameInstance->BitAccount->SetBitmap(wxBitmapBundle(wxImage(GetPictureName()).Scale(45, 45, wxIMAGE_QUALITY_HIGH)));
+      }
+      MyMainFrame::AccountFrame->Destroy();
+      MyMainFrame::MainFrameInstance->OnClickAccount(event);
+   }
+}
+
+/////////// OnClick Logout Event ///////////
+void MyAccountFrame::OnClickLogout(wxCommandEvent& event WXUNUSED(event)) {
+   Login("LO");
+   MyMainFrame::AccountFrame->Destroy();
+   MyMainFrame::MainFrameInstance->BitAccount->SetBitmap(wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(45, 45, wxIMAGE_QUALITY_HIGH)));
+   MyMainFrame::MainFrameInstance->OnClickAccount(event);
+}
+
+/////////// OnClick Console Event ///////////
+void MySettingsFrame::OnClickConsole(wxCommandEvent& event) {
+   WindowsConsole(checkConsole->IsChecked());
+   bool status = event.IsChecked();
+   UpdateConfig("Console", status);
+   UIData::Console = status;
+}
 
 /////////// OnChanged Game Path Event ///////////
 void MySettingsFrame::OnChangedGameDir(wxFileDirPickerEvent& event) {
    std::string NewPath = event.GetPath().utf8_string();
-
    std::string key = reinterpret_cast<wxDirPickerCtrl*> (event.GetEventObject())->GetLabel();
+   UpdateConfig(key, NewPath);
+   UpdateGameDirectory(NewPath);
+}
 
-   if (fs::exists("Launcher.toml")) {
-      toml::parse_result config = toml::parse_file("Launcher.toml");
-      config.insert_or_assign(key, NewPath);
+/////////// OnChanged Profile Path Event ///////////
+void MySettingsFrame::OnChangedProfileDir(wxFileDirPickerEvent& event) {
+   std::string NewPath = event.GetPath().utf8_string();
+   std::string key = reinterpret_cast<wxDirPickerCtrl*> (event.GetEventObject())->GetLabel();
+   UpdateConfig(key, NewPath);
+   UpdateProfileDirectory(NewPath);
+}
 
-      std::ofstream tml("Launcher.toml");
-      if (tml.is_open()) {
-         tml << config;
-         tml.close();
-      } else wxMessageBox("Failed to modify config file", "Error");
-   }
+/////////// OnChanged Cache Path Event ///////////
+void MySettingsFrame::OnChangedCacheDir(wxFileDirPickerEvent& event) {
+   std::string NewPath = event.GetPath().utf8_string();
+   std::string key = reinterpret_cast<wxDirPickerCtrl*> (event.GetEventObject())->GetLabel();
+   UpdateConfig(key, NewPath);
+   UpdateCacheDirectory(NewPath);
 }
 
 /////////// OnChanged Build Event ///////////
 void MySettingsFrame::OnChangedBuild(wxCommandEvent& event) {
    std::string key = reinterpret_cast<wxChoice*> (event.GetEventObject())->GetString(event.GetSelection());
+   UpdateConfig("Build", key);
+   UIData::Build = key;
+}
 
-   if (fs::exists("Launcher.toml")) {
-      toml::parse_result config = toml::parse_file("Launcher.toml");
-      config.insert_or_assign("Build", key);
-
-      std::ofstream tml("Launcher.toml");
-      if (tml.is_open()) {
-         tml << config;
-         tml.close();
-      } else wxMessageBox("Failed to modify config file", "Error");
+/////////// AutoDetect Game Function ///////////
+void MySettingsFrame::OnAutoDetectGame (wxCommandEvent& event) {
+   HKEY BeamNG;
+   std::string GamePath;
+   LONG RegRes =
+       RegOpenKeyExA(HKEY_CURRENT_USER, R"(Software\BeamNG\BeamNG.drive)", 0,
+                     KEY_READ, &BeamNG);
+   if (RegRes == ERROR_SUCCESS) {
+      GamePath = Launcher::QueryValue(BeamNG, "rootpath");
+      RegCloseKey(BeamNG);
    }
+   if (!GamePath.empty()) {
+      if (GamePath.ends_with('\\')) GamePath.pop_back();
+      UpdateConfig("GamePath", GamePath);
+      UpdateGameDirectory(GamePath);
+   }
+   else
+      wxMessageBox("Please launch the game at least once, failed to read registry key Software\\BeamNG\\BeamNG.drive", "Error");
+}
+
+/////////// AutoDetect Profile Function ///////////
+void MySettingsFrame::OnAutoDetectProfile(wxCommandEvent& event){
+   HKEY BeamNG;
+   std::string ProfilePath;
+   LONG RegRes =
+       RegOpenKeyExA(HKEY_CURRENT_USER, R"(Software\BeamNG\BeamNG.drive)", 0,
+                     KEY_READ, &BeamNG);
+   if (RegRes == ERROR_SUCCESS) {
+      ProfilePath = Launcher::QueryValue(BeamNG, "userpath_override");
+      RegCloseKey(BeamNG);
+   }
+   if (ProfilePath.empty()) {
+      PWSTR folderPath = nullptr;
+      HRESULT hr =
+          SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, nullptr, &folderPath);
+
+      if (!SUCCEEDED(hr)) {
+         wxMessageBox(
+             "Please launch the game at least once, failed to read registry key Software\\BeamNG\\BeamNG.drive",
+             "Error");
+         return;
+      }
+      else {
+         _bstr_t bstrPath(folderPath);
+         std::string Path((char*)bstrPath);
+         CoTaskMemFree(folderPath);
+         ProfilePath = Path + "\\BeamNG.drive";
+      }
+   }
+   UpdateConfig("ProfilePath", ProfilePath);
+   ctrlProfileDirectory->SetPath(ProfilePath);
+}
+
+/////////// Reset Cache Function ///////////
+void MySettingsFrame::OnResetCache(wxCommandEvent& event) {
+   std::string CachePath = fs::current_path().append("Resources").string();
+   UpdateConfig("CachePath", CachePath);
+   ctrlCacheDirectory->SetPath(CachePath);
 }
 
 /////////// MAIN FUNCTION ///////////
