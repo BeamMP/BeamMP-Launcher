@@ -86,6 +86,8 @@ class MySettingsFrame : public wxFrame {
    MySettingsFrame();
    void UpdateInfo();
    void UpdateGameDirectory(const std::string& path);
+   void UpdateProfileDirectory(const std::string& path);
+   void UpdateCacheDirectory(const std::string& path);
 
    private:
    wxDirPickerCtrl* ctrlGameDirectory, *ctrlProfileDirectory, *ctrlCacheDirectory;
@@ -96,6 +98,8 @@ class MySettingsFrame : public wxFrame {
 
    void OnClickConsole(wxCommandEvent& event);
    void OnChangedGameDir (wxFileDirPickerEvent& event);
+   void OnChangedProfileDir (wxFileDirPickerEvent& event);
+   void OnChangedCacheDir (wxFileDirPickerEvent& event);
    void OnChangedBuild (wxCommandEvent& event);
    void OnAutoDetectGame(wxCommandEvent& event);
    void OnAutoDetectProfile(wxCommandEvent& event);
@@ -106,31 +110,33 @@ class MySettingsFrame : public wxFrame {
 /////////// Event Tables ///////////
 //MainFrame (ID range 1 to 99):
 wxBEGIN_EVENT_TABLE(MyMainFrame, wxFrame)
-   EVT_BUTTON(1, MyMainFrame::OnClickAccount)
-   EVT_BUTTON(2, MyMainFrame::OnClickSettings)
-   EVT_BUTTON(3, MyMainFrame::OnClickLaunch)
-   EVT_BUTTON(4, MyMainFrame::OnClickLogo)
-wxEND_EVENT_TABLE()
+    EVT_BUTTON(1, MyMainFrame::OnClickAccount)
+        EVT_BUTTON(2, MyMainFrame::OnClickSettings)
+            EVT_BUTTON(3, MyMainFrame::OnClickLaunch)
+                EVT_BUTTON(4, MyMainFrame::OnClickLogo)
+                    wxEND_EVENT_TABLE()
 
-//AccountFrame (ID range 100 to 199):
-wxBEGIN_EVENT_TABLE(MyAccountFrame, wxFrame)
-   EVT_BUTTON(100, MyAccountFrame::OnClickLogout)
-   EVT_BUTTON(101, MyAccountFrame::OnClickRegister)
-   EVT_BUTTON(102, MyAccountFrame::OnClickLogin)
-wxEND_EVENT_TABLE()
+    //AccountFrame (ID range 100 to 199):
+    wxBEGIN_EVENT_TABLE(MyAccountFrame, wxFrame)
+        EVT_BUTTON(100, MyAccountFrame::OnClickLogout)
+            EVT_BUTTON(101, MyAccountFrame::OnClickRegister)
+                EVT_BUTTON(102, MyAccountFrame::OnClickLogin)
+                    wxEND_EVENT_TABLE()
 
-//SettingsFrame (ID range 200 to 299):
-wxBEGIN_EVENT_TABLE(MySettingsFrame, wxFrame)
-   EVT_DIRPICKER_CHANGED(200, MySettingsFrame::OnChangedGameDir)
-   EVT_BUTTON(201, MySettingsFrame::OnAutoDetectGame)
-   EVT_BUTTON(202, MySettingsFrame::OnAutoDetectProfile)
-   EVT_BUTTON(203, MySettingsFrame::OnResetCache)
-   EVT_CHOICE(204, MySettingsFrame::OnChangedBuild)
-   EVT_CHECKBOX(205, MySettingsFrame::OnClickConsole)
-wxEND_EVENT_TABLE()
+    //SettingsFrame (ID range 200 to 299):
+    wxBEGIN_EVENT_TABLE(MySettingsFrame, wxFrame)
+        EVT_DIRPICKER_CHANGED(200, MySettingsFrame::OnChangedGameDir)
+            EVT_DIRPICKER_CHANGED(201, MySettingsFrame::OnChangedProfileDir)
+                EVT_DIRPICKER_CHANGED(202, MySettingsFrame::OnChangedCacheDir)
+                    EVT_BUTTON(203, MySettingsFrame::OnAutoDetectGame)
+                        EVT_BUTTON(204, MySettingsFrame::OnAutoDetectProfile)
+                            EVT_BUTTON(205, MySettingsFrame::OnResetCache)
+                                EVT_CHOICE(206, MySettingsFrame::OnChangedBuild)
+                                    EVT_CHECKBOX(207, MySettingsFrame::OnClickConsole)
+                                        wxEND_EVENT_TABLE()
 
-/////////// Get Stats Function ///////////
-void MyMainFrame::GetStats () {
+    /////////// Get Stats Function ///////////
+    void MyMainFrame::GetStats () {
    std::string results = HTTP::Get("https://backend.beammp.com/stats_raw");
 
    nlohmann::json jf = nlohmann::json::parse(results, nullptr, false);
@@ -168,6 +174,18 @@ void MySettingsFrame::UpdateGameDirectory(const std::string& path) {
    ctrlGameDirectory->SetPath(path);
    UIData::GamePath = path;
    MyMainFrame::GameVersionLabel();
+}
+
+/////////// Update Profile Directory Function ///////////
+void MySettingsFrame::UpdateProfileDirectory(const std::string& path) {
+   ctrlProfileDirectory->SetPath(path);
+   UIData::ProfilePath = path;
+}
+
+/////////// Update Cache Directory Function ///////////
+void MySettingsFrame::UpdateCacheDirectory(const std::string& path) {
+   ctrlCacheDirectory->SetPath(path);
+   UIData::CachePath = path;
 }
 
 /////////// Load Config Function ///////////
@@ -559,17 +577,17 @@ MySettingsFrame::MySettingsFrame() :
    ctrlGameDirectory = new wxDirPickerCtrl (panel, 200, wxEmptyString, wxT("Game Directory"), wxPoint(130, 100), wxSize(300,-1));
    ctrlGameDirectory->SetLabel("GamePath");
    MySettingsFrame::SetFocus();
-   auto btnDetectGameDirectory = new wxButton(panel, 201, wxT("Detect"), wxPoint(185,140), wxSize(90, 25));
+   auto btnDetectGameDirectory = new wxButton(panel, 203, wxT("Detect"), wxPoint(185,140), wxSize(90, 25));
 
    auto* txtProfileDirectory = new wxStaticText(panel, wxID_ANY, wxT("Profile Directory: "), wxPoint(30, 200));
-   ctrlProfileDirectory = new wxDirPickerCtrl (panel, 200, wxEmptyString, wxT("Profile Directory"), wxPoint(130, 200), wxSize(300,-1));
+   ctrlProfileDirectory = new wxDirPickerCtrl (panel, 201, wxEmptyString, wxT("Profile Directory"), wxPoint(130, 200), wxSize(300,-1));
    ctrlProfileDirectory->SetLabel("ProfilePath");
-   auto btnDetectProfileDirectory = new wxButton(panel, 202, wxT("Detect"), wxPoint(185,240), wxSize(90, 25));
+   auto btnDetectProfileDirectory = new wxButton(panel, 204, wxT("Detect"), wxPoint(185,240), wxSize(90, 25));
 
    auto* txtCacheDirectory = new wxStaticText(panel, wxID_ANY, wxT("Cache Directory: "), wxPoint(30, 300));
-   ctrlCacheDirectory = new wxDirPickerCtrl (panel, 200, wxEmptyString, wxT("Cache Directory"), wxPoint(130, 300), wxSize(300,-1));
+   ctrlCacheDirectory = new wxDirPickerCtrl (panel, 202, wxEmptyString, wxT("Cache Directory"), wxPoint(130, 300), wxSize(300,-1));
    ctrlCacheDirectory->SetLabel("CachePath");
-   auto btnCacheDirectory = new wxButton(panel, 203, wxT("Reset"), wxPoint(185,340), wxSize(90, 25));
+   auto btnCacheDirectory = new wxButton(panel, 205, wxT("Reset"), wxPoint(185,340), wxSize(90, 25));
 
    auto* txtBuild = new wxStaticText(panel, wxID_ANY, wxT("Build: "), wxPoint(30, 400));
    wxArrayString BuildChoices;
@@ -577,10 +595,10 @@ MySettingsFrame::MySettingsFrame() :
    BuildChoices.Add("Release");
    BuildChoices.Add("EA");
    BuildChoices.Add("Dev");
-   choiceController = new wxChoice (panel, 204, wxPoint(85, 400), wxSize(120, 20), BuildChoices);
+   choiceController = new wxChoice (panel, 206, wxPoint(85, 400), wxSize(120, 20), BuildChoices);
    choiceController->Select(0);
 
-   checkConsole = new wxCheckBox (panel, 205, " Show Console", wxPoint(30, 450));
+   checkConsole = new wxCheckBox (panel, 207, " Show Console", wxPoint(30, 450));
 
    //UI Colors:
    if (DarkMode) {
@@ -727,9 +745,9 @@ void MyAccountFrame::OnClickLogout(wxCommandEvent& event WXUNUSED(event)) {
 
 /////////// OnClick Console Event ///////////
 void MySettingsFrame::OnClickConsole(wxCommandEvent& event) {
-      WindowsConsole(checkConsole->IsChecked());
-      bool status = event.IsChecked();
-      UpdateConfig("Console", status);
+   WindowsConsole(checkConsole->IsChecked());
+   bool status = event.IsChecked();
+   UpdateConfig("Console", status);
 }
 
 /////////// OnChanged Game Path Event ///////////
@@ -738,6 +756,22 @@ void MySettingsFrame::OnChangedGameDir(wxFileDirPickerEvent& event) {
    std::string key = reinterpret_cast<wxDirPickerCtrl*> (event.GetEventObject())->GetLabel();
    UpdateConfig(key, NewPath);
    UpdateGameDirectory(NewPath);
+}
+
+/////////// OnChanged Profile Path Event ///////////
+void MySettingsFrame::OnChangedProfileDir(wxFileDirPickerEvent& event) {
+   std::string NewPath = event.GetPath().utf8_string();
+   std::string key = reinterpret_cast<wxDirPickerCtrl*> (event.GetEventObject())->GetLabel();
+   UpdateConfig(key, NewPath);
+   UpdateProfileDirectory(NewPath);
+}
+
+/////////// OnChanged Cache Path Event ///////////
+void MySettingsFrame::OnChangedCacheDir(wxFileDirPickerEvent& event) {
+   std::string NewPath = event.GetPath().utf8_string();
+   std::string key = reinterpret_cast<wxDirPickerCtrl*> (event.GetEventObject())->GetLabel();
+   UpdateConfig(key, NewPath);
+   UpdateCacheDirectory(NewPath);
 }
 
 /////////// OnChanged Build Event ///////////
@@ -763,7 +797,7 @@ void MySettingsFrame::OnAutoDetectGame (wxCommandEvent& event) {
       UpdateGameDirectory(GamePath);
    }
    else
-   wxMessageBox("Please launch the game at least once, failed to read registry key Software\\BeamNG\\BeamNG.drive", "Error");
+      wxMessageBox("Please launch the game at least once, failed to read registry key Software\\BeamNG\\BeamNG.drive", "Error");
 }
 
 /////////// AutoDetect Profile Function ///////////
