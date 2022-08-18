@@ -89,9 +89,10 @@ class MySettingsFrame : public wxFrame {
    void UpdateProfileDirectory(const std::string& path);
    void UpdateCacheDirectory(const std::string& path);
 
+
    private:
-   wxDirPickerCtrl* ctrlGameDirectory, *ctrlProfileDirectory, *ctrlCacheDirectory;
    wxCheckBox* checkConsole;
+   wxDirPickerCtrl* ctrlGameDirectory, *ctrlProfileDirectory, *ctrlCacheDirectory;
    wxChoice* choiceController;
 
    bool DarkMode = wxSystemSettings::GetAppearance().IsDark();
@@ -167,6 +168,7 @@ void MySettingsFrame::UpdateInfo() {
    ctrlGameDirectory->SetPath(UIData::GamePath);
    ctrlProfileDirectory->SetPath(UIData::ProfilePath);
    ctrlCacheDirectory->SetPath(UIData::CachePath);
+   checkConsole->SetValue(UIData::Console);
 }
 
 /////////// Update Game Directory Function ///////////
@@ -197,6 +199,7 @@ void LoadConfig() {
       auto GamePath             = config["GamePath"];
       auto ProfilePath          = config["ProfilePath"];
       auto CachePath            = config["CachePath"];
+      auto Console              = config["Console"];
 
       if (GamePath.is_string()) {
          UIData::GamePath = GamePath.as_string()->get();
@@ -209,6 +212,11 @@ void LoadConfig() {
       if (CachePath.is_string()) {
          UIData::CachePath = CachePath.as_string()->get();
       } else wxMessageBox("Cache path not found!", "Error");
+
+      if (Console.is_boolean()) {
+         UIData::Console = Console.as_boolean()->get();
+         wxMessageBox(std::to_string(UIData::Console), "DEBUG");
+      } else wxMessageBox("Unable to retrieve console state!", "Error");
 
    } else {
       std::ofstream tml("Launcher.toml");
@@ -292,11 +300,16 @@ void CheckKey() {
    } else UpdateKey("");
 }
 
+void WindowsConsole (bool isChecked);
+
 /////////// OnInit Function ///////////
 bool MyApp::OnInit() {
    Log::Init();
    LoadConfig();
    CheckKey();
+
+   WindowsConsole(UIData::Console);
+
    auto* MainFrame = new MyMainFrame();
    MyMainFrame::MainFrameInstance = MainFrame;
    MainFrame->SetIcon(wxIcon("icons/BeamMP_black.png",wxBITMAP_TYPE_PNG));
@@ -748,6 +761,7 @@ void MySettingsFrame::OnClickConsole(wxCommandEvent& event) {
    WindowsConsole(checkConsole->IsChecked());
    bool status = event.IsChecked();
    UpdateConfig("Console", status);
+   UIData::Console = status;
 }
 
 /////////// OnChanged Game Path Event ///////////
