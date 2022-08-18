@@ -169,6 +169,7 @@ void MySettingsFrame::UpdateInfo() {
    ctrlProfileDirectory->SetPath(UIData::ProfilePath);
    ctrlCacheDirectory->SetPath(UIData::CachePath);
    checkConsole->SetValue(UIData::Console);
+   choiceController->SetStringSelection(UIData::Build);
 }
 
 /////////// Update Game Directory Function ///////////
@@ -195,7 +196,7 @@ void LoadConfig() {
    if (fs::exists("Launcher.toml")) {
       toml::parse_result config = toml::parse_file("Launcher.toml");
       auto ui                   = config["UI"];
-      auto build                = config["Build"];
+      auto Build                = config["Build"];
       auto GamePath             = config["GamePath"];
       auto ProfilePath          = config["ProfilePath"];
       auto CachePath            = config["CachePath"];
@@ -215,8 +216,11 @@ void LoadConfig() {
 
       if (Console.is_boolean()) {
          UIData::Console = Console.as_boolean()->get();
-         wxMessageBox(std::to_string(UIData::Console), "DEBUG");
       } else wxMessageBox("Unable to retrieve console state!", "Error");
+
+      if (Build.is_string()) {
+         UIData::Build = Build.as_string()->get();
+      } else wxMessageBox("Unable to retrieve build state!", "Error");
 
    } else {
       std::ofstream tml("Launcher.toml");
@@ -792,6 +796,7 @@ void MySettingsFrame::OnChangedCacheDir(wxFileDirPickerEvent& event) {
 void MySettingsFrame::OnChangedBuild(wxCommandEvent& event) {
    std::string key = reinterpret_cast<wxChoice*> (event.GetEventObject())->GetString(event.GetSelection());
    UpdateConfig("Build", key);
+   UIData::Build = key;
 }
 
 /////////// AutoDetect Game Function ///////////
