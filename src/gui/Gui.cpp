@@ -650,6 +650,8 @@ MyMainFrame::MyMainFrame() :
    else
       BitAccount->SetBitmap(wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(45, 45, wxIMAGE_QUALITY_HIGH)));
 
+   BitAccount->SetBackgroundColour(wxColour(40, 40, 40));
+   BitAccount->SetWindowStyle(wxBORDER_NONE);
    // Buttons:
    auto btnSettings = new wxButton(panel, 2, wxT("Settings"), wxPoint(730, 570), wxSize(110, 25));
    btnLaunch        = new wxButton(panel, 3, wxT("Launch"), wxPoint(850, 570), wxSize(110, 25));
@@ -884,7 +886,8 @@ void MyAccountFrame::OnClickLogin(wxCommandEvent& event WXUNUSED(event)) {
    json["username"] = ctrlUsername->GetValue().utf8_string();
 
    if (Login(json.dump())) {
-      std::string picture = HTTP::Get("https://forum.beammp.com/user_avatar/forum.beammp.com/" + UIData::Username + "/240/4411_2.png");
+      std::string picture = HTTP::Get("https://forum.beammp.com/user_avatar/forum.beammp.com/" + UIData::Username + "/240/19891_2.png");
+      //4411_2
       std::ofstream File("icons/" + UIData::Username + PictureType(picture), std::ios::binary);
       if (File.is_open()) {
          File << picture;
