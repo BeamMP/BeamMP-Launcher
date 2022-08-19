@@ -10,4 +10,7 @@
 class Log {
    public:
    static void Init();
+   static void ConsoleOutput(bool enable);
+   private:
+   static inline el::Configurations Conf{};
 };

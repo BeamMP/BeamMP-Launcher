@@ -31,7 +31,6 @@ Launcher::Launcher() :
    WindowsInit();
    SetUnhandledExceptionFilter(CrashHandler);
    LOG(INFO) << "Starting Launcher V" << FullVersion;
-   UpdateCheck();
 }
 
 void Launcher::Abort() {
@@ -183,72 +182,6 @@ std::string Launcher::QueryValue(HKEY& hKey, const char* Name) {
       return {(char*)buffer, keySize - 1};
    }
    return {};
-}
-std::string Launcher::GetLocalAppdata() {
-   PWSTR folderPath = nullptr;
-
-   HRESULT hr =
-       SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, nullptr, &folderPath);
-
-   if (!SUCCEEDED(hr)) {
-      LOG(FATAL) << "Failed to get path of localAppData";
-      throw ShutdownException("Fatal Error");
-   }
-
-   _bstr_t bstrPath(folderPath);
-   std::string Path((char*)bstrPath);
-   CoTaskMemFree(folderPath);
-
-   if (!Path.empty()) {
-      Path += "\\BeamNG.drive\\";
-      VersionParser GameVer(BeamVersion);
-      Path += GameVer.split[0] + '.' + GameVer.split[1] + '\\';
-      return Path;
-   }
-   return {};
-}
-void Launcher::QueryRegistry() {
-   HKEY BeamNG;
-   LONG RegRes =
-       RegOpenKeyExA(HKEY_CURRENT_USER, R"(Software\BeamNG\BeamNG.drive)", 0,
-                     KEY_READ, &BeamNG);
-   if (RegRes == ERROR_SUCCESS) {
-      BeamRoot     = QueryValue(BeamNG, "rootpath");
-      BeamVersion  = QueryValue(BeamNG, "version");
-      BeamUserPath = QueryValue(BeamNG, "userpath_override");
-      RegCloseKey(BeamNG);
-      if (BeamUserPath.empty() && !BeamVersion.empty()) {
-         BeamUserPath = GetLocalAppdata();
-      } else if (!BeamUserPath.empty() && !BeamVersion.empty()) {
-         VersionParser GameVer(BeamVersion);
-         BeamUserPath += GameVer.split[0] + '.' + GameVer.split[1] + '\\';
-      }
-      if (!BeamUserPath.empty()) {
-         MPUserPath = BeamUserPath + "mods\\multiplayer";
-      }
-      if (!BeamRoot.empty() && !BeamVersion.empty() && !BeamUserPath.empty())
-         return;
-   }
-   LOG(FATAL)
-       << "Please launch the game at least once, failed to read registry "
-          "key Software\\BeamNG\\BeamNG.drive";
-   throw ShutdownException("Fatal Error");
-}
-
-void Launcher::AdminRelaunch() {
-   system("cls");
-   ShellExecuteA(nullptr, "runas", fs::current_path().string().c_str(), nullptr,
-                 nullptr, SW_SHOWNORMAL);
-   ShowWindow(GetConsoleWindow(), 0);
-   throw ShutdownException("Relaunching");
-}
-
-void Launcher::Relaunch() {
-   ShellExecuteA(nullptr, "open", fs::current_path().string().c_str(), nullptr,
-                 nullptr, SW_SHOWNORMAL);
-   ShowWindow(GetConsoleWindow(), 0);
-   std::this_thread::sleep_for(std::chrono::seconds(1));
-   throw ShutdownException("Relaunching");
 }
 
 const std::string& Launcher::getFullVersion() {

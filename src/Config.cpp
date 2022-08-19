@@ -25,15 +25,21 @@ void Launcher::LoadConfig() {
          for (char& c : TargetBuild) c = char(tolower(c));
       } else LOG(ERROR) << "Failed to get 'Build' string from config";
 
-      if (GamePath.is_string()) GameConfigPath = GamePath.as_string()->get();
+      if (GamePath.is_string()) BeamRoot = GamePath.as_string()->get();
       else LOG(ERROR) << "Failed to get 'GamePath' string from config";
 
-      if (ProfilePath.is_string()) ProfileConfigPath = ProfilePath.as_string()->get();
+      if (ProfilePath.is_string()) {
+         BeamUserPath = ProfilePath.as_string()->get();
+         if (!BeamUserPath.empty()) {
+            MPUserPath = BeamUserPath + "mods\\multiplayer";
+         }
+      }
       else LOG(ERROR) << "Failed to get 'ProfilePath' string from config";
 
-      if (CachePath.is_string()) CacheConfigPath = CachePath.as_string()->get();
+      if (CachePath.is_string()) LauncherCache = CachePath.as_string()->get();
       else LOG(ERROR) << "Failed to get 'CachePath' string from config";
 
+      BeamVersion = UIData::GameVer;
    } else {
       LOG(FATAL) << "Failed to find config on disk!";
       throw ShutdownException("Fatal Error");

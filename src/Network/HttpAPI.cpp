@@ -87,14 +87,16 @@ bool HTTP::ProgressBar(size_t c, size_t t) {
    if (isDownload) {
       static double progress_bar_adv;
       progress_bar_adv = round(double(c) / double(t) * 25);
-      std::cout << "\r";
-      std::cout << "Progress: [ ";
-      std::cout << round(double(c) / double(t) * 100);
-      std::cout << "% ] [";
-      int i;
-      for (i = 0; i <= progress_bar_adv; i++) std::cout << "#";
-      for (i = 0; i < 25 - progress_bar_adv; i++) std::cout << ".";
-      std::cout << "]";
+      if (UIData::Console) {
+         std::cout << "\r";
+         std::cout << "Progress: [ ";
+         std::cout << round(double(c) / double(t) * 100);
+         std::cout << "% ] [";
+         int i;
+         for (i = 0; i <= progress_bar_adv; i++) std::cout << "#";
+         for (i = 0; i < 25 - progress_bar_adv; i++) std::cout << ".";
+         std::cout << "]";
+      }
    }
    if (Launcher::Terminated()) {
       CliRef.load()->stop();
@@ -114,7 +116,11 @@ bool HTTP::Download(const std::string& IP, const std::string& Path, DownloadProg
    isDownload      = false;
 
    if (Ret.empty()) return false;
-   std::cout << "\n";
+
+   if (UIData::Console) {
+      std::cout << "\n";
+   }
+
    std::ofstream File(Path, std::ios::binary);
    if (File.is_open()) {
       File << Ret;

@@ -13,7 +13,6 @@ void entry() {
       launcher.RunDiscordRPC();
       launcher.LoadConfig();  // check if json (issue)
       launcher.CheckKey();
-      launcher.QueryRegistry();
       // UI call
       // launcher.SetupMOD();
       launcher.LaunchGame();

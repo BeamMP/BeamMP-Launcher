@@ -18,6 +18,7 @@ struct VersionParser {
    std::vector<std::string> split;
    std::vector<size_t> data;
 };
+
 struct HKEY__;
 typedef HKEY__ *HKEY;
 
@@ -31,14 +32,11 @@ class Launcher {
    std::string Login(const std::string& fields);
    void SendIPC(const std::string& Data, bool core = true);
    void RunDiscordRPC();
-   void QueryRegistry();
    void WaitForGame();
    void LoadConfig();
    void LaunchGame();
    void CheckKey();
    void SetupMOD();
-   static void AdminRelaunch();
-   static void Relaunch();
    static std::string QueryValue(HKEY& hKey, const char* Name);
 
    public:  // Getters and Setters
@@ -54,11 +52,9 @@ class Launcher {
 
    private:  // functions
    void HandleIPC(const std::string& Data);
-   std::string GetLocalAppdata();
    void UpdatePresence();
    void RichPresence();
    void WindowsInit();
-   void UpdateCheck();
    void ResetMods();
    void EnableMP();
    void ListenIPC();
@@ -68,7 +64,7 @@ class Launcher {
    static inline std::thread EntryThread{};
    static inline VersionParser SupportedVersion{"0.25.4.0"};
    static inline std::string Version{"2.0"};
-   static inline std::string FullVersion{Version + ".1"};
+   static inline std::string FullVersion{Version + ".99"};
 
    private:  // variables
    uint32_t GamePID{0};
@@ -87,9 +83,7 @@ class Launcher {
    std::string DiscordMessage{};
    Server ServerHandler{this};
    std::string TargetBuild{"default"};
-   std::string GameConfigPath{};
-   std::string ProfileConfigPath{};
-   std::string CacheConfigPath{};
+   std::string LauncherCache{};
    static inline std::atomic<bool> Shutdown{false}, Exit{false};
    std::unique_ptr<IPC> IPCToGame{};
    std::unique_ptr<IPC> IPCFromGame{};
@@ -102,10 +96,8 @@ class ShutdownException : public std::runtime_error {
 };
 
 struct UIData {
-   static inline std::string GamePath, ProfilePath, CachePath, Build, PublicKey, UserRole, Username;
+   static inline std::string GamePath, ProfilePath, CachePath, Build, PublicKey, UserRole, Username, GameVer;
    static inline bool LoginAuth{false}, Console{false};
-
-
 };
 
 void UpdateKey(const std::string& newKey);

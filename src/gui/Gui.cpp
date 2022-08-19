@@ -401,6 +401,7 @@ bool MyApp::OnInit() {
    CheckKey();
 
    WindowsConsole(UIData::Console);
+   Log::ConsoleOutput(UIData::Console);
 
    auto* MainFrame                = new MyMainFrame();
    MyMainFrame::MainFrameInstance = MainFrame;
@@ -504,11 +505,31 @@ std::string GetPictureName() {
    return "";
 }
 
+
+/////////// Progress Bar Function ///////////
 bool ProgressBar (size_t c, size_t t) {
    int Percent = int(round(double(c) / double(t) * 100));
    MyMainFrame::MainFrameInstance->UpdateBar->SetValue(Percent);
    MyMainFrame::MainFrameInstance->txtUpdate->SetLabel("Downloading " + std::to_string(Percent) + "%");
    return true;
+}
+
+
+/////////// Relaunch Functions ///////////
+void AdminRelaunch(const std::string& executable) {
+   system("cls");
+   ShellExecuteA(nullptr, "runas", executable.c_str(), nullptr,
+                 nullptr, SW_SHOWNORMAL);
+   ShowWindow(GetConsoleWindow(), 0);
+   throw ShutdownException("Launcher Relaunching");
+}
+
+void Relaunch(const std::string& executable) {
+   ShellExecuteA(nullptr, "open", executable.c_str(), nullptr,
+                 nullptr, SW_SHOWNORMAL);
+   ShowWindow(GetConsoleWindow(), 0);
+   std::this_thread::sleep_for(std::chrono::seconds(1));
+   throw ShutdownException("Launcher Relaunching");
 }
 
 /////////// Update Check Function ///////////
@@ -525,11 +546,12 @@ void UpdateCheck() {
    if (fallback) {
       link = "https://backup1.beammp.com/builds/launcher?download=true";
    } else link = "https://beammp.com/builds/launcher?download=true";
-   auto CurrentPath = fs::current_path();
-   std::string EP(CurrentPath.append("BeamMP-Launcher.exe").string()), Back(CurrentPath.append("BeamMP-Launcher.back").string());
-   LOG(INFO) <<EP + " AND " + Back;
+   const auto CurrentPath = fs::current_path();
+   std::string EP((CurrentPath/"BeamMP-Launcher.exe").string()), Tmp(EP + ".tmp");
+   std::string Back((CurrentPath/"BeamMP-Launcher.back").string());
 
    if (fs::exists(Back)) remove(Back.c_str());
+
    std::string RemoteVer;
    for (char& c : HTTP) {
       if (std::isdigit(c) || c == '.') {
@@ -540,24 +562,28 @@ void UpdateCheck() {
    if (VersionParser(RemoteVer) > VersionParser(Launcher::FullVersion)) {
       system("cls");
       MyMainFrame::MainFrameInstance->txtUpdate->SetLabel("Downloading...");
-      if (std::rename(EP.c_str(), Back.c_str())) {
-         wxMessageBox("Failed to create a backup!", "Error");
-      }
 
-      if (!HTTP::Download(link, EP, ProgressBar)) {
+
+      if (!HTTP::Download(link, Tmp, ProgressBar)) {
          wxMessageBox("Launcher Update failed! trying again...", "Error");
 
          std::this_thread::sleep_for(std::chrono::seconds(2));
 
-         if (!HTTP::Download(link, EP, ProgressBar)) {
+         if (!HTTP::Download(link, Tmp, ProgressBar)) {
             wxMessageBox("Launcher Update failed!", "Error");
             std::this_thread::sleep_for(std::chrono::seconds(5));
-            Launcher::AdminRelaunch();
+            AdminRelaunch(EP);
          }
       }
-      Launcher::Relaunch();
-   } else MyMainFrame::MainFrameInstance->txtUpdate->SetLabel("BeamMP V" + Launcher::FullVersion);
 
+      MyMainFrame::MainFrameInstance->Destroy();
+
+      if (std::rename(EP.c_str(), Back.c_str()) || std::rename(Tmp.c_str(), EP.c_str())) {
+         LOG(ERROR) << "Failed to create a backup!";
+      }
+
+      Relaunch(EP);
+   } else MyMainFrame::MainFrameInstance->txtUpdate->SetLabel("BeamMP V" + Launcher::FullVersion);
 }
 
 /////////// TestFrame Function ///////////
@@ -781,6 +807,7 @@ void MyMainFrame::GameVersionLabel() {
    std::string read = jsonRead();
    if (!read.empty()) {
       txtGameVersion->SetLabel(read);
+      UIData::GameVer = read;
       VersionParser CurrentVersion(read);
       if (CurrentVersion > Launcher::SupportedVersion)
          txtGameVersion->SetForegroundColour(wxColour(255, 173, 0));
@@ -790,6 +817,7 @@ void MyMainFrame::GameVersionLabel() {
    } else {
       txtGameVersion->SetLabel(wxT("NA"));
       txtGameVersion->SetForegroundColour("red");
+      UIData::GameVer = "";
    }
 }
 
@@ -831,6 +859,10 @@ void MyMainFrame::OnClickSettings(wxCommandEvent& event WXUNUSED(event)) {
 /////////// OnClick Launch Event ///////////
 void MyMainFrame::OnClickLaunch(wxCommandEvent& event WXUNUSED(event)) {
    static bool FirstTime = true;
+   if(UIData::GameVer.empty()) {
+      wxMessageBox("Game path is invalid please check settings", "Error");
+      return;
+   }
    if (Launcher::EntryThread.joinable()) Launcher::EntryThread.join();
    Launcher::EntryThread = std::thread([&]() {
       entry();
@@ -889,6 +921,7 @@ void MyAccountFrame::OnClickLogout(wxCommandEvent& event WXUNUSED(event)) {
 /////////// OnClick Console Event ///////////
 void MySettingsFrame::OnClickConsole(wxCommandEvent& event) {
    WindowsConsole(checkConsole->IsChecked());
+   Log::ConsoleOutput(checkConsole->IsChecked());
    bool status = event.IsChecked();
    UpdateConfig("Console", status);
    UIData::Console = status;
