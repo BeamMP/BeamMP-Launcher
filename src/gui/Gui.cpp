@@ -886,8 +886,7 @@ void MyAccountFrame::OnClickLogin(wxCommandEvent& event WXUNUSED(event)) {
    json["username"] = ctrlUsername->GetValue().utf8_string();
 
    if (Login(json.dump())) {
-      std::string picture = HTTP::Get("https://forum.beammp.com/user_avatar/forum.beammp.com/" + UIData::Username + "/240/19891_2.png");
-      //4411_2
+      std::string picture = HTTP::Get("https://forum.beammp.com/user_avatar/forum.beammp.com/" + UIData::Username + "/240/4411_2.png");
       std::ofstream File("icons/" + UIData::Username + PictureType(picture), std::ios::binary);
       if (File.is_open()) {
          File << picture;
