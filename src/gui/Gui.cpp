@@ -59,11 +59,11 @@ class MyMainFrame : public wxFrame {
    wxStaticText* txtUpdate;
    wxBitmapButton* BitAccount;
    void OnClickAccount(wxCommandEvent& event);
+   wxButton* btnLaunch;
 
    private:
    wxStaticText* txtStatusResult;
    static inline wxStaticText *txtGameVersion, *txtPlayers, *txtModVersion, *txtServers;
-   wxButton* btnLaunch;
 
    bool DarkMode = wxSystemSettings::GetAppearance().IsDark();
    void GetStats();
@@ -150,11 +150,20 @@ void MyMainFrame::GetStats() {
       else
          txtServers->SetForegroundColour(wxColour(255, 173, 0));
 
+      if (!jf["ModVersion"].is_null()) {
+         txtModVersion->SetForegroundColour("green");
+         txtModVersion->SetLabel(to_string(jf["ModVersion"]));
+      } else {
+         txtModVersion->SetLabel("NA");
+         txtModVersion->SetForegroundColour("red");
+      }
    } else {
       txtPlayers->SetLabel("NA");
       txtPlayers->SetForegroundColour("red");
       txtServers->SetLabel("NA");
       txtServers->SetForegroundColour("red");
+      txtModVersion->SetLabel("NA");
+      txtModVersion->SetForegroundColour("red");
    }
 }
 
@@ -415,7 +424,7 @@ bool MyApp::OnInit() {
 
    auto* MainFrame                = new MyMainFrame();
    MyMainFrame::MainFrameInstance = MainFrame;
-   MyMainFrame::UpdateThread = std::thread (UpdateCheck);
+   MyMainFrame::UpdateThread      = std::thread(UpdateCheck);
 
    MainFrame->SetIcon(wxIcon("icons/BeamMP_black.png", wxBITMAP_TYPE_PNG));
 
@@ -497,9 +506,8 @@ std::string GetPictureName() {
    return "";
 }
 
-
 /////////// Progress Bar Function ///////////
-bool ProgressBar (size_t c, size_t t) {
+bool ProgressBar(size_t c, size_t t) {
    int Percent = int(round(double(c) / double(t) * 100));
    MyMainFrame::MainFrameInstance->UpdateBar->SetValue(Percent);
    MyMainFrame::MainFrameInstance->txtUpdate->SetLabel("Downloading " + std::to_string(Percent) + "%");
@@ -526,6 +534,7 @@ void Relaunch(const std::string& executable) {
 
 /////////// Update Check Function ///////////
 void UpdateCheck() {
+   MyMainFrame::MainFrameInstance->btnLaunch->Disable();
    std::string link;
    std::string HTTP = HTTP::Get("https://beammp.com/builds/launcher?version=true");
    bool fallback    = false;
@@ -539,8 +548,8 @@ void UpdateCheck() {
       link = "https://backup1.beammp.com/builds/launcher?download=true";
    } else link = "https://beammp.com/builds/launcher?download=true";
    const auto CurrentPath = fs::current_path();
-   std::string EP((CurrentPath/"BeamMP-Launcher.exe").string()), Tmp(EP + ".tmp");
-   std::string Back((CurrentPath/"BeamMP-Launcher.back").string());
+   std::string EP((CurrentPath / "BeamMP-Launcher.exe").string()), Tmp(EP + ".tmp");
+   std::string Back((CurrentPath / "BeamMP-Launcher.back").string());
 
    if (fs::exists(Back)) remove(Back.c_str());
 
@@ -573,7 +582,7 @@ void UpdateCheck() {
       }
 
       Relaunch(EP);
-   } else MyMainFrame::MainFrameInstance->txtUpdate->SetLabel("BeamMP V" + Launcher::FullVersion);
+   } else MyMainFrame::MainFrameInstance->btnLaunch->Enable();
 }
 
 /////////// Main Frame Content ///////////
@@ -606,14 +615,10 @@ MyMainFrame::MyMainFrame() :
    auto* HyperPatreon = new wxHyperlinkCtrl(panel, wxID_ANY, wxT("Patreon"), wxT("https://www.patreon.com/BeamMP"), wxPoint(240, 10));
 
    // Update:
-   txtUpdate = new wxStaticText(panel, wxID_ANY, wxT("Updating BeamMP "), wxPoint(10, 490));
+   txtUpdate = new wxStaticText(panel, wxID_ANY, wxT("BeamMP V" + Launcher::FullVersion), wxPoint(10, 490));
 
    UpdateBar = new wxGauge(panel, wxID_ANY, 100, wxPoint(10, 520), wxSize(127, -1));
-   UpdateBar->SetValue(0);
-   while (UpdateBar->GetValue() < 101) {
-      txtUpdate->SetLabel(wxT("Updating BeamMP: " + std::to_string(UpdateBar->GetValue()) + "%"));
-      UpdateBar->SetValue(UpdateBar->GetValue() + 1);
-   }
+   UpdateBar->SetValue(100);
 
    // Information:
    auto* txtGameVersionTitle = new wxStaticText(panel, wxID_ANY, wxT("Game Version: "), wxPoint(160, 490));
@@ -666,7 +671,6 @@ MyMainFrame::MyMainFrame() :
       txtGameVersionTitle->SetForegroundColour("white");
       txtPlayersTitle->SetForegroundColour("white");
       txtModVersionTitle->SetForegroundColour("white");
-      txtModVersion->SetForegroundColour("white");
       txtServersTitle->SetForegroundColour("white");
       txtPatreon->SetForegroundColour("white");
       txtStatus->SetForegroundColour("white");
@@ -841,7 +845,7 @@ void MyMainFrame::OnClickSettings(wxCommandEvent& event WXUNUSED(event)) {
 /////////// OnClick Launch Event ///////////
 void MyMainFrame::OnClickLaunch(wxCommandEvent& event WXUNUSED(event)) {
    static bool FirstTime = true;
-   if(UIData::GameVer.empty()) {
+   if (UIData::GameVer.empty()) {
       wxMessageBox("Game path is invalid please check settings", "Error");
       return;
    }
