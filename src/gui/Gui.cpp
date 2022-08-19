@@ -27,21 +27,10 @@
 #endif
 // clang-format on
 
-/*/////////// TestFrame class ///////////
-class MyTestFrame : public wxFrame {
-   public:
-   MyTestFrame();
-
-   private:
-   // Here you put the frame functions:
-   bool DarkMode = wxSystemSettings::GetAppearance().IsDark();
-};*/
-
 /////////// Inherit App class ///////////
 class MyApp : public wxApp {
    public:
    bool OnInit() override;
-   // static inline MyTestFrame* TestFrame;
 };
 
 /////////// AccountFrame class ///////////
@@ -354,6 +343,9 @@ bool Login(const std::string& fields) {
       if (!d["username"].is_null()) {
          UIData::Username = d["username"].get<std::string>();
       }
+      if (!d["role"].is_null()) {
+         UIData::UserRole = d["role"].get<std::string>();
+      }
       return true;
    } else if (!d["message"].is_null()) wxMessageBox(d["message"].get<std::string>(), "Error");
    return false;
@@ -394,6 +386,24 @@ void UpdateCheck();
 bool MyApp::OnInit() {
    if (!fs::exists("icons")) {
       fs::create_directory("icons");
+      std::string picture = HTTP::Get("https://forum.beammp.com/uploads/default/original/3X/c/d/cd7f8f044efe85e5a0f7bc1d296775438e800488.png");
+      std::ofstream File("icons/BeamMP_white.png", std::ios::binary);
+      if (File.is_open()) {
+         File << picture;
+         File.close();
+      }
+      picture = HTTP::Get("https://forum.beammp.com/uploads/default/original/3X/b/9/b95f01469238d3ec92163d1b0be79cdd1662fdcd.png");
+      File.open("icons/BeamMP_black.png", std::ios::binary);
+      if (File.is_open()) {
+         File << picture;
+         File.close();
+      }
+      picture = HTTP::Get("https://forum.beammp.com/uploads/default/original/3X/6/f/6f0da341a1e570dc973d7251ecd8b4bb3c17eb65.png");
+      File.open("icons/default.png", std::ios::binary);
+      if (File.is_open()) {
+         File << picture;
+         File.close();
+      }
    }
 
    Log::Init();
@@ -422,24 +432,6 @@ bool MyApp::OnInit() {
    }
    wxFileSystem::AddHandler(new wxInternetFSHandler);
    MainFrame->Show(true);
-
-   // Test Frame Properties:
-   /*TestFrame = new MyTestFrame();
-
-   TestFrame->SetIcon(wxIcon("icons/BeamMP_black.png",wxBITMAP_TYPE_PNG));
-   TestFrame->SetSize(1000, 650);
-   TestFrame->Center();
-
-   if (wxSystemSettings::GetAppearance().IsDark()) {
-      TestFrame->SetBackgroundColour(wxColour(40, 40, 40));
-      TestFrame->SetForegroundColour(wxColour(255, 255, 255));
-   }
-
-   else {
-      TestFrame->SetBackgroundColour(wxColour("white"));
-      TestFrame->SetForegroundColour(wxColour("white"));
-   }*/
-
    return true;
 }
 
@@ -514,8 +506,7 @@ bool ProgressBar (size_t c, size_t t) {
    return true;
 }
 
-
-/////////// Relaunch Functions ///////////
+/////////// Admin Relaunch Functions ///////////
 void AdminRelaunch(const std::string& executable) {
    system("cls");
    ShellExecuteA(nullptr, "runas", executable.c_str(), nullptr,
@@ -524,6 +515,7 @@ void AdminRelaunch(const std::string& executable) {
    throw ShutdownException("Launcher Relaunching");
 }
 
+/////////// Relaunch Functions ///////////
 void Relaunch(const std::string& executable) {
    ShellExecuteA(nullptr, "open", executable.c_str(), nullptr,
                  nullptr, SW_SHOWNORMAL);
@@ -563,10 +555,8 @@ void UpdateCheck() {
       system("cls");
       MyMainFrame::MainFrameInstance->txtUpdate->SetLabel("Downloading...");
 
-
       if (!HTTP::Download(link, Tmp, ProgressBar)) {
          wxMessageBox("Launcher Update failed! trying again...", "Error");
-
          std::this_thread::sleep_for(std::chrono::seconds(2));
 
          if (!HTTP::Download(link, Tmp, ProgressBar)) {
@@ -585,16 +575,6 @@ void UpdateCheck() {
       Relaunch(EP);
    } else MyMainFrame::MainFrameInstance->txtUpdate->SetLabel("BeamMP V" + Launcher::FullVersion);
 }
-
-/////////// TestFrame Function ///////////
-/*MyTestFrame::MyTestFrame() :
-    wxFrame(nullptr, wxID_ANY, "BeamMP Launcher V3", wxDefaultPosition,wxDefaultSize,
-            wxMINIMIZE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLOSE_BOX) {
-
-auto* file = new wxFileDialog (this, wxT("Test"), wxT(""),wxT(""));
-file->SetPosition(wxPoint(250,250));
-file->SetForegroundColour("white");
-}*/
 
 /////////// Main Frame Content ///////////
 MyMainFrame::MyMainFrame() :
@@ -724,13 +704,15 @@ MyAccountFrame::MyAccountFrame() :
       else
          image->SetBitmap(wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(120, 120, wxIMAGE_QUALITY_HIGH)));
 
-      auto* txtName  = new wxStaticText(panel, wxID_ANY, wxT("Username: " + UIData::Username), wxPoint(180, 200));
+      auto* txtName  = new wxStaticText(panel, wxID_ANY, wxT("Username: " + UIData::Username), wxPoint(190, 190));
+      auto* txtRole  = new wxStaticText(panel, wxID_ANY, wxT("Role: " + UIData::UserRole), wxPoint(190, 230));
       auto btnLogout = new wxButton(panel, 100, wxT("Logout"), wxPoint(185, 550), wxSize(110, 25));
 
       // UI Colors:
       if (DarkMode) {
          // Text:
          txtName->SetForegroundColour("white");
+         txtRole->SetForegroundColour("white");
       }
    } else {
       image->SetBitmap(wxBitmapBundle(wxImage("icons/default.png", wxBITMAP_TYPE_PNG).Scale(120, 120, wxIMAGE_QUALITY_HIGH)));
