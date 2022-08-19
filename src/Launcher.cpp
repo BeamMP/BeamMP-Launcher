@@ -237,14 +237,14 @@ void Launcher::QueryRegistry() {
 
 void Launcher::AdminRelaunch() {
    system("cls");
-   ShellExecuteA(nullptr, "runas", CurrentPath.string().c_str(), nullptr,
+   ShellExecuteA(nullptr, "runas", fs::current_path().string().c_str(), nullptr,
                  nullptr, SW_SHOWNORMAL);
    ShowWindow(GetConsoleWindow(), 0);
    throw ShutdownException("Relaunching");
 }
 
 void Launcher::Relaunch() {
-   ShellExecuteA(nullptr, "open", CurrentPath.string().c_str(), nullptr,
+   ShellExecuteA(nullptr, "open", fs::current_path().string().c_str(), nullptr,
                  nullptr, SW_SHOWNORMAL);
    ShowWindow(GetConsoleWindow(), 0);
    std::this_thread::sleep_for(std::chrono::seconds(1));
