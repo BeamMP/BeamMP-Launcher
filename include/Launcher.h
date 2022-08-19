@@ -37,6 +37,8 @@ class Launcher {
    void LaunchGame();
    void CheckKey();
    void SetupMOD();
+   static void AdminRelaunch();
+   static void Relaunch();
    static std::string QueryValue(HKEY& hKey, const char* Name);
 
    public:  // Getters and Setters
@@ -54,19 +56,19 @@ class Launcher {
    void HandleIPC(const std::string& Data);
    std::string GetLocalAppdata();
    void UpdatePresence();
-   void AdminRelaunch();
    void RichPresence();
    void WindowsInit();
    void UpdateCheck();
    void ResetMods();
    void EnableMP();
-   void Relaunch();
    void ListenIPC();
    void Abort();
 
    public: // variables
    static inline std::thread EntryThread{};
    static inline VersionParser SupportedVersion{"0.25.4.0"};
+   static inline std::string Version{"2.0"};
+   static inline std::string FullVersion{Version + ".1"};
 
    private:  // variables
    uint32_t GamePID{0};
@@ -83,14 +85,12 @@ class Launcher {
    std::string BeamVersion{};
    std::string BeamUserPath{};
    std::string DiscordMessage{};
-   std::string Version{"2.0"};
    Server ServerHandler{this};
    std::string TargetBuild{"default"};
    std::string GameConfigPath{};
    std::string ProfileConfigPath{};
    std::string CacheConfigPath{};
    static inline std::atomic<bool> Shutdown{false}, Exit{false};
-   std::string FullVersion{Version + ".99"};
    std::unique_ptr<IPC> IPCToGame{};
    std::unique_ptr<IPC> IPCFromGame{};
 };

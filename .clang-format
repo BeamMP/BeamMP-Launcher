@@ -39,3 +39,4 @@ SpacesInSquareBrackets: false
 Standard: Latest
 TabWidth: 2
 UseTab: Never
+ColumnLimit: 0

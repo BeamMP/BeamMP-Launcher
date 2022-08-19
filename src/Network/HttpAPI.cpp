@@ -14,7 +14,7 @@
 
 bool HTTP::isDownload                = false;
 std::atomic<httplib::Client*> CliRef = nullptr;
-std::string HTTP::Get(const std::string& IP) {
+std::string HTTP::Get(const std::string& IP, DownloadProgress DP) {
    static std::mutex Lock;
    std::scoped_lock Guard(Lock);
 
@@ -24,7 +24,7 @@ std::string HTTP::Get(const std::string& IP) {
    CliRef.store(&cli);
    cli.set_connection_timeout(std::chrono::seconds(5));
    cli.set_follow_location(true);
-   auto res = cli.Get(IP.substr(pos).c_str(), ProgressBar);
+   auto res = cli.Get(IP.substr(pos).c_str(), DP);
    std::string Ret;
 
    if (res.error() == httplib::Error::Success) {
@@ -105,12 +105,12 @@ bool HTTP::ProgressBar(size_t c, size_t t) {
    return true;
 }
 
-bool HTTP::Download(const std::string& IP, const std::string& Path) {
+bool HTTP::Download(const std::string& IP, const std::string& Path, DownloadProgress DP) {
    static std::mutex Lock;
    std::scoped_lock Guard(Lock);
 
    isDownload      = true;
-   std::string Ret = Get(IP);
+   std::string Ret = Get(IP, DP);
    isDownload      = false;
 
    if (Ret.empty()) return false;
