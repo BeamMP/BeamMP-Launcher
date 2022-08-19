@@ -255,7 +255,7 @@ void Server::SyncResources() {
         FN != FNames.end() && !Terminate; ++FN, ++FS) {
       auto pos = FN->find_last_of('/');
       if (pos != std::string::npos) {
-         a = "Resources" + FN->substr(pos);
+         a = LauncherInstance->getCachePath() + FN->substr(pos);
       } else continue;
       Pos++;
       if (fs::exists(a)) {

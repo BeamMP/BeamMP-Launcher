@@ -215,3 +215,7 @@ const std::string& Launcher::getMPUserPath() {
 const std::string& Launcher::getPublicKey() {
    return PublicKey;
 }
+
+const std::string& Launcher::getCachePath() {
+   return LauncherCache;
+}

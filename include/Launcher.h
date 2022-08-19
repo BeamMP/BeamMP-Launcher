@@ -44,6 +44,7 @@ class Launcher {
    static void setExit(bool exit) noexcept;
    const std::string& getFullVersion();
    const std::string& getMPUserPath();
+   const std::string& getCachePath();
    static bool Terminated() noexcept;
    const std::string& getPublicKey();
    const std::string& getUserRole();
