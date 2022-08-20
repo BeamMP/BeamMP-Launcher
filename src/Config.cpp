@@ -31,7 +31,7 @@ void Launcher::LoadConfig() {
       if (ProfilePath.is_string()) {
          BeamUserPath = ProfilePath.as_string()->get();
          if (!BeamUserPath.empty()) {
-            MPUserPath = BeamUserPath + "mods\\multiplayer";
+            MPUserPath = BeamUserPath + "\\mods\\multiplayer";
          }
       }
       else LOG(ERROR) << "Failed to get 'ProfilePath' string from config";
