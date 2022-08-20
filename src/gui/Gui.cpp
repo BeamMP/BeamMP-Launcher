@@ -758,8 +758,8 @@ MySettingsFrame::MySettingsFrame() :
    ctrlProfileDirectory->SetLabel("ProfilePath");
    auto btnDetectProfileDirectory = new wxButton(panel, 204, wxT("Detect"), wxPoint(185, 240), wxSize(90, 25));
 
-   auto* txtCacheDirectory = new wxStaticText(panel, wxID_ANY, wxT("Cache Directory: "), wxPoint(30, 300));
-   ctrlCacheDirectory      = new wxDirPickerCtrl(panel, 202, wxEmptyString, wxT("Cache Directory"), wxPoint(130, 300), wxSize(300, -1));
+   auto* txtCacheDirectory = new wxStaticText(panel, wxID_ANY, wxT("Download Cache: "), wxPoint(30, 300));
+   ctrlCacheDirectory      = new wxDirPickerCtrl(panel, 202, wxEmptyString, wxT("Download Cache"), wxPoint(130, 300), wxSize(300, -1));
    ctrlCacheDirectory->SetLabel("CachePath");
    auto btnCacheDirectory = new wxButton(panel, 205, wxT("Reset"), wxPoint(185, 340), wxSize(90, 25));
 

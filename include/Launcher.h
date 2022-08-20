@@ -20,7 +20,7 @@ struct VersionParser {
 };
 
 struct HKEY__;
-typedef HKEY__ *HKEY;
+typedef HKEY__* HKEY;
 
 class Launcher {
    public:  // constructors
@@ -43,8 +43,8 @@ class Launcher {
    void setDiscordMessage(const std::string& message);
    static void setExit(bool exit) noexcept;
    const std::string& getFullVersion();
-   const std::string& getMPUserPath();
-   const std::string& getCachePath();
+   const fs::path& getMPUserPath();
+   const fs::path& getCachePath();
    static bool Terminated() noexcept;
    const std::string& getPublicKey();
    const std::string& getUserRole();
@@ -61,7 +61,7 @@ class Launcher {
    void ListenIPC();
    void Abort();
 
-   public: // variables
+   public:  // variables
    static inline std::thread EntryThread{};
    static inline VersionParser SupportedVersion{"0.25.4.0"};
    static inline std::string Version{"2.0"};
@@ -70,6 +70,9 @@ class Launcher {
    private:  // variables
    uint32_t GamePID{0};
    bool EnableUI = true;
+   fs::path MPUserPath{};
+   fs::path BeamUserPath{};
+   fs::path LauncherCache{};
    int64_t DiscordTime{};
    bool LoginAuth = false;
    fs::path CurrentPath{};
@@ -78,13 +81,11 @@ class Launcher {
    std::string PublicKey{};
    std::thread IPCSystem{};
    std::thread DiscordRPC{};
-   std::string MPUserPath{};
    std::string BeamVersion{};
-   std::string BeamUserPath{};
    std::string DiscordMessage{};
    Server ServerHandler{this};
    std::string TargetBuild{"default"};
-   std::string LauncherCache{};
+
    static inline std::atomic<bool> Shutdown{false}, Exit{false};
    std::unique_ptr<IPC> IPCToGame{};
    std::unique_ptr<IPC> IPCFromGame{};

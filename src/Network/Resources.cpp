@@ -255,7 +255,7 @@ void Server::SyncResources() {
         FN != FNames.end() && !Terminate; ++FN, ++FS) {
       auto pos = FN->find_last_of('/');
       if (pos != std::string::npos) {
-         a = LauncherInstance->getCachePath() + FN->substr(pos);
+         a = (LauncherInstance->getCachePath()/FN->substr(pos+1)).string();
       } else continue;
       Pos++;
       if (fs::exists(a)) {
@@ -269,8 +269,8 @@ void Server::SyncResources() {
                   fs::create_directories(LauncherInstance->getMPUserPath());
                }
                fs::copy_file(a,
-                             LauncherInstance->getMPUserPath() +
-                                 a.substr(a.find_last_of('/')),
+                             LauncherInstance->getMPUserPath() /
+                                 a.substr(a.find_last_of('/')+1),
                              fs::copy_options::overwrite_existing);
             } catch (std::exception& e) {
                LOG(ERROR) << "Failed copy to the mods folder! " << e.what();
@@ -282,7 +282,7 @@ void Server::SyncResources() {
          } else remove(a.c_str());
       }
       CheckForDir();
-      std::string FName = a.substr(a.find_last_of('/'));
+      std::string FName = a.substr(a.find_last_of('/')+1);
       do {
          TCPSend("f" + *FN);
 
@@ -313,7 +313,7 @@ void Server::SyncResources() {
          if (!fs::exists(LauncherInstance->getMPUserPath())) {
             fs::create_directories(LauncherInstance->getMPUserPath());
          }
-         fs::copy_file(a, LauncherInstance->getMPUserPath() + FName,
+         fs::copy_file(a, LauncherInstance->getMPUserPath()/FName,
                        fs::copy_options::overwrite_existing);
       }
       WaitForConfirm();

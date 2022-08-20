@@ -44,7 +44,7 @@ void Launcher::ResetMods() {
       fs::create_directories(MPUserPath);
       return;
    }
-   if (DirCount(fs::path(MPUserPath)) > 3) {
+   if (DirCount(MPUserPath) > 3) {
       LOG(WARNING)
           << "mods/multiplayer will be cleared in 15 seconds, close to abort";
       std::this_thread::sleep_for(std::chrono::seconds(15));
@@ -54,7 +54,7 @@ void Launcher::ResetMods() {
 }
 
 void Launcher::EnableMP() {
-   std::string File(BeamUserPath + "mods\\db.json");
+   fs::path File(BeamUserPath/"mods"/"db.json");
    if (!fs::exists(File)) return;
    auto Size = fs::file_size(File);
    if (Size < 2) return;
@@ -86,5 +86,5 @@ void Launcher::SetupMOD() {
        "https://backend.beammp.com/builds/client?download=true"
        "&pk=" +
            PublicKey + "&branch=" + TargetBuild,
-       MPUserPath + "\\BeamMP.zip");
+       (MPUserPath/"BeamMP.zip").string());
 }

@@ -25,19 +25,28 @@ void Launcher::LoadConfig() {
          for (char& c : TargetBuild) c = char(tolower(c));
       } else LOG(ERROR) << "Failed to get 'Build' string from config";
 
-      if (GamePath.is_string()) BeamRoot = GamePath.as_string()->get();
+      if (GamePath.is_string()) {
+         if(!GamePath.as_string()->get().empty()) {
+            BeamRoot = GamePath.as_string()->get();
+         } else throw ShutdownException("GamePath cannot be empty");
+      }
       else LOG(ERROR) << "Failed to get 'GamePath' string from config";
 
       if (ProfilePath.is_string()) {
-         BeamUserPath = ProfilePath.as_string()->get();
-         if (!BeamUserPath.empty()) {
-            MPUserPath = BeamUserPath + "\\mods\\multiplayer";
-         }
+         auto GameVer = VersionParser(UIData::GameVer).split;
+
+         if (!ProfilePath.as_string()->get().empty()) {
+            BeamUserPath = fs::path(ProfilePath.as_string()->get())/(GameVer[0] + '.' + GameVer[1]);
+            MPUserPath = BeamUserPath/"mods"/"multiplayer";
+         } else throw ShutdownException("ProfilePath cannot be empty");
       }
       else LOG(ERROR) << "Failed to get 'ProfilePath' string from config";
 
-      if (CachePath.is_string()) LauncherCache = CachePath.as_string()->get();
-      else LOG(ERROR) << "Failed to get 'CachePath' string from config";
+      if (CachePath.is_string()) {
+         if(!CachePath.as_string()->get().empty()) {
+            LauncherCache = CachePath.as_string()->get();
+         } else throw ShutdownException("CachePath cannot be empty");
+      } else LOG(ERROR) << "Failed to get 'CachePath' string from config";
 
       BeamVersion = UIData::GameVer;
    } else {

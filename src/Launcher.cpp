@@ -208,7 +208,7 @@ void Launcher::setExit(bool exit) noexcept {
    Exit.store(exit);
 }
 
-const std::string& Launcher::getMPUserPath() {
+const fs::path& Launcher::getMPUserPath() {
    return MPUserPath;
 }
 
@@ -216,6 +216,6 @@ const std::string& Launcher::getPublicKey() {
    return PublicKey;
 }
 
-const std::string& Launcher::getCachePath() {
+const fs::path& Launcher::getCachePath() {
    return LauncherCache;
 }
