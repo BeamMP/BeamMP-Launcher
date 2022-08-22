@@ -3,6 +3,7 @@
 /// Copyright (c) 2021-present Anonymous275 read the LICENSE file for more info.
 ///
 // clang-format off
+#include <tomlplusplus/toml.hpp>
 #include <wx/wxprec.h>
 #ifndef WX_PRECOMP
 #include <wx/dc.h>
@@ -15,7 +16,6 @@
 #include <wx/wx.h>
 #include <wx/wxhtml.h.>
 #include <wx/filepicker.h>
-#include <tomlplusplus/toml.hpp>
 #include <comutil.h>
 #include <ShlObj.h>
 #include <fstream>
@@ -199,7 +199,7 @@ void MySettingsFrame::UpdateCacheDirectory(const std::string& path) {
 template<typename ValueType>
 void UpdateConfig(const std::string& key, ValueType&& value) {
    if (fs::exists(UIData::ConfigPath)) {
-      toml::parse_result config = toml::parse_file(UIData::ConfigPath);
+      toml::table config = toml::parse_file(UIData::ConfigPath).table();
       config.insert_or_assign(key, value);
 
       std::ofstream tml(UIData::ConfigPath);
