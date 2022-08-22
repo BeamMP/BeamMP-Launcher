@@ -98,9 +98,9 @@ class ShutdownException : public std::runtime_error {
 };
 
 struct UIData {
-   static inline std::string GamePath, ProfilePath, CachePath, Build, PublicKey, UserRole, Username, GameVer;
-   static inline bool LoginAuth{false}, Console{false};
+   static inline std::string GamePath, ProfilePath, CachePath, Build, PublicKey, UserRole, Username, GameVer, ConfigPath;
+   static inline bool LoginAuth{false}, Console{false}, UI;
 };
 
 void UpdateKey(const std::string& newKey);
-void entry();
+int entry();

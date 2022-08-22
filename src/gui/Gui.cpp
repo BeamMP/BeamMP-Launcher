@@ -198,11 +198,11 @@ void MySettingsFrame::UpdateCacheDirectory(const std::string& path) {
 /////////// UpdateConfig Function ///////////
 template<typename ValueType>
 void UpdateConfig(const std::string& key, ValueType&& value) {
-   if (fs::exists("Launcher.toml")) {
-      toml::parse_result config = toml::parse_file("Launcher.toml");
+   if (fs::exists(UIData::ConfigPath)) {
+      toml::parse_result config = toml::parse_file(UIData::ConfigPath);
       config.insert_or_assign(key, value);
 
-      std::ofstream tml("Launcher.toml");
+      std::ofstream tml(UIData::ConfigPath);
       if (tml.is_open()) {
          tml << config;
          tml.close();
@@ -272,9 +272,9 @@ std::string ResetCache() {
 
 /////////// Load Config Function ///////////
 void LoadConfig() {
-   if (fs::exists("Launcher.toml")) {
-      toml::parse_result config = toml::parse_file("Launcher.toml");
-      auto ui                   = config["UI"];
+   if (fs::exists(UIData::ConfigPath)) {
+      toml::parse_result config = toml::parse_file(UIData::ConfigPath);
+      auto UI                   = config["UI"];
       auto Build                = config["Build"];
       auto GamePath             = config["GamePath"];
       auto ProfilePath          = config["ProfilePath"];
@@ -301,8 +301,12 @@ void LoadConfig() {
          UIData::Build = Build.as_string()->get();
       } else wxMessageBox("Unable to retrieve build state!", "Error");
 
+      if (UI.is_boolean()) {
+         UIData::UI = UI.as_boolean()->get();
+      } else wxMessageBox("Unable to retrieve UI state!", "Error");
+
    } else {
-      std::ofstream tml("Launcher.toml");
+      std::ofstream tml(UIData::ConfigPath);
       if (tml.is_open()) {
          tml << "UI = true\n"
                 "Build = 'Default'\n"
@@ -415,8 +419,6 @@ bool MyApp::OnInit() {
       }
    }
 
-   Log::Init();
-   LoadConfig();
    CheckKey();
 
    WindowsConsole(UIData::Console);
@@ -963,20 +965,34 @@ void MySettingsFrame::OnResetCache(wxCommandEvent& event) {
 
 /////////// MAIN FUNCTION ///////////
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
+   std::string ConfigPath(lpCmdLine);
+   if (!ConfigPath.empty()) {
+      UIData::ConfigPath = ConfigPath;
+   } else UIData::ConfigPath = "Launcher.toml";
    wxDisableAsserts();
    wxLog::SetLogLevel(wxLOG_Info);
-   int result = 0;
-   try {
-      new MyApp();
-      result = wxEntry(hInstance, hPrevInstance, lpCmdLine, nShowCmd);
-      if (Launcher::EntryThread.joinable())
-         Launcher::EntryThread.join();
-      if (MyMainFrame::UpdateThread.joinable())
-         MyMainFrame::UpdateThread.join();
-   } catch (const ShutdownException& e) {
-      LOG(INFO) << "Launcher shutting down with reason: " << e.what();
-   } catch (const std::exception& e) {
-      LOG(FATAL) << e.what();
+   Log::Init();
+   LoadConfig();
+   UIData::GameVer = jsonRead();
+
+   if (UIData::UI) {
+      int result = 0;
+      try {
+         new MyApp();
+         result = wxEntry(hInstance, hPrevInstance, lpCmdLine, nShowCmd);
+         if (Launcher::EntryThread.joinable())
+            Launcher::EntryThread.join();
+         if (MyMainFrame::UpdateThread.joinable())
+            MyMainFrame::UpdateThread.join();
+      } catch (const ShutdownException& e) {
+         LOG(INFO) << "Launcher shutting down with reason: " << e.what();
+      } catch (const std::exception& e) {
+         LOG(FATAL) << e.what();
+      }
+      return result;
+   } else {
+      WindowsConsole(true);
+      Log::ConsoleOutput(true);
+      return entry();
    }
-   return result;
 }
