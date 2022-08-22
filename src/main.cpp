@@ -6,8 +6,7 @@
 #include "Launcher.h"
 #include "Logger.h"
 
-void entry() {
-
+int entry() {
    try {
       Launcher launcher;
       launcher.RunDiscordRPC();
@@ -25,5 +24,5 @@ void entry() {
    }
    std::this_thread::sleep_for(std::chrono::seconds(2));
    Launcher::setExit(true);
-
+   return 0;
 }
