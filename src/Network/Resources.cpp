@@ -262,7 +262,7 @@ void Server::SyncResources() {
          if (!std::all_of(FS->begin(), FS->end(), isdigit)) continue;
          if (fs::file_size(a) == std::stoull(*FS)) {
             UpdateUl(false, std::to_string(Pos) + "/" + std::to_string(Amount) +
-                                ": " + a.substr(a.find_last_of('/')));
+                                ": " + a.substr(a.find_last_of("/\\")));
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
             try {
                if (!fs::exists(LauncherInstance->getMPUserPath())) {
@@ -270,7 +270,7 @@ void Server::SyncResources() {
                }
                fs::copy_file(a,
                              LauncherInstance->getMPUserPath() /
-                                 a.substr(a.find_last_of('/')+1),
+                                 a.substr(a.find_last_of("/\\")+1),
                              fs::copy_options::overwrite_existing);
             } catch (std::exception& e) {
                LOG(ERROR) << "Failed copy to the mods folder! " << e.what();
@@ -282,7 +282,7 @@ void Server::SyncResources() {
          } else remove(a.c_str());
       }
       CheckForDir();
-      std::string FName = a.substr(a.find_last_of('/')+1);
+      std::string FName = a.substr(a.find_last_of("/\\")+1);
       do {
          TCPSend("f" + *FN);
 
@@ -313,7 +313,7 @@ void Server::SyncResources() {
          if (!fs::exists(LauncherInstance->getMPUserPath())) {
             fs::create_directories(LauncherInstance->getMPUserPath());
          }
-         fs::copy_file(a, LauncherInstance->getMPUserPath()/FName,
+         fs::copy_file(a, LauncherInstance->getMPUserPath()/fs::path(FName).filename(),
                        fs::copy_options::overwrite_existing);
       }
       WaitForConfirm();
