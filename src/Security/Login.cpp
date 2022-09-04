@@ -94,7 +94,8 @@ void CheckLocalKey(){
             d.Parse(Buffer.c_str());
             if (Buffer == "-1" || Buffer.at(0) != '{' || d.HasParseError()) {
                 error(Buffer);
-                fatal("Invalid answer from authentication servers, please try again later!");
+                info("Invalid answer from authentication servers.");
+                UpdateKey(nullptr);
             }
             if(d["success"].GetBool()){
                 LoginAuth = true;
