@@ -374,6 +374,13 @@ void CheckKey() {
          Key.read(&Buffer[0], std::streamsize(Size));
          Key.close();
 
+         for (char& c : Buffer) {
+            if (!std::isalnum(c) && c != '-') {
+               UpdateKey("");
+               return;
+            }
+         }
+
          Buffer = HTTP::Post("https://auth.beammp.com/userlogin",
                              R"({"pk":")" + Buffer + "\"}");
 
