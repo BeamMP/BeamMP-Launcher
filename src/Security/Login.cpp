@@ -90,7 +90,7 @@ void CheckLocalKey(){
 
             for (char& c : Buffer) {
               if (!std::isalnum(c) && c != '-') {
-                UpdateKey("");
+                UpdateKey(nullptr);
                 return;
               }
             }
