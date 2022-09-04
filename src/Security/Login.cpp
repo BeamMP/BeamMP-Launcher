@@ -18,7 +18,7 @@ extern bool LoginAuth;
 std::string Role;
 
 void UpdateKey(const char* newKey){
-    if(newKey){
+    if(newKey && std::isalnum(newKey[0])){
         std::ofstream Key("key");
         if(Key.is_open()){
             Key << newKey;
@@ -87,6 +87,13 @@ void CheckLocalKey(){
             std::string Buffer(Size, 0);
             Key.read(&Buffer[0], Size);
             Key.close();
+
+            for (char& c : Buffer) {
+              if (!std::isalnum(c) && c != '-') {
+                UpdateKey("");
+                return;
+              }
+            }
 
             Buffer = HTTP::Post("https://auth.beammp.com/userlogin", R"({"pk":")" + Buffer + "\"}");
 
