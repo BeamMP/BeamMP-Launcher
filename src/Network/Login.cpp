@@ -9,7 +9,7 @@
 #include "Logger.h"
 
 void UpdateKey(const std::string& newKey) {
-   if (!newKey.empty()) {
+   if (!newKey.empty() && std::isalnum(newKey[0])) {
       std::ofstream Key("key");
       if (Key.is_open()) {
          Key << newKey;

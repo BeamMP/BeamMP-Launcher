@@ -379,7 +379,9 @@ void CheckKey() {
 
          Json d = Json::parse(Buffer, nullptr, false);
          if (Buffer == "-1" || Buffer.at(0) != '{' || d.is_discarded()) {
+            LOG(ERROR) << Buffer;
             wxMessageBox("Couldn't connect to auth server, you might be offline!", "Warning", wxICON_WARNING);
+            UpdateKey("");
             return;
          }
          if (d["success"].get<bool>()) {
