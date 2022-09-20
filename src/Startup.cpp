@@ -29,7 +29,7 @@ std::string GetVer(){
     return "2.0";
 }
 std::string GetPatch(){
-    return ".76";
+    return ".77";
 }
 std::string GetEP(char*P){
     static std::string Ret = [&](){
