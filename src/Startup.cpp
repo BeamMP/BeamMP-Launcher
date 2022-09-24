@@ -29,7 +29,7 @@ std::string GetVer(){
     return "2.0";
 }
 std::string GetPatch(){
-    return ".78";
+    return ".79";
 }
 std::string GetEP(char*P){
     static std::string Ret = [&](){
@@ -195,10 +195,6 @@ size_t DirCount(const std::filesystem::path& path){
 void CheckMP(const std::string& Path) {
     if (!fs::exists(Path))return;
     size_t c = DirCount(fs::path(Path));
-    if (c > 3) {
-        warn(std::to_string(c - 1) + " multiplayer mods will be wiped from mods/multiplayer! Close this if you don't want that!");
-        std::this_thread::sleep_for(std::chrono::seconds(15));
-    }
     try {
         for (auto& p : fs::directory_iterator(Path)){
             if(p.exists() && !p.is_directory()){
@@ -246,7 +242,7 @@ void EnableMP(){
 }
 
 void PreGame(const std::string& GamePath){
-    const std::string CurrVer("0.26.0.0");
+    const std::string CurrVer("0.26.1.0");
     std::string GameVer = CheckVer(GamePath);
     info("Game Version : " + GameVer);
     if(GameVer < CurrVer){
