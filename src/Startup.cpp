@@ -195,10 +195,6 @@ size_t DirCount(const std::filesystem::path& path){
 void CheckMP(const std::string& Path) {
     if (!fs::exists(Path))return;
     size_t c = DirCount(fs::path(Path));
-    if (c > 3) {
-        warn(std::to_string(c - 1) + " multiplayer mods will be wiped from mods/multiplayer! Close this if you don't want that!");
-        std::this_thread::sleep_for(std::chrono::seconds(15));
-    }
     try {
         for (auto& p : fs::directory_iterator(Path)){
             if(p.exists() && !p.is_directory()){
