@@ -31,6 +31,7 @@ std::string GetVer(){
 std::string GetPatch(){
     return ".80";
 }
+
 std::string GetEP(char*P){
     static std::string Ret = [&](){
         std::string path(P);
