@@ -345,6 +345,6 @@ std::string Server::TCPRcv() {
       Ret = Zlib::DeComp(Ret.substr(4));
    }
 
-   if (Ret[0] == 'E') UUl(Ret.substr(1));
+   if (Ret[0] == 'E' || Ret[0] == 'K') UUl(Ret.substr(1));
    return Ret;
 }

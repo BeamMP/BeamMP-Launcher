@@ -54,7 +54,7 @@ std::string Server::Auth() {
 
    auto Res = TCPRcv();
 
-   if (Res.empty() || Res[0] == 'E') {
+   if (Res.empty() || Res[0] == 'E' || Res[0] == 'K') {
       Abort();
       return "";
    }
@@ -81,7 +81,7 @@ std::string Server::Auth() {
 
    Res = TCPRcv();
 
-   if (Res[0] == 'E') {
+   if (Res[0] == 'E' || Res[0] == 'K') {
       Abort();
       return "";
    }
