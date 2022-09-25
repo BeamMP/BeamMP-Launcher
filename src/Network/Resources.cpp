@@ -60,7 +60,7 @@ std::string Auth(SOCKET Sock){
 
     auto Res = TCPRcv(Sock);
 
-    if(Res.empty() || Res[0] == 'E'){
+    if(Res.empty() || Res[0] == 'E' || Res[0] == 'K'){
         Abord();
         return "";
     }
@@ -87,7 +87,7 @@ std::string Auth(SOCKET Sock){
 
     Res = TCPRcv(Sock);
 
-    if(Res[0] == 'E'){
+    if(Res[0] == 'E' || Res[0] == 'K'){
         Abord();
         return "";
     }

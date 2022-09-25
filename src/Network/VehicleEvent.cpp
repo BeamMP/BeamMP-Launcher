@@ -109,7 +109,7 @@ std::string TCPRcv(SOCKET Sock){
 #ifdef DEBUG
     //debug("Parsing from server -> " + std::to_string(Ret.size()));
 #endif
-    if(Ret[0] == 'E')UUl(Ret.substr(1));
+    if(Ret[0] == 'E' || Ret[0] == 'K')UUl(Ret.substr(1));
     return Ret;
 }
 
