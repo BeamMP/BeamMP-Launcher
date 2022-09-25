@@ -293,27 +293,30 @@ void LoadConfig() {
          UIData::CachePath = CachePath.as_string()->get();
       } else wxMessageBox("Cache path not found!", "Error");
 
-      if (Console.is_boolean()) {
+      UIData::Console = true;
+      /*if (Console.is_boolean()) {
          UIData::Console = Console.as_boolean()->get();
-      } else wxMessageBox("Unable to retrieve console state!", "Error");
+      } else wxMessageBox("Unable to retrieve console state!", "Error");*/
 
       if (Build.is_string()) {
          UIData::Build = Build.as_string()->get();
       } else wxMessageBox("Unable to retrieve build state!", "Error");
 
-      if (UI.is_boolean()) {
+
+      UIData::UI = false;
+      /*if (UI.is_boolean()) {
          UIData::UI = UI.as_boolean()->get();
-      } else wxMessageBox("Unable to retrieve UI state!", "Error");
+      } else wxMessageBox("Unable to retrieve UI state!", "Error");*/
 
    } else {
       std::ofstream tml(UIData::ConfigPath);
       if (tml.is_open()) {
-         tml << "UI = true\n"
+         tml << //"UI = true\n"
                 "Build = 'Default'\n"
                 "GamePath = ''\n"
                 "ProfilePath = ''\n"
-                "CachePath = ''\n"
-                "Console = false";
+                "CachePath = ''";
+                //"Console = false";
          tml.close();
          AutoDetectGame();
          AutoDetectProfile();

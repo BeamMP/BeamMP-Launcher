@@ -15,9 +15,11 @@ void Launcher::LoadConfig() {
       auto GamePath             = config["GamePath"];
       auto ProfilePath          = config["ProfilePath"];
       auto CachePath            = config["CachePath"];
-      if (ui.is_boolean()) {
+
+      EnableUI = false;
+      /*if (ui.is_boolean()) {
          EnableUI = ui.as_boolean()->get();
-      } else LOG(ERROR) << "Failed to get 'UI' boolean from config";
+      } else LOG(ERROR) << "Failed to get 'UI' boolean from config";*/
 
       // Default -1 / Release 1 / EA 2 / Dev 3 / Custom 3
       if (build.is_string()) {

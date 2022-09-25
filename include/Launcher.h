@@ -63,7 +63,7 @@ class Launcher {
 
    public:  // variables
    static inline std::thread EntryThread{};
-   static inline VersionParser SupportedVersion{"0.26.0.0"};
+   static inline VersionParser SupportedVersion{"0.26.1.0"};
    static inline std::string Version{"2.0"};
    static inline std::string FullVersion{Version + ".99"};
 
