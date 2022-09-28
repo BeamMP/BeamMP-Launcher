@@ -69,10 +69,12 @@ void Server::ServerParser(const std::string& Data) {
       case 'p':
          PingEnd = std::chrono::high_resolution_clock::now();
          if (PingStart > PingEnd) Ping = 0;
-         else
-            Ping = int(std::chrono::duration_cast<std::chrono::milliseconds>(
-                           PingEnd - PingStart)
-                           .count());
+         else {
+            Ping = int(std::chrono::duration_cast<std::chrono::milliseconds>(PingEnd - PingStart).count());
+            if (Ping > 800) {
+               LauncherInstance->SendIPC("Up-2");
+            } else LauncherInstance->SendIPC("Up" + std::to_string(Ping));
+         }
          return;
       case 'M':
          MStatus = Data;
@@ -86,7 +88,4 @@ void Server::ServerParser(const std::string& Data) {
          break;
    }
    LauncherInstance->SendIPC(Data, false);
-   if (getPing() > 800) {
-      LauncherInstance->SendIPC("Up-2");
-   } else LauncherInstance->SendIPC("Up" + std::to_string(getPing()));
 }
