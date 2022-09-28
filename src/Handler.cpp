@@ -33,9 +33,6 @@ void Launcher::HandleIPC(const std::string& Data) {
          break;
       case 'U':
          SendIPC("Ul" + ServerHandler.getUIStatus());
-         if (ServerHandler.getPing() > 800) {
-            SendIPC("Up-2");
-         } else SendIPC("Up" + std::to_string(ServerHandler.getPing()));
          break;
       case 'M':
          SendIPC(ServerHandler.getMap());
@@ -89,4 +86,7 @@ void Server::ServerParser(const std::string& Data) {
          break;
    }
    LauncherInstance->SendIPC(Data, false);
+   if (getPing() > 800) {
+      LauncherInstance->SendIPC("Up-2");
+   } else LauncherInstance->SendIPC("Up" + std::to_string(getPing()));
 }
