@@ -106,7 +106,13 @@ void Launcher::LaunchGame() {
           << "BeamNG V" << BeamVersion
           << " is slightly older than recommended, this might cause issues!";
    }
+
    if (Memory::GetBeamNGPID({}) == 0) {
+      if(Memory::GetLauncherPID({GetCurrentProcessId()}) != 0) {
+         Abort();
+         LOG(ERROR) << "Two launchers are open with no game process";
+         return;
+      }
       LOG(INFO) << "Launching BeamNG from steam";
       ShellExecuteA(nullptr, nullptr, "steam://rungameid/284160", nullptr,
                     nullptr, SW_SHOWNORMAL);
@@ -119,12 +125,8 @@ void Launcher::LaunchGame() {
 void Launcher::WaitForGame() {
    std::set<uint32_t> BlackList;
    int chan = 1;
-   do {
+   while (GamePID == 0 && !Shutdown.load()) {
       auto PID = Memory::GetBeamNGPID(BlackList);
-      if(PID == 0 && BlackList.empty() && Memory::GetLauncherPID({GetCurrentProcessId()})) {
-         Shutdown.store(true);
-         break;
-      }
       if (PID != 0 && IPC::mem_used(PID)) {
          BlackList.emplace(PID);
          LOG(INFO) << "Skipping Channel #" << chan++;
@@ -132,7 +134,7 @@ void Launcher::WaitForGame() {
          GamePID = PID;
       }
       std::this_thread::sleep_for(std::chrono::seconds(1));
-   } while (GamePID == 0 && !Shutdown.load());
+   }
    if (Shutdown.load()) return;
 
    if (GamePID == 0) {
