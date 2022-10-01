@@ -118,10 +118,16 @@ void Launcher::LaunchGame() {
 
 void Launcher::WaitForGame() {
    std::set<uint32_t> BlackList;
+   int chan = 1;
    do {
       auto PID = Memory::GetBeamNGPID(BlackList);
+      if(PID == 0 && BlackList.empty() && Memory::GetLauncherPID({GetCurrentProcessId()})) {
+         Shutdown.store(true);
+         break;
+      }
       if (PID != 0 && IPC::mem_used(PID)) {
          BlackList.emplace(PID);
+         LOG(INFO) << "Skipping Channel #" << chan++;
       } else {
          GamePID = PID;
       }

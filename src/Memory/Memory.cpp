@@ -35,6 +35,28 @@ uint32_t Memory::GetBeamNGPID(const std::set<uint32_t>& BL) {
    return pe32.th32ProcessID;
 }
 
+uint32_t Memory::GetLauncherPID(const std::set<uint32_t>& BL) {
+   SetLastError(0);
+   PROCESSENTRY32 pe32;
+   pe32.dwSize     = sizeof(PROCESSENTRY32);
+   HANDLE Snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+
+   if (Process32First(Snapshot, &pe32)) {
+      do {
+         if (std::string("BeamMP-Launcher.exe") == pe32.szExeFile &&
+             BL.find(pe32.th32ProcessID) == BL.end() &&
+             BL.find(pe32.th32ParentProcessID) == BL.end()) {
+            break;
+         }
+      } while (Process32Next(Snapshot, &pe32));
+   }
+
+   if (Snapshot != INVALID_HANDLE_VALUE) { CloseHandle(Snapshot); }
+
+   if (GetLastError() != 0) return 0;
+   return pe32.th32ProcessID;
+}
+
 uint64_t Memory::GetModuleBase(const char* Name) {
    return (uint64_t)GetModuleHandleA(Name);
 }
