@@ -261,7 +261,6 @@ void SyncResources(SOCKET Sock){
         if (fs::exists(a)) {
             if (FS->find_first_not_of("0123456789") != std::string::npos)continue;
             if (fs::file_size(a) == std::stoull(*FS)){
-                UpdateUl(false,std::to_string(Pos) + "/" + std::to_string(Amount) + ": " + a.substr(a.find_last_of('/')));
                 std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 try {
                     if(!fs::exists(GetGamePath() + "mods/multiplayer")){
@@ -274,6 +273,7 @@ void SyncResources(SOCKET Sock){
                     Terminate = true;
                     continue;
                 }
+                UpdateUl(false,std::to_string(Pos) + "/" + std::to_string(Amount) + ": " + a.substr(a.find_last_of('/')));
                 WaitForConfirm();
                 continue;
             }else remove(a.c_str());
