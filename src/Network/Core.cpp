@@ -55,9 +55,6 @@ void Parse(std::string Data,SOCKET CSocket){
             Data = Data.substr(0,1);
             break;
         case 'B':
-            NetReset();
-            Terminate = true;
-            TCPTerminate = true;
             Data = Code + HTTP::Get("https://backend.beammp.com/servers-info");
             break;
         case 'C':
