@@ -31,14 +31,14 @@ void Server::TCPClientMain() {
    SOCKADDR_IN ServerAddr;
    TCPSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
    if (TCPSocket == -1) {
-      LOG(ERROR) << "Socket failed! Error code: " << GetSocketApiError();
+      LOG(ERROR) << GetSocketApiError() << " TCP Socket";
       return;
    }
    const char optval = 0;
    int status = ::setsockopt(TCPSocket, SOL_SOCKET, SO_DONTLINGER, &optval,
                              sizeof(optval));
    if (status < 0) {
-      LOG(INFO) << "Failed to set DONTLINGER: " << GetSocketApiError();
+      LOG(INFO) << GetSocketApiError() << " TCP DONTLINGER";
    }
    ServerAddr.sin_family = AF_INET;
    ServerAddr.sin_port   = htons(Port);
@@ -46,7 +46,7 @@ void Server::TCPClientMain() {
    status = connect(TCPSocket, (SOCKADDR*)&ServerAddr, sizeof(ServerAddr));
    if (status != 0) {
       UStatus = "Connection Failed!";
-      LOG(ERROR) << "Connect failed! Error code: " << GetSocketApiError();
+      LOG(ERROR) << GetSocketApiError() << " TCP Connect";
       Terminate.store(true);
       return;
    }
@@ -67,7 +67,7 @@ void Server::TCPClientMain() {
 
 void Server::StartUDP() {
    if (TCPConnection.joinable() && !UDPConnection.joinable()) {
-      LOG(INFO) << "Connecting UDP";
+      LOG(INFO) << "Starting UDP";
       UDPConnection = std::thread(&Server::UDPMain, this);
    }
 }
@@ -82,7 +82,7 @@ void Server::UDPSend(std::string Data) {
    int sendOk         = sendto(UDPSocket, Packet.c_str(), int(Packet.size()), 0,
                                (sockaddr*)UDPSockAddress.get(), sizeof(sockaddr_in));
    if (sendOk == SOCKET_ERROR)
-      LOG(ERROR) << "UDP Socket Error Code : " << GetSocketApiError();
+      LOG(ERROR) << GetSocketApiError() << " UDP Send";
 }
 
 void Server::UDPParser(std::string Packet) {
@@ -100,7 +100,10 @@ void Server::UDPRcv() {
    if (UDPSocket == -1) return;
    int32_t Rcv = recvfrom(UDPSocket, &Ret[0], 10240, 0, (sockaddr*)&FromServer,
                           &clientLength);
-   if (Rcv == SOCKET_ERROR) return;
+   if (Rcv == SOCKET_ERROR) {
+      LOG(ERROR) << GetSocketApiError() << " UDP Rcv";
+      return;
+   }
    UDPParser(Ret.substr(0, Rcv));
 }
 
@@ -155,7 +158,7 @@ void Server::SendLarge(std::string Data) {
 
 std::string Server::GetSocketApiError() {
    // This will provide us with the error code and an error message, all in one.
-   // The resulting format is "<CODE> - <MESSAGE>"
+   // The resulting format is "<MESSAGE> - <CODE>"
    int err;
    char msgbuf[256];
    msgbuf[0] = '\0';
@@ -167,7 +170,7 @@ std::string Server::GetSocketApiError() {
                   msgbuf, sizeof(msgbuf), nullptr);
 
    if (*msgbuf) {
-      return std::to_string(WSAGetLastError()) + " - " + std::string(msgbuf);
+      return std::string(msgbuf) + " - " + std::to_string(WSAGetLastError());
    } else {
       return std::to_string(WSAGetLastError());
    }
