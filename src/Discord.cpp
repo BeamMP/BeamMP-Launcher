@@ -99,8 +99,8 @@ void ErrorAboard(){
     exit(6);
 }
 void Discord_Main(){
-    std::thread t1(DMain);
-    t1.detach();
+    /*std::thread t1(DMain);
+    t1.detach();*/
     /*info("Connecting to discord client...");
     int C = 0;
     while(DiscordInfo == nullptr && C < 80){
