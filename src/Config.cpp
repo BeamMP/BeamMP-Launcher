@@ -30,10 +30,11 @@ void Launcher::LoadConfig(const fs::path& conf) {  // check if json (issue)
       } else LOG(ERROR) << "Failed to get 'Build' string from config";
 
       if (ProfilePath.is_string() && !ProfilePath.as_string()->get().empty()) {
-         BeamUserPath = fs::path(ProfilePath.as_string()->get());
+         BeamProfilePath = fs::path(ProfilePath.as_string()->get());
+         BeamUserPath = BeamProfilePath/GetProfileVersion();
       } else {
          LOG(ERROR) << "'ProfilePath' string from config is empty defaulting";
-         BeamUserPath = GetBeamNGProfile();
+         BeamUserPath = GetProfileRoot()/GetProfileVersion();
       }
       MPUserPath = BeamUserPath / "mods" / "multiplayer";
 
@@ -44,7 +45,7 @@ void Launcher::LoadConfig(const fs::path& conf) {  // check if json (issue)
       } else LOG(ERROR) << "Failed to get 'CachePath' string from config";
 
    } else {
-      auto GameProfile = GetBeamNGProfile();
+      auto GameProfile = GetProfileRoot();
       std::ofstream tml(conf);
       if (tml.is_open()) {
          tml << "Build = 'Default'\n"
@@ -58,7 +59,7 @@ void Launcher::LoadConfig(const fs::path& conf) {  // check if json (issue)
    }
 }
 
-fs::path Launcher::GetBeamNGProfile() {
+fs::path Launcher::GetProfileRoot() {
 
       HKEY BeamNG;
       fs::path ProfilePath;
@@ -82,8 +83,12 @@ fs::path Launcher::GetBeamNGProfile() {
             CoTaskMemFree(folderPath);
          }
       }
+      BeamProfilePath = ProfilePath;
+      return BeamProfilePath;
+}
 
-      /////Load latest link
+std::string Launcher::GetProfileVersion() {
+      //load latest.lnk from profile
 
       if (CoInitializeEx(nullptr, COINIT_MULTITHREADED) != S_OK) {
          throw ShutdownException("Failed to read link: CoInitializeEx");
@@ -107,10 +112,10 @@ fs::path Launcher::GetBeamNGProfile() {
          throw ShutdownException("Failed to read link: QueryInterface(IID_IPersistFile)");
       }
 
-      rc = iPersistFile->Load((ProfilePath/"latest.lnk").wstring().c_str(), STGM_READ);
+      rc = iPersistFile->Load((BeamProfilePath/"latest.lnk").wstring().c_str(), STGM_READ);
 
       if (FAILED(rc)) {
-         throw ShutdownException("Failed to read link: iPersistFile->Load()");
+         throw ShutdownException("Failed to read link: Please launch the game at least once, check ProfilePath in Launcher.toml");
       }
 
       rc = iShellLink->Resolve(nullptr, 0);
@@ -132,6 +137,6 @@ fs::path Launcher::GetBeamNGProfile() {
       iShellLink->Release();
 
       BeamVersion = std::filesystem::path(linkTarget).filename().string();
-      LOG(INFO) << "Found BeamNG profile " << BeamVersion;
-      return ProfilePath/BeamVersion;
+      LOG(INFO) << "Found profile for BeamNG " << BeamVersion;
+      return BeamVersion;
 }

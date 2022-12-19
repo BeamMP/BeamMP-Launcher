@@ -53,7 +53,8 @@ class Launcher {
 
    private:  // functions
    void HandleIPC(const std::string& Data);
-   fs::path GetBeamNGProfile();
+   std::string GetProfileVersion();
+   fs::path GetProfileRoot();
    void UpdatePresence();
    void RichPresence();
    void WindowsInit();
@@ -71,6 +72,7 @@ class Launcher {
    uint32_t GamePID{0};
    fs::path MPUserPath{};
    fs::path BeamUserPath{};
+   fs::path BeamProfilePath{};
    fs::path LauncherCache{"Resources"};
    int64_t DiscordTime{};
    bool LoginAuth = false;
