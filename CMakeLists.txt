@@ -15,17 +15,9 @@ if (WIN32)
     set(VcpkgRoot ${_VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET})
     include_directories(${VcpkgRoot}/include)
     link_directories(${VcpkgRoot}/lib)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUNICODE")
 endif(WIN32)
 
-set(wxUSE_STL ON)
-set(BUILD_EXAMPLES OFF)
-set(wxBUILD_SHARED OFF)
-set(wxUSE_HTML ON)
-set(wxUSE_STREAMS ON)
-set(wxBUILD_MSVC_MULTIPROC ON)
-set(wxBUILD_USE_STATIC_RUNTIME ON)
-
-add_subdirectory(include/wxWidgets)
 add_subdirectory(include/cpp-httplib)
 add_subdirectory(include/tomlplusplus)
 
@@ -33,7 +25,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 
-add_executable(${PROJECT_NAME} WIN32
+add_executable(${PROJECT_NAME}
         src/main.cpp include/easyloggingpp/src/easylogging++.cc
         src/Launcher.cpp include/Launcher.h include/Memory/Hook.h
         src/Memory/Definitions.cpp include/Memory/Definitions.h
@@ -42,7 +34,7 @@ add_executable(${PROJECT_NAME} WIN32
         src/Memory/GELua.cpp include/Memory/GELua.h
         src/Memory/IPC.cpp include/Memory/IPC.h
         src/Logger.cpp include/Logger.h
-        src/gui/Gui.cpp
+        #src/gui/Gui.cpp
         include/Json.h
         src/Network/HttpAPI.cpp include/HttpAPI.h
         src/Network/Server.cpp include/Server.h
@@ -56,7 +48,6 @@ if (WIN32)
     if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
         target_link_libraries(${PROJECT_NAME} PRIVATE discord-rpc)
     endif()
-    target_link_libraries(${PROJECT_NAME} PRIVATE wx::net wx::html wx::webview wx::core wx::base)
     target_link_libraries(${PROJECT_NAME} PRIVATE
             ZLIB::ZLIB OpenSSL::SSL OpenSSL::Crypto ws2_32
             Dbghelp comsuppw minhook::minhook nlohmann_json nlohmann_json::nlohmann_json)

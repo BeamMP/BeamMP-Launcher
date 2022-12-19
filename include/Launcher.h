@@ -24,16 +24,16 @@ typedef HKEY__* HKEY;
 
 class Launcher {
    public:  // constructors
-   Launcher();
+   Launcher(int argc, char* argv[]);
    ~Launcher();
 
    public:  // available functions
    static void StaticAbort(Launcher* Instance = nullptr);
    std::string Login(const std::string& fields);
    void SendIPC(const std::string& Data, bool core = true);
+   void LoadConfig(const fs::path& conf);
    void RunDiscordRPC();
    void WaitForGame();
-   void LoadConfig();
    void LaunchGame();
    void CheckKey();
    void SetupMOD();
@@ -53,6 +53,7 @@ class Launcher {
 
    private:  // functions
    void HandleIPC(const std::string& Data);
+   fs::path GetBeamNGProfile();
    void UpdatePresence();
    void RichPresence();
    void WindowsInit();
@@ -63,16 +64,14 @@ class Launcher {
 
    public:  // variables
    static inline std::thread EntryThread{};
-   static inline VersionParser SupportedVersion{"0.26.1.0"};
    static inline std::string Version{"3.0"};
    static inline std::string FullVersion{Version + ".0"};
 
    private:  // variables
    uint32_t GamePID{0};
-   bool EnableUI = true;
    fs::path MPUserPath{};
    fs::path BeamUserPath{};
-   fs::path LauncherCache{};
+   fs::path LauncherCache{"Resources"};
    int64_t DiscordTime{};
    bool LoginAuth = false;
    fs::path CurrentPath{};
@@ -97,10 +96,4 @@ class ShutdownException : public std::runtime_error {
        runtime_error(message){};
 };
 
-struct UIData {
-   static inline std::string GamePath, ProfilePath, CachePath, Build, PublicKey, UserRole, Username, GameVer, ConfigPath;
-   static inline bool LoginAuth{false}, Console{false}, UI;
-};
 
-void UpdateKey(const std::string& newKey);
-int entry();

@@ -31,11 +31,6 @@ std::vector<std::string> Split(const std::string& String,
    return Val;
 }
 
-void CheckForDir() {
-   if (!fs::exists("Resources")) {
-      _wmkdir(L"Resources");
-   }
-}
 
 void Server::WaitForConfirm() {
    while (!Terminate && !ModLoaded) {
@@ -218,7 +213,7 @@ void Server::SyncResources() {
    std::string Ret = Auth();
    if (Ret.empty()) return;
    LOG(INFO) << "Checking Resources...";
-   CheckForDir();
+
 
    std::vector<std::string> list = Split(Ret, ";");
    std::vector<std::string> FNames(list.begin(),
@@ -281,7 +276,7 @@ void Server::SyncResources() {
             continue;
          } else remove(a.c_str());
       }
-      CheckForDir();
+
       std::string FName = a.substr(a.find_last_of("/\\")+1);
       do {
          TCPSend("f" + *FN);

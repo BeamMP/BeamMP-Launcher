@@ -6,13 +6,11 @@
 #include "Launcher.h"
 #include "Logger.h"
 
-int entry() {
+int main(int argc, char* argv[]) {
    try {
-      Launcher launcher;
+      Launcher launcher(argc, argv);
       launcher.RunDiscordRPC();
-      launcher.LoadConfig();  // check if json (issue)
       launcher.CheckKey();
-      // UI call
       // launcher.SetupMOD();
       launcher.LaunchGame();
       launcher.WaitForGame();

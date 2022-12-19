@@ -21,9 +21,10 @@ LONG WINAPI CrashHandler(EXCEPTION_POINTERS* p) {
    return EXCEPTION_EXECUTE_HANDLER;
 }
 
-Launcher::Launcher() :
+Launcher::Launcher(int argc, char* argv[]) :
     CurrentPath(std::filesystem::current_path()),
     DiscordMessage("Just launched") {
+   Log::Init();
    Shutdown.store(false);
    Exit.store(false);
    Launcher::StaticAbort(this);
@@ -31,6 +32,8 @@ Launcher::Launcher() :
    WindowsInit();
    SetUnhandledExceptionFilter(CrashHandler);
    LOG(INFO) << "Starting Launcher V" << FullVersion;
+   if (argc > 1) LoadConfig(fs::current_path() / argv[1]);
+   else LoadConfig(fs::current_path() / "Launcher.toml");
 }
 
 void Launcher::Abort() {
@@ -88,7 +91,7 @@ void Launcher::WindowsInit() {
 }
 
 void Launcher::LaunchGame() {
-   VersionParser GameVersion(BeamVersion);
+   /*VersionParser GameVersion(BeamVersion);
    if (GameVersion.data[1] > SupportedVersion.data[1]) {
       LOG(FATAL) << "BeamNG V" << BeamVersion
                  << " not yet supported, please wait until we update BeamMP!";
@@ -105,7 +108,9 @@ void Launcher::LaunchGame() {
       LOG(WARNING)
           << "BeamNG V" << BeamVersion
           << " is slightly older than recommended, this might cause issues!";
-   }
+   }*/
+
+
 
    if (Memory::GetBeamNGPID({}) == 0) {
       if(Memory::GetLauncherPID({GetCurrentProcessId()}) != 0) {
@@ -225,5 +230,8 @@ const std::string& Launcher::getPublicKey() {
 }
 
 const fs::path& Launcher::getCachePath() {
+   if (!fs::exists(LauncherCache)) {
+      fs::create_directories(LauncherCache);
+   }
    return LauncherCache;
 }

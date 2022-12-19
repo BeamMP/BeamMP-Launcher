@@ -13,7 +13,6 @@ void Log::Init() {
    Conf.setGlobally(ConfigurationType::Format,
                     "%datetime{[%d/%M/%y %H:%m:%s]} [%level] %msg");
    Conf.setGlobally(ConfigurationType::LogFlushThreshold, "2");
-   Conf.setGlobally(ConfigurationType::ToStandardOutput, "false");
    Conf.set(Level::Verbose, ConfigurationType::Format, DFormat);
    Conf.set(Level::Debug, ConfigurationType::Format, DFormat);
    Conf.set(Level::Trace, ConfigurationType::Format, DFormat);
