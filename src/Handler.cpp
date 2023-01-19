@@ -9,7 +9,7 @@
 #include "Memory/BeamNG.h"
 #include "Memory/Memory.h"
 
-void Launcher::HandleIPC(const std::string& Data) {
+void Launcher::HandleIPC(const std::string& Data) {  //TODO Improve all cases since SendIPC can be called async
    char Code = Data.at(0), SubCode = 0;
    if (Data.length() > 1) SubCode = Data.at(1);
    switch (Code) {
