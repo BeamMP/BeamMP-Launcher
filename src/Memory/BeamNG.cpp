@@ -13,16 +13,19 @@ int BeamNG::lua_open_jit_D(lua_State* State) {
     Memory::Print("Got lua State -> " + Memory::GetHex(reinterpret_cast<uint64_t>(State)));
     GELua::State = State;
     RegisterGEFunctions();
+    UpdateDetour->Enable();
     return OpenJITDetour->Original(State);
 }
 
 uint64_t BeamNG::update_D(lua_State* State) {
     if(GELua::State != State) {
-        Memory::Print("Got lua State -> " + Memory::GetHex(reinterpret_cast<uint64_t>(State)));
+        Memory::Print("Fallback Got lua State -> " + Memory::GetHex(reinterpret_cast<uint64_t>(State)));
         GELua::State = State;
         RegisterGEFunctions();
     }
-    return UpdateDetour->Original(State);
+    auto ret = UpdateDetour->Original(State);
+    UpdateDetour->Disable();
+    return ret;
 }
 
 void BeamNG::EntryPoint() {
