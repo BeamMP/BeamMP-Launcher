@@ -14,6 +14,7 @@ namespace def {
                            void* Param4);
    typedef uint32_t (*GetTickCount)();
    typedef int (*lua_open_jit)(lua_State* L);
+   typedef uint64_t (*update_function)(lua_State* L);
    typedef void (*lua_get_field)(lua_State* L, int idx, const char* k);
    typedef const char* (*lua_push_fstring)(lua_State* L, const char* fmt, ...);
    typedef int (*lua_p_call)(lua_State* L, int arg, int res, int err);

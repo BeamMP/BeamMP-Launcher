@@ -83,6 +83,12 @@ uint64_t Memory::FindPattern(const char* module, const char* Pattern[]) {
    return 0;
 }
 
+std::string Memory::GetHex(uint64_t num) {
+    char buffer[30];
+    sprintf(buffer, "%llx", num);
+    return std::string{buffer};
+}
+
 void* operator new(size_t size) {
    return GlobalAlloc(GPTR, size);
 }

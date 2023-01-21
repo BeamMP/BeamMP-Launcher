@@ -13,6 +13,7 @@ class GELua {
    static inline def::lua_settop lua_settop;
    static inline def::GetTickCount GetTickCount;
    static inline def::lua_open_jit lua_open_jit;
+   static inline def::update_function update_function;
    static inline def::lua_push_fstring lua_push_fstring;
    static inline def::lua_get_field lua_get_field;
    static inline def::lua_p_call lua_p_call;

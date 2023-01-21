@@ -16,13 +16,14 @@ class BeamNG {
    static void SendIPC(const std::string& Data);
 
    private:
-   static inline std::unique_ptr<Hook<def::GEUpdate>> TickCountDetour;
+   static inline std::unique_ptr<Hook<def::update_function>> UpdateDetour;
    static inline std::unique_ptr<Hook<def::lua_open_jit>> OpenJITDetour;
    static inline std::unique_ptr<IPC> IPCFromLauncher;
    static inline std::unique_ptr<IPC> IPCToLauncher;
    static inline uint64_t GameBaseAddr;
    static inline uint64_t DllBaseAddr;
    static int lua_open_jit_D(lua_State* State);
+   static uint64_t update_D(lua_State* State);
    static void RegisterGEFunctions();
    // static int GetTickCount_D(void* GEState, void* Param2, void* Param3, void*
    // Param4);

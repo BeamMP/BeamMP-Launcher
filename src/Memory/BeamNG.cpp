@@ -10,10 +10,19 @@
 std::unique_ptr<atomic_queue<std::string, 1000>> RCVQueue, SendQueue;
 
 int BeamNG::lua_open_jit_D(lua_State* State) {
-   Memory::Print("Got lua State");
-   GELua::State = State;
-   RegisterGEFunctions();
-   return OpenJITDetour->Original(State);
+    Memory::Print("Got lua State -> " + Memory::GetHex(reinterpret_cast<uint64_t>(State)));
+    GELua::State = State;
+    RegisterGEFunctions();
+    return OpenJITDetour->Original(State);
+}
+
+uint64_t BeamNG::update_D(lua_State* State) {
+    if(GELua::State != State) {
+        Memory::Print("Got lua State -> " + Memory::GetHex(reinterpret_cast<uint64_t>(State)));
+        GELua::State = State;
+        RegisterGEFunctions();
+    }
+    return UpdateDetour->Original(State);
 }
 
 void BeamNG::EntryPoint() {
@@ -27,6 +36,11 @@ void BeamNG::EntryPoint() {
    GELua::FindAddresses();
    /*GameBaseAddr = Memory::GetModuleBase(GameModule);
    DllBaseAddr = Memory::GetModuleBase(DllModule);*/
+
+    UpdateDetour = std::make_unique<Hook<def::update_function>>(
+            GELua::update_function, update_D);
+    UpdateDetour->Enable();
+
    OpenJITDetour = std::make_unique<Hook<def::lua_open_jit>>(
        GELua::lua_open_jit, lua_open_jit_D);
    OpenJITDetour->Enable();
@@ -94,7 +108,7 @@ void BeamNG::IPCListener() {
          IPCFromLauncher->confirm_receive();
       } else TimeOuts++;
    }
-   Memory::Print("IPC Listener System shutting down");
+   Memory::Print("IPC Listener System shutting down (timeout)");
 }
 
 uint32_t BeamNG::IPCSender(void* LP) {
@@ -105,8 +119,10 @@ uint32_t BeamNG::IPCSender(void* LP) {
          IPCToLauncher->send(result);
          if (!IPCToLauncher->send_timed_out()) TimeOuts = 0;
          else TimeOuts++;
+      } else {
+          Sleep(1); //TODO look into possibly have it wake up on a new message instead
       }
    }
-   Memory::Print("IPC Sender System shutting down");
+   Memory::Print("IPC Sender System shutting down (timeout)");
    return 0;
 }
