@@ -65,8 +65,8 @@ class Launcher {
 
    public:  // variables
    static inline std::thread EntryThread{};
-   static inline std::string Version{"3.0"};
-   static inline std::string FullVersion{Version + ".0"};
+   static inline std::string Version{"2.0"};
+   static inline std::string FullVersion{Version + ".99"};
 
    private:  // variables
    uint32_t GamePID{0};
