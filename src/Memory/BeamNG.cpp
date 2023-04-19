@@ -6,6 +6,7 @@
 #include "Memory/BeamNG.h"
 #include "Memory/Memory.h"
 #include "atomic_queue.h"
+#include <csignal>
 
 std::unique_ptr<atomic_queue<std::string, 1000>> RCVQueue, SendQueue;
 
@@ -28,30 +29,39 @@ uint64_t BeamNG::update_D(lua_State* State) {
     return ret;
 }
 
+void SignalHandler(int sig) {
+    Memory::Print( "Got termination signal ("  + std::to_string(sig)  +")");
+    BeamNG::Terminate = true;
+}
+
 void BeamNG::EntryPoint() {
-   RCVQueue     = std::make_unique<atomic_queue<std::string, 1000>>();
-   SendQueue    = std::make_unique<atomic_queue<std::string, 1000>>();
-   uint32_t PID = Memory::GetPID();
-   auto status  = MH_Initialize();
-   if (status != MH_OK)
-      Memory::Print(std::string("MH Error -> ") + MH_StatusToString(status));
-   Memory::Print("PID : " + std::to_string(PID));
-   GELua::FindAddresses();
-   /*GameBaseAddr = Memory::GetModuleBase(GameModule);
-   DllBaseAddr = Memory::GetModuleBase(DllModule);*/
+    signal(SIGINT, SignalHandler);
+    signal(SIGTERM, SignalHandler);
+    signal(SIGABRT, SignalHandler);
+    signal(SIGBREAK, SignalHandler);
+    RCVQueue = std::make_unique<atomic_queue<std::string, 1000>>();
+    SendQueue = std::make_unique<atomic_queue<std::string, 1000>>();
+    uint32_t PID = Memory::GetPID();
+    auto status = MH_Initialize();
+    if (status != MH_OK)
+        Memory::Print(std::string("MH Error -> ") + MH_StatusToString(status));
+    Memory::Print("PID : " + std::to_string(PID));
+    GELua::FindAddresses();
+    /*GameBaseAddr = Memory::GetModuleBase(GameModule);
+    DllBaseAddr = Memory::GetModuleBase(DllModule);*/
 
     UpdateDetour = std::make_unique<Hook<def::update_function>>(
             GELua::update_function, update_D);
     UpdateDetour->Enable();
 
-   OpenJITDetour = std::make_unique<Hook<def::lua_open_jit>>(
-       GELua::lua_open_jit, lua_open_jit_D);
-   OpenJITDetour->Enable();
-   IPCFromLauncher = std::make_unique<IPC>(PID, 0x1900000);
-   IPCToLauncher   = std::make_unique<IPC>(PID + 1, 0x1900000);
-   CreateThread(nullptr, 0, LPTHREAD_START_ROUTINE(IPCSender), nullptr, 0,
-                nullptr);
-   IPCListener();
+    OpenJITDetour = std::make_unique<Hook<def::lua_open_jit>>(
+            GELua::lua_open_jit, lua_open_jit_D);
+    OpenJITDetour->Enable();
+    IPCFromLauncher = std::make_unique<IPC>(PID, 0x1900000);
+    IPCToLauncher = std::make_unique<IPC>(PID + 1, 0x1900000);
+    CreateThread(nullptr, 0, LPTHREAD_START_ROUTINE(IPCSender), nullptr, 0,
+                 nullptr);
+    IPCListener();
 }
 
 int Core(lua_State* L) {
@@ -102,30 +112,25 @@ void BeamNG::SendIPC(const std::string& Data) {
 }
 
 void BeamNG::IPCListener() {
-   int TimeOuts = 0;
-   while (TimeOuts < 20) {
+   while (!Terminate) {
       IPCFromLauncher->receive();
       if (!IPCFromLauncher->receive_timed_out()) {
-         TimeOuts = 0;
          RCVQueue->push(IPCFromLauncher->msg());
          IPCFromLauncher->confirm_receive();
-      } else TimeOuts++;
+      }
    }
-   Memory::Print("IPC Listener System shutting down (timeout)");
+   Memory::Print("IPC Listener System shutting down (terminate)");
 }
 
 uint32_t BeamNG::IPCSender(void* LP) {
    std::string result;
-   int TimeOuts = 0;
-   while (TimeOuts < 20) {
+   while (!Terminate) {
       if (SendQueue->try_pop(result)) {
          IPCToLauncher->send(result);
-         if (!IPCToLauncher->send_timed_out()) TimeOuts = 0;
-         else TimeOuts++;
       } else {
           Sleep(1); //TODO look into possibly have it wake up on a new message instead
       }
    }
-   Memory::Print("IPC Sender System shutting down (timeout)");
+   Memory::Print("IPC Sender System shutting down (terminate)");
    return 0;
 }

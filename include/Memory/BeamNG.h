@@ -14,7 +14,7 @@ class BeamNG {
    public:
    static void EntryPoint();
    static void SendIPC(const std::string& Data);
-
+   static inline bool Terminate = false;
    private:
    static inline std::unique_ptr<Hook<def::update_function>> UpdateDetour;
    static inline std::unique_ptr<Hook<def::lua_open_jit>> OpenJITDetour;
