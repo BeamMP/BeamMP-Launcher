@@ -31,7 +31,7 @@ Launcher::Launcher(int argc, char* argv[]) :
    DiscordTime = std::time(nullptr);
    WindowsInit();
    SetUnhandledExceptionFilter(CrashHandler);
-   LOG(INFO) << "Starting Launcher V" << FullVersion;
+   LOG(INFO) << "Starting Launcher v" << FullVersion;
    if (argc > 1) LoadConfig(fs::current_path() / argv[1]);
    else LoadConfig(fs::current_path() / "Launcher.toml");
 }

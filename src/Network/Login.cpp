@@ -35,43 +35,47 @@ std::string GetFail(const std::string& R) {
 }
 
 std::string Launcher::Login(const std::string& fields) {
-   if (fields == "LO") {
-      LoginAuth = false;
-      UpdateKey("");
-      return "";
-   }
-   LOG(INFO) << "Attempting to authenticate...";
-   std::string Buffer = HTTP::Post("https://auth.beammp.com/userlogin", fields);
-   Json d             = Json::parse(Buffer, nullptr, false);
+    if (fields == "LO") {
+        LoginAuth = false;
+        UpdateKey("");
+        return "";
+    }
+    LOG(INFO) << "Attempting to authenticate...";
+    std::string Buffer = HTTP::Post("https://auth.beammp.com/userlogin", fields);
+    Json d = Json::parse(Buffer, nullptr, false);
 
-   if (Buffer == "-1") {
-      return GetFail("Failed to communicate with the auth system!");
-   }
+    if (Buffer == "-1") {
+        return GetFail("Failed to communicate with the auth system!");
+    }
 
-   if (Buffer.at(0) != '{' || d.is_discarded()) {
-      LOG(ERROR) << Buffer;
-      return GetFail(
-          "Invalid answer from authentication servers, please try again "
-          "later!");
-   }
+    if (Buffer.at(0) != '{' || d.is_discarded()) {
+        LOG(ERROR) << Buffer;
+        return GetFail(
+                "Invalid answer from authentication servers, please try again "
+                "later!");
+    }
 
-   if (!d["success"].is_null() && d["success"].get<bool>()) {
-      LoginAuth = true;
-      if (!d["private_key"].is_null()) {
-         UpdateKey(d["private_key"].get<std::string>());
-      }
-      if (!d["public_key"].is_null()) {
-         PublicKey = d["public_key"].get<std::string>();
-      }
-      LOG(INFO) << "Authentication successful!";
-   } else LOG(WARNING) << "Authentication failed!";
+    if (!d["success"].is_null() && d["success"].get<bool>()) {
+        LoginAuth = true;
+        if (!d["private_key"].is_null()) {
+            UpdateKey(d["private_key"].get<std::string>());
+        }
+        if (!d["public_key"].is_null()) {
+            PublicKey = d["public_key"].get<std::string>();
+        }
+        if (!d["role"].is_null()) {
+            UserRole = d["role"].get<std::string>();
+        }
+        LOG(INFO) << "Authentication successful!";
+    } else
+        LOG(WARNING) << "Authentication failed!";
 
-   if (!d["message"].is_null()) {
-      d.erase("private_key");
-      d.erase("public_key");
-      return d.dump();
-   }
-   return GetFail("Invalid message parsing!");
+    if (!d["message"].is_null()) {
+        d.erase("private_key");
+        d.erase("public_key");
+        return d.dump();
+    }
+    return GetFail("Invalid message parsing!");
 }
 
 void Launcher::CheckKey() {

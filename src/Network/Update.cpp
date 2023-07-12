@@ -7,6 +7,7 @@
 #include "Json.h"
 #include "Launcher.h"
 #include "Logger.h"
+#include "hashpp.h"
 
 VersionParser::VersionParser(const std::string& from_string) {
    std::string token;
@@ -40,17 +41,20 @@ size_t DirCount(const std::filesystem::path& path) {
 }
 
 void Launcher::ResetMods() {
-   if (!fs::exists(MPUserPath)) {
-      fs::create_directories(MPUserPath);
-      return;
-   }
-   if (DirCount(MPUserPath) > 3) {
-      LOG(WARNING)
-          << "mods/multiplayer will be cleared in 15 seconds, close to abort";
-      std::this_thread::sleep_for(std::chrono::seconds(15));
-   }
-   fs::remove_all(MPUserPath);
-   fs::create_directories(MPUserPath);
+    if (!fs::exists(MPUserPath)) {
+        fs::create_directories(MPUserPath);
+        return;
+    }
+    if (DirCount(MPUserPath) > 3) {
+        LOG(WARNING)
+                << "mods/multiplayer will be cleared in 15 seconds, close to abort";
+        std::this_thread::sleep_for(std::chrono::seconds(15));
+    }
+    for (auto &de: std::filesystem::directory_iterator(MPUserPath)) {
+        if (de.path().filename() != "BeamMP.zip") {
+            std::filesystem::remove(de.path());
+        }
+    }
 }
 
 void Launcher::EnableMP() {
@@ -78,13 +82,43 @@ void Launcher::EnableMP() {
    }
 }
 
+
 void Launcher::SetupMOD() {
-   ResetMods();
-   EnableMP();
-   LOG(INFO) << "Downloading mod please wait";
-   HTTP::Download(
-       "https://backend.beammp.com/builds/client?download=true"
-       "&pk=" +
-           PublicKey + "&branch=" + TargetBuild,
-       (MPUserPath/"BeamMP.zip").string());
+    std::string LatestHash = HTTP::Get("https://backend.beammp.com/sha/mod?branch=" + TargetBuild + "&pk=" + PublicKey);
+    transform(LatestHash.begin(), LatestHash.end(), LatestHash.begin(), ::tolower);
+
+    std::string FileHash = hashpp::get::getFileHash(hashpp::ALGORITHMS::SHA2_256, (MPUserPath / "BeamMP.zip").string());
+
+    ResetMods();
+    EnableMP();
+
+    if (FileHash != LatestHash) {
+        LOG(INFO) << "Downloading BeamMP Update " << LatestHash;
+        HTTP::Download(
+                "https://backend.beammp.com/builds/mod?download=true"
+                "&pk=" +
+                PublicKey + "&branch=" + TargetBuild,
+                (MPUserPath / "BeamMP.zip").string());
+    }
+}
+
+void Launcher::UpdateCheck() {
+    std::string LatestHash = HTTP::Get("https://backend.beammp.com/sha/launcher?branch=" + TargetBuild + "&pk=" + PublicKey);
+    transform(LatestHash.begin(), LatestHash.end(), LatestHash.begin(), ::tolower);
+
+    std::string FileHash = hashpp::get::getFileHash(hashpp::ALGORITHMS::SHA2_256, "BeamMP-Launcher.exe");
+
+    if(FileHash != LatestHash) {
+        LOG(INFO) << "Launcher update found!";
+        fs::remove("BeamMP-Launcher.back");
+        fs::rename("BeamMP-Launcher.exe", "BeamMP-Launcher.back");
+        LOG(INFO) << "Downloading Launcher update " << LatestHash;
+        HTTP::Download(
+                "https://backend.beammp.com/builds/launcher?download=true"
+                "&pk=" +
+                PublicKey + "&branch=" + TargetBuild,
+                "BeamMP-Launcher.exe");
+        throw ShutdownException("Launcher update");
+    }
+
 }

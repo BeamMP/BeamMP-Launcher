@@ -33,10 +33,12 @@ class Launcher {
    void SendIPC(const std::string& Data, bool core = true);
    void LoadConfig(const fs::path& conf);
    void RunDiscordRPC();
+   void UpdateCheck();
    void WaitForGame();
    void LaunchGame();
    void CheckKey();
    void SetupMOD();
+
    static std::string QueryValue(HKEY& hKey, const char* Name);
 
    public:  // Getters and Setters
@@ -53,6 +55,7 @@ class Launcher {
 
    private:  // functions
    void HandleIPC(const std::string& Data);
+   bool IsAllowedLink(const std::string& Link);
    std::string GetProfileVersion();
    fs::path GetProfileRoot();
    void UpdatePresence();
@@ -65,8 +68,8 @@ class Launcher {
 
    public:  // variables
    static inline std::thread EntryThread{};
-   static inline std::string Version{"2.0"};
-   static inline std::string FullVersion{Version + ".99"};
+   static inline std::string Version{"2.1"};
+   static inline std::string FullVersion{Version + ".0"};
 
    private:  // variables
    uint32_t GamePID{0};

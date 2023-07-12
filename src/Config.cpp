@@ -48,7 +48,8 @@ void Launcher::LoadConfig(const fs::path& conf) {  // check if json (issue)
       auto GameProfile = GetProfileRoot();
       std::ofstream tml(conf);
       if (tml.is_open()) {
-         tml << "Build = 'Default'\n"
+         tml << "# Build is the lua build, it can be either default, canary, or public\n"
+                "Build = 'default'\n"
                 "CachePath = 'Resources'\n"
                 "ProfilePath = '"
              << GameProfile.string() << "'";

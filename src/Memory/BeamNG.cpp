@@ -97,14 +97,25 @@ int LuaPop(lua_State* L) {
    return 0;
 }
 
+int LuaOpenURL(lua_State* L) {
+    if (lua_gettop(L) == 1) {
+        size_t Size;
+        const char* Data = GELua::lua_tolstring(L, 1, &Size);
+        std::string msg(Data, Size);
+        BeamNG::SendIPC("CO" + msg);
+    }
+    return 0;
+}
+
 void BeamNG::RegisterGEFunctions() {
-   Memory::Print("Registering GE Functions");
-   GELuaTable::Begin(GELua::State);
-   GELuaTable::InsertFunction(GELua::State, "Core", Core);
-   GELuaTable::InsertFunction(GELua::State, "Game", Game);
-   GELuaTable::InsertFunction(GELua::State, "try_pop", LuaPop);
-   GELuaTable::End(GELua::State, "MP");
-   Memory::Print("Registered!");
+    Memory::Print("Registering GE Functions");
+    GELuaTable::Begin(GELua::State);
+    GELuaTable::InsertFunction(GELua::State, "Core", Core);
+    GELuaTable::InsertFunction(GELua::State, "Game", Game);
+    GELuaTable::InsertFunction(GELua::State, "try_pop", LuaPop);
+    GELuaTable::InsertFunction(GELua::State, "open_url", LuaOpenURL);
+    GELuaTable::End(GELua::State, "MP");
+    Memory::Print("Registered!");
 }
 
 void BeamNG::SendIPC(const std::string& Data) {

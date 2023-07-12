@@ -9,9 +9,10 @@
 int main(int argc, char* argv[]) {
    try {
       Launcher launcher(argc, argv);
+      launcher.UpdateCheck();
       launcher.RunDiscordRPC();
       launcher.CheckKey();
-      // launcher.SetupMOD();
+      launcher.SetupMOD();
       launcher.LaunchGame();
       launcher.WaitForGame();
       LOG(INFO) << "Launcher shutting down";
