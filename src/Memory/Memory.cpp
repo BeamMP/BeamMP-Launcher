@@ -171,10 +171,12 @@ void Memory::Print(const std::string& msg) {
 }
 
 uint32_t Memory::EntryPoint() {
-   AllocConsole();
-   SetConsoleTitleA("BeamMP Console");
-   BeamNG::EntryPoint();
-   return 0;
+    if (Memory::DebugMode) {
+        AllocConsole();
+        SetConsoleTitleA("BeamMP Console");
+    }
+    BeamNG::EntryPoint();
+    return 0;
 }
 
 uint32_t Memory::GetTickCount() {

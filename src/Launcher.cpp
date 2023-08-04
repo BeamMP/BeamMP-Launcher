@@ -32,8 +32,15 @@ Launcher::Launcher(int argc, char* argv[]) :
    WindowsInit();
    SetUnhandledExceptionFilter(CrashHandler);
    LOG(INFO) << "Starting Launcher v" << FullVersion;
-   if (argc > 1) LoadConfig(fs::current_path() / argv[1]);
-   else LoadConfig(fs::current_path() / "Launcher.toml");
+   if (argc > 1) {
+       if(std::string(argv[1]).find('0') != std::string::npos) {
+           DebugMode = true;
+           Memory::DebugMode = true;
+           LoadConfig(fs::current_path() / "Launcher.toml");
+       } else {
+           LoadConfig(fs::current_path() / argv[1]);
+       }
+   } else LoadConfig(fs::current_path() / "Launcher.toml");
 }
 
 void Launcher::Abort() {

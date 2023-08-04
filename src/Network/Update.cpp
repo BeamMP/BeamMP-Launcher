@@ -41,19 +41,23 @@ size_t DirCount(const std::filesystem::path& path) {
 }
 
 void Launcher::ResetMods() {
-    if (!fs::exists(MPUserPath)) {
-        fs::create_directories(MPUserPath);
-        return;
-    }
-    if (DirCount(MPUserPath) > 3) {
-        LOG(WARNING)
-                << "mods/multiplayer will be cleared in 15 seconds, close to abort";
-        std::this_thread::sleep_for(std::chrono::seconds(15));
-    }
-    for (auto &de: std::filesystem::directory_iterator(MPUserPath)) {
-        if (de.path().filename() != "BeamMP.zip") {
-            std::filesystem::remove(de.path());
+    try {
+        if (!fs::exists(MPUserPath)) {
+            fs::create_directories(MPUserPath);
+            return;
         }
+        if (DirCount(MPUserPath) > 3) {
+            LOG(WARNING)
+                    << "mods/multiplayer will be cleared in 15 seconds, close to abort";
+            std::this_thread::sleep_for(std::chrono::seconds(15));
+        }
+        for (auto &de: std::filesystem::directory_iterator(MPUserPath)) {
+            if (de.path().filename() != "BeamMP.zip") {
+                std::filesystem::remove(de.path());
+            }
+        }
+    } catch (...) {
+        throw ShutdownException("We were unable to clean the multiplayer mods folder! Is the game still running or do you have something open in that folder?");
     }
 }
 
@@ -103,6 +107,10 @@ void Launcher::SetupMOD() {
 }
 
 void Launcher::UpdateCheck() {
+    if(DebugMode){
+        LOG(DEBUG) << "Debug mode active skipping update checks";
+        return;
+    }
     std::string LatestHash = HTTP::Get("https://backend.beammp.com/sha/launcher?branch=" + TargetBuild + "&pk=" + PublicKey);
     transform(LatestHash.begin(), LatestHash.end(), LatestHash.begin(), ::tolower);
 

@@ -79,6 +79,7 @@ class Launcher {
    fs::path LauncherCache{"Resources"};
    int64_t DiscordTime{};
    bool LoginAuth = false;
+   bool DebugMode = false;
    fs::path CurrentPath{};
    std::string BeamRoot{};
    std::string UserRole{};

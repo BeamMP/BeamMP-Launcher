@@ -14,7 +14,8 @@ class Memory {
    static uint32_t GetLauncherPID(const std::set<uint32_t>& BL);
    static uint64_t GetModuleBase(const char* Name);
    static void Print(const std::string& msg);
-    static std::string GetHex(uint64_t num);
+   static std::string GetHex(uint64_t num);
+   static inline bool DebugMode = false;
    static void Inject(uint32_t PID);
    static uint32_t GetTickCount();
    static uint32_t EntryPoint();
