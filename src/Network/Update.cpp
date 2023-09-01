@@ -116,18 +116,18 @@ void Launcher::UpdateCheck() {
 
     transform(LatestHash.begin(), LatestHash.end(), LatestHash.begin(), ::tolower);
 
-    std::string FileHash = hashpp::get::getFileHash(hashpp::ALGORITHMS::SHA2_256, "BeamMP-Launcher.exe");
+    std::string FileHash = hashpp::get::getFileHash(hashpp::ALGORITHMS::SHA2_256, (CurrentPath/"BeamMP-Launcher.exe").string());
 
     if(FileHash != LatestHash && VersionParser(LatestVersion) > VersionParser(FullVersion)) {
         LOG(INFO) << "Launcher update found!";
-        fs::remove("BeamMP-Launcher.back");
-        fs::rename("BeamMP-Launcher.exe", "BeamMP-Launcher.back");
+        fs::remove((CurrentPath/"BeamMP-Launcher.back").string());
+        fs::rename((CurrentPath/"BeamMP-Launcher.exe").string(), (CurrentPath/"BeamMP-Launcher.back").string());
         LOG(INFO) << "Downloading Launcher update " << LatestHash;
         HTTP::Download(
                 "https://backend.beammp.com/builds/launcher?download=true"
                 "&pk=" +
                 PublicKey + "&branch=" + TargetBuild,
-                "BeamMP-Launcher.exe");
+                (CurrentPath/"BeamMP-Launcher.exe").string());
         throw ShutdownException("Launcher update");
     }
 

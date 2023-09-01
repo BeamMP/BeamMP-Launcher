@@ -56,7 +56,7 @@ void Launcher::LoadConfig(const fs::path& conf) {  // check if json (issue)
 
          tml.close();
          LoadConfig(conf);
-      } else LOG(ERROR) << "Failed to create config file";
+      } else LOG(ERROR) << "Failed to create config file " << conf;
    }
 }
 

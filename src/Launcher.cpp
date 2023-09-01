@@ -22,7 +22,7 @@ LONG WINAPI CrashHandler(EXCEPTION_POINTERS* p) {
 }
 
 Launcher::Launcher(int argc, char* argv[]) :
-    CurrentPath(std::filesystem::current_path()),
+    CurrentPath(fs::current_path()),
     DiscordMessage("Just launched") {
     Log::Init();
     Shutdown.store(false);
@@ -33,22 +33,31 @@ Launcher::Launcher(int argc, char* argv[]) :
     SetUnhandledExceptionFilter(CrashHandler);
     LOG(INFO) << "Starting Launcher v" << FullVersion;
 
-    fs::path config_path(fs::current_path() / "Launcher.toml");
-    if (argc > 1) {
-        std::string arg(argv[1]);
-        if (arg.starts_with('0')) {
-            LOG(INFO) << "Debug param in effect";
-            DebugMode = true;
-            Memory::DebugMode = true;
-        } else if (arg.starts_with("beammp://")) {
-            if (arg.starts_with("beammp://connect/")) {
-                ConnectURI = arg.substr(17);
-            }
-        } else {
-            config_path = fs::current_path() / arg;
-        }
+    fs::path config_path(CurrentPath / "Launcher.toml");
+
+    std::string arg, arg2;
+    if(argc > 2) {
+        arg = argv[1];
+        arg2 = argv[2];
+    } else if (argc > 1) {
+        arg = argv[1];
     }
+    if (arg.starts_with('0')) {
+        LOG(INFO) << "Debug param in effect";
+        DebugMode = true;
+        Memory::DebugMode = true;
+    } else if (arg2.starts_with("beammp://")) {
+        CurrentPath = arg;
+        config_path = CurrentPath / "Launcher.toml";
+        if (arg2.starts_with("beammp://connect/")) {
+            ConnectURI = arg2.substr(17);
+        }
+    } else if (!arg.empty()) {
+        config_path = CurrentPath / arg;
+    }
+
     LoadConfig(config_path);
+    LauncherCache = CurrentPath/"Resources";
 }
 
 void Launcher::Abort() {
@@ -105,7 +114,7 @@ void Launcher::WindowsInit() {
     signal(SIGBREAK, ShutdownHandler);
 
 
-    std::wstring command = L"cmd /c \"cd /D \"" + CurrentPath.wstring() + L"\" && BeamMP-Launcher.exe \"%1\"\"";
+    std::wstring command = L"\"" + (CurrentPath/"BeamMP-Launcher.exe").wstring() + L"\" \"" + CurrentPath.wstring() + L"\" \"%1\"";
     std::wstring ICON = L"\"" + (CurrentPath/"BeamMP-Launcher.exe").wstring() + L"\",0";
     std::wstring URL = L"URL:beammp Protocol";
     HKEY hKey;

@@ -8,9 +8,9 @@
 #include "Launcher.h"
 #include "Logger.h"
 
-void UpdateKey(const std::string& newKey) {
+void Launcher::UpdateKey(const std::string& newKey) {
    if (!newKey.empty() && std::isalnum(newKey[0])) {
-      std::ofstream Key("key");
+      std::ofstream Key(CurrentPath/"key");
       if (Key.is_open()) {
          Key << newKey;
          Key.close();
@@ -18,8 +18,8 @@ void UpdateKey(const std::string& newKey) {
          LOG(FATAL) << "Cannot write to disk!";
          throw ShutdownException("Fatal Error");
       }
-   } else if (fs::exists("key")) {
-      remove("key");
+   } else if (fs::exists(CurrentPath/"key")) {
+      fs::remove(CurrentPath/"key");
    }
 }
 
@@ -79,10 +79,10 @@ std::string Launcher::Login(const std::string& fields) {
 }
 
 void Launcher::CheckKey() {
-   if (fs::exists("key") && fs::file_size("key") < 100) {
-      std::ifstream Key("key");
+   if (fs::exists(CurrentPath/"key") && fs::file_size(CurrentPath/"key") < 100) {
+      std::ifstream Key(CurrentPath/"key");
       if (Key.is_open()) {
-         auto Size = fs::file_size("key");
+         auto Size = fs::file_size(CurrentPath/"key");
          std::string Buffer(Size, 0);
          Key.read(&Buffer[0], std::streamsize(Size));
          Key.close();

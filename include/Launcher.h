@@ -30,6 +30,7 @@ class Launcher {
    public:  // available functions
    static void StaticAbort(Launcher* Instance = nullptr);
    std::string Login(const std::string& fields);
+   void UpdateKey(const std::string& newKey);
    void SendIPC(const std::string& Data, bool core = true);
    void LoadConfig(const fs::path& conf);
    void RunDiscordRPC();
@@ -76,7 +77,7 @@ class Launcher {
    fs::path MPUserPath{};
    fs::path BeamUserPath{};
    fs::path BeamProfilePath{};
-   fs::path LauncherCache{"Resources"};
+   fs::path LauncherCache{};
    int64_t DiscordTime{};
    bool LoginAuth = false;
    bool DebugMode = false;
