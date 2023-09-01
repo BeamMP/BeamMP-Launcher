@@ -53,6 +53,10 @@ void Launcher::HandleIPC(const std::string& Data) {  //TODO Improve all cases si
         case 'N':
             if (SubCode == 'c') {
                 SendIPC("N{\"Auth\":" + std::to_string(LoginAuth) + "}");
+                if(LoginAuth && !ConnectURI.empty()) {
+                    SendIPC("J" + ConnectURI);
+                    ConnectURI.clear();
+                }
             } else {
                 SendIPC("N" + Login(Data.substr(Data.find(':') + 1)));
             }

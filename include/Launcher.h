@@ -86,6 +86,7 @@ class Launcher {
    std::string PublicKey{};
    std::thread IPCSystem{};
    std::thread DiscordRPC{};
+   std::string ConnectURI{};
    std::string BeamVersion{};
    std::string DiscordMessage{};
    Server ServerHandler{this};

@@ -24,23 +24,31 @@ LONG WINAPI CrashHandler(EXCEPTION_POINTERS* p) {
 Launcher::Launcher(int argc, char* argv[]) :
     CurrentPath(std::filesystem::current_path()),
     DiscordMessage("Just launched") {
-   Log::Init();
-   Shutdown.store(false);
-   Exit.store(false);
-   Launcher::StaticAbort(this);
-   DiscordTime = std::time(nullptr);
-   WindowsInit();
-   SetUnhandledExceptionFilter(CrashHandler);
-   LOG(INFO) << "Starting Launcher v" << FullVersion;
-   if (argc > 1) {
-       if(std::string(argv[1]).find('0') != std::string::npos) {
-           DebugMode = true;
-           Memory::DebugMode = true;
-           LoadConfig(fs::current_path() / "Launcher.toml");
-       } else {
-           LoadConfig(fs::current_path() / argv[1]);
-       }
-   } else LoadConfig(fs::current_path() / "Launcher.toml");
+    Log::Init();
+    Shutdown.store(false);
+    Exit.store(false);
+    Launcher::StaticAbort(this);
+    DiscordTime = std::time(nullptr);
+    WindowsInit();
+    SetUnhandledExceptionFilter(CrashHandler);
+    LOG(INFO) << "Starting Launcher v" << FullVersion;
+
+    fs::path config_path(fs::current_path() / "Launcher.toml");
+    if (argc > 1) {
+        std::string arg(argv[1]);
+        if (arg.starts_with('0')) {
+            LOG(INFO) << "Debug param in effect";
+            DebugMode = true;
+            Memory::DebugMode = true;
+        } else if (arg.starts_with("beammp://")) {
+            if (arg.starts_with("beammp://connect/")) {
+                ConnectURI = arg.substr(17);
+            }
+        } else {
+            config_path = fs::current_path() / arg;
+        }
+    }
+    LoadConfig(config_path);
 }
 
 void Launcher::Abort() {
@@ -89,12 +97,29 @@ void Launcher::StaticAbort(Launcher* Instance) {
 }
 
 void Launcher::WindowsInit() {
-   system("cls");
-   SetConsoleTitleA(("BeamMP Launcher v" + FullVersion).c_str());
-   signal(SIGINT, ShutdownHandler);
-   signal(SIGTERM, ShutdownHandler);
-   signal(SIGABRT, ShutdownHandler);
-   signal(SIGBREAK, ShutdownHandler);
+    system("cls");
+    SetConsoleTitleA(("BeamMP Launcher v" + FullVersion).c_str());
+    signal(SIGINT, ShutdownHandler);
+    signal(SIGTERM, ShutdownHandler);
+    signal(SIGABRT, ShutdownHandler);
+    signal(SIGBREAK, ShutdownHandler);
+
+
+    std::wstring command = L"cmd /c \"cd /D \"" + CurrentPath.wstring() + L"\" && BeamMP-Launcher.exe \"%1\"\"";
+    std::wstring ICON = L"\"" + (CurrentPath/"BeamMP-Launcher.exe").wstring() + L"\",0";
+    std::wstring URL = L"URL:beammp Protocol";
+    HKEY hKey;
+    RegCreateKey(HKEY_CLASSES_ROOT, L"beammp", &hKey);
+    RegSetValueEx(hKey, nullptr, 0, REG_SZ, (BYTE*)URL.c_str(), URL.size()*2);
+    RegSetValueEx(hKey, L"URL Protocol", 0, REG_SZ, (BYTE*)"", 0);
+
+    RegCreateKey(HKEY_CLASSES_ROOT, L"beammp\\DefaultIcon", &hKey);
+    RegSetValueEx(hKey, nullptr, 0, REG_SZ, (BYTE*)ICON.c_str(), ICON.size()*2);
+
+    RegCreateKey(HKEY_CLASSES_ROOT, L"beammp\\shell\\open\\command", &hKey);
+    RegSetValueEx(hKey, nullptr, 0, REG_SZ, (BYTE*)command.c_str(), command.size()*2);
+    RegCloseKey(hKey);
+
 }
 
 void Launcher::LaunchGame() {
