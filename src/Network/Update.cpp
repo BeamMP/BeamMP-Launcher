@@ -112,11 +112,13 @@ void Launcher::UpdateCheck() {
         return;
     }
     std::string LatestHash = HTTP::Get("https://backend.beammp.com/sha/launcher?branch=" + TargetBuild + "&pk=" + PublicKey);
+    std::string LatestVersion = HTTP::Get("https://backend.beammp.com/version/launcher?branch=" + TargetBuild + "&pk=" + PublicKey);
+
     transform(LatestHash.begin(), LatestHash.end(), LatestHash.begin(), ::tolower);
 
     std::string FileHash = hashpp::get::getFileHash(hashpp::ALGORITHMS::SHA2_256, "BeamMP-Launcher.exe");
 
-    if(FileHash != LatestHash) {
+    if(FileHash != LatestHash && VersionParser(LatestVersion) > VersionParser(FullVersion)) {
         LOG(INFO) << "Launcher update found!";
         fs::remove("BeamMP-Launcher.back");
         fs::rename("BeamMP-Launcher.exe", "BeamMP-Launcher.back");
