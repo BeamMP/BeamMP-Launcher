@@ -68,7 +68,7 @@ void Launcher::HandleIPC(const std::string& Data) {  //TODO Improve all cases si
 }
 
 bool Launcher::IsAllowedLink(const std::string& Link) {
-    std::regex link_pattern(R"(https:\/\/(?:\w+)?(?:\.)?(?:beammp|discord)\.com)");
+    std::regex link_pattern(R"(https:\/\/(?:\w+)?(?:\.)?(?:beammp\.com|discord\.gg|patreon\.com))");
     std::smatch link_match;
     return std::regex_search(Link,link_match, link_pattern) && link_match.position() == 0;
 }
