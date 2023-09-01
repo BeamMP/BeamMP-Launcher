@@ -120,8 +120,8 @@ void Launcher::UpdateCheck() {
 
     if(FileHash != LatestHash && VersionParser(LatestVersion) > VersionParser(FullVersion)) {
         LOG(INFO) << "Launcher update found!";
-        fs::remove((CurrentPath/"BeamMP-Launcher.back").string());
-        fs::rename((CurrentPath/"BeamMP-Launcher.exe").string(), (CurrentPath/"BeamMP-Launcher.back").string());
+        fs::remove(CurrentPath/"BeamMP-Launcher.back");
+        fs::rename(CurrentPath/"BeamMP-Launcher.exe", CurrentPath/"BeamMP-Launcher.back");
         LOG(INFO) << "Downloading Launcher update " << LatestHash;
         HTTP::Download(
                 "https://backend.beammp.com/builds/launcher?download=true"
