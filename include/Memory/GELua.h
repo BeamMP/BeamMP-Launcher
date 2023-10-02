@@ -40,8 +40,8 @@ namespace GELuaTable {
    }
    inline void InsertFunction(lua_State* L, const char* name,
                               lua_CFunction func) {
-      BeginEntry(L, name);
+      //BeginEntry(L, name);
       GELua::lua_pushcclosure(L, func, 0);
-      EndEntry(L);
+      End(L, name);
    }
 }

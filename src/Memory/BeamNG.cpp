@@ -109,12 +109,12 @@ int LuaOpenURL(lua_State* L) {
 
 void BeamNG::RegisterGEFunctions() {
     Memory::Print("Registering GE Functions");
-    GELuaTable::Begin(GELua::State);
-    GELuaTable::InsertFunction(GELua::State, "Core", Core);
-    GELuaTable::InsertFunction(GELua::State, "Game", Game);
-    GELuaTable::InsertFunction(GELua::State, "try_pop", LuaPop);
-    GELuaTable::InsertFunction(GELua::State, "open_url", LuaOpenURL);
-    GELuaTable::End(GELua::State, "MP");
+    //GELuaTable::Begin(GELua::State);
+    GELuaTable::InsertFunction(GELua::State, "mp_core", Core);
+    GELuaTable::InsertFunction(GELua::State, "mp_game", Game);
+    GELuaTable::InsertFunction(GELua::State, "mp_try_pop", LuaPop);
+    GELuaTable::InsertFunction(GELua::State, "mp_open_url", LuaOpenURL);
+    //GELuaTable::End(GELua::State, "MP");
     Memory::Print("Registered!");
 }
 
