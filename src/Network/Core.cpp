@@ -9,8 +9,18 @@
 #include "Security/Init.h"
 
 #include "Http.h"
+#if defined(_WIN32)
 #include <winsock2.h>
 #include <ws2tcpip.h>
+
+#elif defined(__linux__)
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <cstring>
+#include <errno.h>
+#endif
+
 #include "Startup.h"
 #include "Logger.h"
 #include <charconv>
@@ -177,13 +187,18 @@ void localRes(){
 }
 void CoreMain() {
     debug("Core Network on start!");
-    WSADATA wsaData;
     SOCKET LSocket,CSocket;
     struct addrinfo *res = nullptr;
     struct addrinfo hints{};
-    int iRes = WSAStartup(514, &wsaData); //2.2
+    int iRes;
+    #ifdef _WIN32
+    WSADATA wsaData;
+    iRes = WSAStartup(514, &wsaData); //2.2
     if (iRes)debug("WSAStartup failed with error: " + std::to_string(iRes));
+    #endif
+    
     ZeroMemory(&hints, sizeof(hints));
+
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
@@ -231,24 +246,40 @@ void CoreMain() {
     KillSocket(LSocket);
     WSACleanup();
 }
+
+#if defined(_WIN32)
 int Handle(EXCEPTION_POINTERS *ep){
     char* hex = new char[100];
-    sprintf_s(hex,100, "%lX", ep->ExceptionRecord->ExceptionCode);
+    sprintf(hex,100, "%lX", ep->ExceptionRecord->ExceptionCode);
     except("(Core) Code : " + std::string(hex));
     delete [] hex;
     return 1;
 }
-
+#endif
 
 [[noreturn]] void CoreNetwork(){
     while(true) {
-#ifndef __MINGW32__
+// #ifndef __MINGW32__
+//         __try{
+// #endif
+//                 CoreMain();
+// #ifndef __MINGW32__
+//         }__except(Handle(GetExceptionInformation())){}
+// #endif
+    #if not defined(__MINGW32__)
         __try{
-#endif
-                CoreMain();
-#ifndef __MINGW32__
+    #endif
+    
+    CoreMain();
+
+    #if not defined(__MINGW32__) and not defined(__linux__)
         }__except(Handle(GetExceptionInformation())){}
-#endif
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+    #elif not defined(__MINGW32__) and defined(__linux__)
+        } catch(...){
+            except("(Core) Code : " + std::string(strerror(errno)));
+        }
+    #endif
+
+    std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 }

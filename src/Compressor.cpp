@@ -8,6 +8,9 @@
 
 #include <iostream>
 #include <zlib.h>
+#ifdef __linux__
+#include <cstring>
+#endif
 
 #define Biggest 30000
 std::string Comp(std::string Data){
@@ -27,7 +30,7 @@ std::string Comp(std::string Data){
     deflateEnd(&defstream);
     int TO = defstream.total_out;
     std::string Ret(TO,0);
-    memcpy_s(&Ret[0],TO,C,TO);
+    memcpy(&Ret[0],C,TO);
     delete [] C;
     return Ret;
 }
@@ -48,7 +51,7 @@ std::string DeComp(std::string Compressed){
     inflateEnd(&infstream);
     int TO = infstream.total_out;
     std::string Ret(TO,0);
-    memcpy_s(&Ret[0],TO,C,TO);
+    memcpy(&Ret[0],C,TO);
     delete [] C;
     return Ret;
 }

@@ -7,7 +7,14 @@
 ///
 
 #include <filesystem>
+#if defined(_WIN32)
 #include <windows.h>
+#elif defined(__linux__)
+#include "vdf_parser.hpp"
+#include <vector>
+#include <pwd.h>
+#include <unistd.h>
+#endif
 #include "Logger.h"
 #include <fstream>
 #include <sstream>
@@ -46,8 +53,13 @@ void SteamExit(int code){
 }*/
 std::string GetGameDir(){
     //if(TraceBack != 4)Exit(0);
+    #if defined(_WIN32)
     return GameDir.substr(0,GameDir.find_last_of('\\'));
+    #elif defined(__linux__)
+    return GameDir.substr(0,GameDir.find_last_of('/'));
+    #endif
 }
+#ifdef _WIN32
 LONG OpenKey(HKEY root,const char* path,PHKEY hKey){
     return RegOpenKeyEx(root, reinterpret_cast<LPCSTR>(path), 0, KEY_READ, hKey);
 }
@@ -129,6 +141,8 @@ std::string QueryKey(HKEY hKey,int ID){
     delete [] buffer;
     return "";
 }
+#endif
+
 namespace fs = std::filesystem;
 
 bool NameValid(const std::string& N){
@@ -286,6 +300,7 @@ void LegitimacyCheck(){
     }else lowExit(2);
     K2.clear();
     RegCloseKey(hKey);*/
+    #if defined(_WIN32)
     std::string Result;
     std::string K3 = R"(Software\BeamNG\BeamNG.drive)";
     HKEY hKey;
@@ -301,9 +316,27 @@ void LegitimacyCheck(){
     Result.clear();
     RegCloseKey(hKey);
     //if(TraceBack < 3)exit(-1);
+    #elif defined(__linux__)
+    struct passwd *pw = getpwuid(getuid());
+    std::string homeDir = pw->pw_dir;
+    // Right now only steam is supported
+    std::ifstream libraryFolders(homeDir + "/.steam/root/steamapps/libraryfolders.vdf");
+    auto root = tyti::vdf::read(libraryFolders);
+
+    for (auto folderInfo: root.childs){
+        if (std::filesystem::exists(folderInfo.second->attribs["path"] + "/steamapps/common/BeamNG.drive/")){
+            GameDir = folderInfo.second->attribs["path"] + "/steamapps/common/BeamNG.drive/";
+            break;
+        }
+    }
+    #endif
 }
 std::string CheckVer(const std::string &dir){
+    #if defined(_WIN32)
     std::string temp,Path = dir + "\\integrity.json";
+    #elif defined(__linux__)
+    std::string temp,Path = dir + "/integrity.json";
+    #endif
     std::ifstream f(Path.c_str(), std::ios::binary);
     int Size = int(std::filesystem::file_size(Path));
     std::string vec(Size,0);

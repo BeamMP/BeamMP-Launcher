@@ -6,8 +6,19 @@
 /// Created by Anonymous275 on 7/25/2020
 ///
 #include "Network/network.hpp"
+#if defined(_WIN32)
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#elif defined(__linux__)
+#include "linuxfixes.h"
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <cstring>
+#endif
+
 #include "Logger.h"
 #include <charconv>
 #include <string>
@@ -117,12 +128,16 @@ SOCKET SetupListener(){
     if(GSocket != -1)return GSocket;
     struct addrinfo *result = nullptr;
     struct addrinfo hints{};
+    int iRes;
+    #ifdef _WIN32
     WSADATA wsaData;
-    int iRes = WSAStartup(514, &wsaData); //2.2
+    iRes = WSAStartup(514, &wsaData); //2.2
     if (iRes != 0) {
         error("(Proxy) WSAStartup failed with error: " + std::to_string(iRes));
         return -1;
     }
+    #endif
+
     ZeroMemory(&hints, sizeof(hints));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;

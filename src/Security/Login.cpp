@@ -47,7 +47,7 @@ std::string Login(const std::string& fields){
         return "";
     }
     info("Attempting to authenticate...");
-    std::string Buffer = HTTP::Post("https://auth.beammp.com/userlogin", fields);
+    std::string Buffer = HTTP::Post("https://auth.beammp.com/userlogin", fields) + "\n";
     json::Document d;
     d.Parse(Buffer.c_str());
     if(Buffer == "-1"){

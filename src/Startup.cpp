@@ -6,7 +6,12 @@
 /// Created by Anonymous275 on 7/16/2020
 ///
 #include "zip_file.h"
+#include <string>
+#if defined(_WIN32)
 #include <windows.h>
+#elif defined(__linux__)
+#include <unistd.h>
+#endif
 #include "Discord/discord_info.h"
 #include "Network/network.hpp"
 #include "Security/Init.h"
@@ -22,9 +27,16 @@ extern int TraceBack;
 bool Dev = false;
 namespace fs = std::filesystem;
 
+#if defined(_WIN32)
 std::string GetEN(){
     return "BeamMP-Launcher.exe";
 }
+#elif defined(__linux__)
+std::string GetEN(){
+    return "BeamMP-Launcher";
+}
+#endif
+
 std::string GetVer(){
     return "2.0";
 }
@@ -39,6 +51,7 @@ std::string GetEP(char*P){
     } ();
     return Ret;
 }
+#if defined(_WIN32)
 void ReLaunch(int argc,char*args[]){
     std::string Arg;
     for(int c = 2; c <= argc; c++){
@@ -62,8 +75,36 @@ void URelaunch(int argc,char* args[]){
     std::this_thread::sleep_for(std::chrono::seconds(1));
     exit(1);
 }
+#elif defined(__linux__)
+void ReLaunch(int argc,char*args[]){
+    std::string Arg;
+    for(int c = 2; c <= argc; c++){
+        Arg += " ";
+        Arg += args[c-1];
+    }
+    system("clear");
+    execl((GetEP() + GetEN()).c_str(), Arg.c_str(), NULL);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    exit(1);
+}
+void URelaunch(int argc,char* args[]){
+    std::string Arg;
+    for(int c = 2; c <= argc; c++){
+        Arg += " ";
+        Arg += args[c-1];
+    }
+    execl((GetEP() + GetEN()).c_str(), Arg.c_str(), NULL);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    exit(1);
+}
+#endif
+
 void CheckName(int argc,char* args[]){
+    #if defined(_WIN32)
     std::string DN = GetEN(),CDir = args[0],FN = CDir.substr(CDir.find_last_of('\\')+1);
+    #elif defined(__linux__)
+    std::string DN = GetEN(),CDir = args[0],FN = CDir.substr(CDir.find_last_of('/')+1);
+    #endif
     if(FN != DN){
         if(fs::exists(DN))remove(DN.c_str());
         if(fs::exists(DN))ReLaunch(argc,args);
@@ -92,7 +133,11 @@ void CheckForUpdates(int argc,char*args[],const std::string& CV){
     if(fs::exists(Back))remove(Back.c_str());
 
     if(HTTP > CV){
+        #if defined(_WIN32)
         system("cls");
+        #elif defined(__linux__)
+        system("clear");
+        #endif
         info("Update found!");
         info("Updating...");
         if(std::rename(EP.c_str(), Back.c_str()))error("failed creating a backup!");
@@ -125,6 +170,7 @@ void CustomPort(int argc, char* argv[]){
     }
 }
 
+#ifdef _WIN32
 void LinuxPatch(){
     HKEY hKey = nullptr;
     LONG result = RegOpenKeyEx(HKEY_CURRENT_USER, R"(Software\Wine)", 0, KEY_READ, &hKey);
@@ -175,7 +221,9 @@ void LinuxPatch(){
 
     info("Patched!");
 }
+#endif
 
+#if defined(_WIN32)
 void InitLauncher(int argc, char* argv[]) {
     system("cls");
     SetConsoleTitleA(("BeamMP Launcher v" + std::string(GetVer()) + GetPatch()).c_str());
@@ -188,6 +236,17 @@ void InitLauncher(int argc, char* argv[]) {
     Discord_Main();
     CheckForUpdates(argc, argv, std::string(GetVer()) + GetPatch());
 }
+#elif defined(__linux__)
+void InitLauncher(int argc, char* argv[]) {
+    system("clear");
+    InitLog();
+    CheckName(argc, argv);
+    CheckLocalKey();
+    ConfigInit();
+    CustomPort(argc, argv);
+    CheckForUpdates(argc, argv, std::string(GetVer()) + GetPatch());
+}
+#endif
 
 size_t DirCount(const std::filesystem::path& path){
     return (size_t)std::distance(std::filesystem::directory_iterator{path}, std::filesystem::directory_iterator{});
@@ -258,7 +317,12 @@ void PreGame(const std::string& GamePath){
         }catch(std::exception&e){
             fatal(e.what());
         }
+        #if defined(_WIN32)
         std::string ZipPath(GetGamePath() + R"(mods\multiplayer\BeamMP.zip)");
+        #elif defined(__linux__)
+        // Linux version of the game cant handle mods with uppercase names
+        std::string ZipPath(GetGamePath() + R"(mods/multiplayer/beammp.zip)");
+        #endif
 
         HTTP::Download("https://backend.beammp.com/builds/client?download=true"
                  "&pk=" + PublicKey + "&branch=" + Branch, ZipPath);

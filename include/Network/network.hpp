@@ -8,7 +8,16 @@
 
 
 #pragma once
+#include <bits/types/siginfo_t.h>
 #include <string>
+#include <sys/ucontext.h>
+
+#ifdef __linux__
+#include <cstdint>
+#include "linuxfixes.h"
+#endif
+
+
 
 void NetReset();
 extern bool Dev;
