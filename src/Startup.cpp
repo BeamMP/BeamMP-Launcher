@@ -8,7 +8,7 @@
 #include "zip_file.h"
 #include <windows.h>
 #include "Discord/discord_info.h"
-#include "Network/network.h"
+#include "Network/network.hpp"
 #include "Security/Init.h"
 #include <filesystem>
 #include "Startup.h"

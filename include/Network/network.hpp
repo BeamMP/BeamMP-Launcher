@@ -9,6 +9,7 @@
 
 #pragma once
 #include <string>
+
 void NetReset();
 extern bool Dev;
 extern int ping;

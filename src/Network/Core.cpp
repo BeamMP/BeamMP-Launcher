@@ -5,7 +5,7 @@
 ///
 /// Created by Anonymous275 on 7/20/2020
 ///
-#include "Network/network.h"
+#include "Network/network.hpp"
 #include "Security/Init.h"
 
 #include "Http.h"

@@ -6,7 +6,7 @@
 /// Created by Anonymous275 on 4/11/2020
 ///
 
-#include "Network/network.h"
+#include "Network/network.hpp"
 #include <ws2tcpip.h>
 #include <filesystem>
 #include "Startup.h"

@@ -5,7 +5,7 @@
 ///
 /// Created by Anonymous275 on 7/25/2020
 ///
-#include "Network/network.h"
+#include "Network/network.hpp"
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include "Logger.h"

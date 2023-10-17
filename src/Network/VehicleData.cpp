@@ -6,7 +6,7 @@
 /// Created by Anonymous275 on 5/8/2020
 ///
 #include "Zlib/Compressor.h"
-#include "Network/network.h"
+#include "Network/network.hpp"
 
 #include <ws2tcpip.h>
 #include "Logger.h"

@@ -13,7 +13,7 @@
 #include <ws2tcpip.h>
 #include <Zlib/Compressor.h>
 
-#include "Network/network.h"
+#include "Network/network.hpp"
 
 
 int LastPort;
