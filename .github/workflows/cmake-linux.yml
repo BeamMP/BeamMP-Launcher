@@ -31,4 +31,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: BeamMP-Launcher
-          path: ${{github.workspace}}/build-linux/Release/BeamMP-Launcher
+          path: ${{github.workspace}}/build-linux/BeamMP-Launcher
