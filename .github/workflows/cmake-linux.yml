@@ -1,4 +1,4 @@
-name: CMake Windows Build
+name: CMake Linux Build
 
 on: [push, pull_request, workflow_dispatch]
 
