@@ -250,7 +250,7 @@ void CoreMain() {
 #if defined(_WIN32)
 int Handle(EXCEPTION_POINTERS *ep){
     char* hex = new char[100];
-    sprintf(hex,100, "%lX", ep->ExceptionRecord->ExceptionCode);
+    sprintf_s(hex,100, "%lX", ep->ExceptionRecord->ExceptionCode);
     except("(Core) Code : " + std::string(hex));
     delete [] hex;
     return 1;
@@ -259,27 +259,20 @@ int Handle(EXCEPTION_POINTERS *ep){
 
 [[noreturn]] void CoreNetwork(){
     while(true) {
-// #ifndef __MINGW32__
-//         __try{
-// #endif
-//                 CoreMain();
-// #ifndef __MINGW32__
-//         }__except(Handle(GetExceptionInformation())){}
-// #endif
-    #if not defined(__MINGW32__)
-        __try{
-    #endif
-    
-    CoreMain();
+        #if not defined(__MINGW32__)
+            __try{
+        #endif
+        
+        CoreMain();
 
-    #if not defined(__MINGW32__) and not defined(__linux__)
-        }__except(Handle(GetExceptionInformation())){}
-    #elif not defined(__MINGW32__) and defined(__linux__)
-        } catch(...){
-            except("(Core) Code : " + std::string(strerror(errno)));
-        }
-    #endif
+        #if not defined(__MINGW32__) and not defined(__linux__)
+            }__except(Handle(GetExceptionInformation())){}
+        #elif not defined(__MINGW32__) and defined(__linux__)
+            } catch(...){
+                except("(Core) Code : " + std::string(strerror(errno)));
+            }
+        #endif
 
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 }
