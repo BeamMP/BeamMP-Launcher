@@ -224,10 +224,6 @@ std::string MultiDownload(SOCKET MSock,SOCKET DSock, uint64_t Size, const std::s
     memcpy(&Ret[MSize],DData,DSize);
     delete[]DData;
 
-    // std::string Ret = std::string(MData) + std::string(DData);
-    // delete []MData;
-    // delete []DData;
-
     return Ret;
 }
 
@@ -287,7 +283,16 @@ void SyncResources(SOCKET Sock){
                     if(!fs::exists(GetGamePath() + "mods/multiplayer")){
                         fs::create_directories(GetGamePath() + "mods/multiplayer");
                     }
-                    fs::copy_file(a, GetGamePath() + "mods/multiplayer" + a.substr(a.find_last_of('/')),
+
+                    std::string FName = a.substr(a.find_last_of('/'));
+                    // Linux version of the game doesnt support uppercase letters in mod names
+                    #if defined(__linux__)
+                    for(char &c : FName){
+                        c = ::tolower(c);
+                    }
+                    #endif
+
+                    fs::copy_file(a, GetGamePath() + "mods/multiplayer" + FName,
                                   fs::copy_options::overwrite_existing);
                 } catch (std::exception& e) {
                     error("Failed copy to the mods folder! " + std::string(e.what()));
@@ -328,6 +333,14 @@ void SyncResources(SOCKET Sock){
             if(!fs::exists(GetGamePath() + "mods/multiplayer")){
                 fs::create_directories(GetGamePath() + "mods/multiplayer");
             }
+
+            // Linux version of the game doesnt support uppercase letters in mod names
+            #if defined(__linux__)
+            for(char &c : FName){
+                c = ::tolower(c);
+            }
+            #endif
+
             fs::copy_file(a,GetGamePath() + "mods/multiplayer" + FName, fs::copy_options::overwrite_existing);
         }
         WaitForConfirm();

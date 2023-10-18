@@ -285,7 +285,7 @@ void EnableMP(){
             //error("Failed to parse " + File); //TODO illegal formatting
             return;
         }
-        if(!d["mods"].IsNull() && !d["mods"]["multiplayerbeammp"].IsNull()){
+        if(d.HasMember("mods") && !d["mods"].IsNull() && d["mods"].HasMember("multiplayerbeammp") && !d["mods"]["multiplayerbeammp"].IsNull()){
             d["mods"]["multiplayerbeammp"]["active"] = true;
             rapidjson::StringBuffer buffer;
             rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
