@@ -7,6 +7,7 @@
 ///
 
 #include <string>
+
 #if defined(_WIN32)
 #include <winsock2.h>
 #elif defined(__linux__)
@@ -14,6 +15,7 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #endif
+
 #include "Logger.h"
 
 std::string GetAddr(const std::string&IP){

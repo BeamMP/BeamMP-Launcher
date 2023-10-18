@@ -14,9 +14,9 @@
 #include <pwd.h>
 #include <sys/wait.h>
 #include <sys/types.h>
+#include <unistd.h>
 #endif
 
-#include <unistd.h>
 #include <Security/Init.h>
 #include <filesystem>
 #include "Startup.h"
