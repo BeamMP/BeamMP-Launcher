@@ -29,7 +29,7 @@ std::string GetVer(){
     return "2.0";
 }
 std::string GetPatch(){
-    return ".82";
+    return ".83";
 }
 
 std::string GetEP(char*P){
@@ -146,31 +146,6 @@ void LinuxPatch(){
         fatal(R"(failed to create the value "Name" under HKEY_CURRENT_USER\Software\Valve\Steam\Apps\284160)");
         return;
     }
-    RegCloseKey(hKey);
-
-    std::string Path = R"(Z:\home\)" + std::string(getenv("USER")) + R"(\.steam\steam\Steam.exe)";
-
-    if(!fs::exists(Path)) {
-        std::ofstream ofs(Path);
-        if (!ofs.is_open()) {
-            fatal("Failed to create file \"" + Path + "\"");
-            return;
-        } else ofs.close();
-    }
-
-    result = RegOpenKeyEx(HKEY_CURRENT_USER, R"(Software\Valve\Steam)", 0, KEY_ALL_ACCESS, &hKey);
-    if (result != ERROR_SUCCESS){
-        fatal(R"(failed to open HKEY_CURRENT_USER\Software\Valve\Steam)");
-        return;
-    }
-
-    result = RegSetValueEx(hKey, "SteamExe", 0, REG_SZ, (BYTE*)Path.c_str(), Path.size());
-
-    if (result != ERROR_SUCCESS){
-        fatal(R"(failed to create the value "Name" under HKEY_CURRENT_USER\Software\Valve\Steam\Apps\284160)");
-        return;
-    }
-
     RegCloseKey(hKey);
 
     info("Patched!");
