@@ -5,6 +5,9 @@
 ///
 /// Created by Anonymous275 on 7/16/2020
 ///
+
+#ifndef __linux__
+
 #include "Discord/discord_rpc.h"
 #include "Logger.h"
 #include <cstring>
@@ -109,3 +112,5 @@ void Discord_Main(){
     }
     if(DiscordInfo == nullptr)ErrorAboard();*/
 }
+
+#endif

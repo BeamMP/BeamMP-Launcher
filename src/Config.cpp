@@ -2,7 +2,7 @@
 /// Created by Anonymous275 on 2/23/2021
 ///
 
-#include "Network/network.h"
+#include "Network/network.hpp"
 #include <filesystem>
 #include "Logger.h"
 #include <fstream>

@@ -58,17 +58,17 @@ std::string Login(const std::string& fields){
         error(Buffer);
         return GetFail("Invalid answer from authentication servers, please try again later!");
     }
-    if(!d["success"].IsNull() && d["success"].GetBool()){
+    if(d.HasMember("success") && !d["success"].IsNull() && d["success"].GetBool()){
         LoginAuth = true;
-        if(!d["private_key"].IsNull()){
+        if(d.HasMember("private_key") && !d["private_key"].IsNull()){
             UpdateKey(d["private_key"].GetString());
         }
-        if(!d["public_key"].IsNull()){
+        if(d.HasMember("public_key") && !d["public_key"].IsNull()){
             PublicKey = d["public_key"].GetString();
         }
         info("Authentication successful!");
     }else info("Authentication failed!");
-    if(!d["message"].IsNull()){
+    if(d.HasMember("message") && !d["message"].IsNull()){
         d.RemoveMember("private_key");
         d.RemoveMember("public_key");
         rapidjson::StringBuffer buffer;
@@ -104,7 +104,7 @@ void CheckLocalKey(){
                 info("Invalid answer from authentication servers.");
                 UpdateKey(nullptr);
             }
-            if(d["success"].GetBool()){
+            if(d.HasMember("success") && d["success"].GetBool()){
                 LoginAuth = true;
                 UpdateKey(d["private_key"].GetString());
                 PublicKey = d["public_key"].GetString();

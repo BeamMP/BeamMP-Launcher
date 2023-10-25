@@ -9,6 +9,16 @@
 
 #pragma once
 #include <string>
+
+#ifdef __linux__
+#include <cstdint>
+#include "linuxfixes.h"
+#include <bits/types/siginfo_t.h>
+#include <sys/ucontext.h>
+#endif
+
+
+
 void NetReset();
 extern bool Dev;
 extern int ping;
