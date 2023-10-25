@@ -180,7 +180,7 @@ void CheckMP(const std::string& Path) {
             }
         }
     } catch (...) {
-        fatal("Please close the game, and try again!");
+        fatal("We were unable to clean the multiplayer mods folder! Is the game still running or do you have something open in that folder?");
     }
 
 }
