@@ -1,9 +1,6 @@
 [submodule "wxWidgets"]
 	path = include/wxWidgets
 	url = https://github.com/wxWidgets/wxWidgets.git
-[submodule "include/cpp-httplib"]
-	path = include/cpp-httplib
-	url = https://github.com/yhirose/cpp-httplib.git
 [submodule "include/tomlplusplus"]
 	path = include/tomlplusplus
 	url = https://github.com/marzer/tomlplusplus.git
