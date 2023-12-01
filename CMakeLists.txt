@@ -11,6 +11,7 @@ if (WIN32)
     find_package(OpenSSL REQUIRED)
     find_package(minhook CONFIG REQUIRED)
     find_package(nlohmann_json CONFIG REQUIRED)
+    find_package(httplib CONFIG REQUIRED)
     #-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static
     set(VcpkgRoot ${_VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET})
     include_directories(${VcpkgRoot}/include)
@@ -18,7 +19,7 @@ if (WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUNICODE")
 endif(WIN32)
 
-add_subdirectory(include/cpp-httplib)
+
 add_subdirectory(include/tomlplusplus)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -50,7 +51,7 @@ if (WIN32)
     endif()
     target_link_libraries(${PROJECT_NAME} PRIVATE
             ZLIB::ZLIB OpenSSL::SSL OpenSSL::Crypto ws2_32
-            Dbghelp comsuppw minhook::minhook nlohmann_json nlohmann_json::nlohmann_json)
+            Dbghelp comsuppw minhook::minhook nlohmann_json httplib::httplib)
 else(WIN32) #MINGW
     add_definitions("-D_WIN32_WINNT=0x0600")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os -s --static")

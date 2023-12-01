@@ -4,7 +4,7 @@
 ///
 #define CPPHTTPLIB_OPENSSL_SUPPORT
 #include "HttpAPI.h"
-#include <cpp-httplib/httplib.h>
+#include <httplib.h>
 #include <cmath>
 #include <fstream>
 #include <iostream>
