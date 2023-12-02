@@ -45,7 +45,7 @@ void Server::Abort() {
 }
 
 std::string Server::Auth() {
-   TCPSend("VC" + LauncherInstance->getVersion());
+   TCPSend("VC" + LauncherInstance->getProtocolVersion());
 
    auto Res = TCPRcv();
 

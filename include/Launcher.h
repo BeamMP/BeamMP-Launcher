@@ -55,6 +55,7 @@ class Launcher {
    const std::string& getPublicKey();
    const std::string& getUserRole();
    const std::string& getVersion();
+   const std::string& getProtocolVersion();
    static bool getExit() noexcept;
 
    private:  // functions
@@ -72,8 +73,9 @@ class Launcher {
 
    public:  // variables
    static inline std::thread EntryThread{};
-   static inline std::string Version{"2.1"};
-   static inline std::string FullVersion{Version + ".1"};
+   static inline std::string Version{"3.0"};
+   static inline std::string FullVersion{Version + ".0"};
+   static inline std::string ProtocolVersion{"2.0"};
 
    private:  // variables
    uint32_t GamePID{0};

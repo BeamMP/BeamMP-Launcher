@@ -276,6 +276,10 @@ const std::string& Launcher::getFullVersion() {
    return FullVersion;
 }
 
+const std::string& Launcher::getProtocolVersion() {
+   return ProtocolVersion;
+}
+
 const std::string& Launcher::getVersion() {
    return Version;
 }
