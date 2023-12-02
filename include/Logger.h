@@ -4,7 +4,7 @@
 ///
 
 #pragma once
-#include <easyloggingpp/src/easylogging++.h>
+#include <easylogging++.h>
 #undef min
 #undef max
 class Log {
