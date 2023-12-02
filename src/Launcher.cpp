@@ -230,7 +230,6 @@ void Launcher::StartProxy() {
       } else {
         res.set_content(to_string(cli_res.error()), "text/plain");
       }
-      res.set_content(req.path, "text/plain");
    });
 
    ProxyPort = HTTPProxy.bind_to_any_port("0.0.0.0");
