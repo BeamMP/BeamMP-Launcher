@@ -19,15 +19,12 @@ if (WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUNICODE")
 endif(WIN32)
 
-
-add_subdirectory(include/tomlplusplus)
-
 set(CMAKE_CXX_STANDARD 20)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 
 add_executable(${PROJECT_NAME}
-        src/main.cpp include/easyloggingpp/src/easylogging++.cc
+        src/main.cpp
         src/Launcher.cpp include/Launcher.h include/Memory/Hook.h
         src/Memory/Definitions.cpp include/Memory/Definitions.h
         src/Memory/Memory.cpp include/Memory/Memory.h include/Memory/Patterns.h
@@ -51,13 +48,13 @@ if (WIN32)
     endif()
     target_link_libraries(${PROJECT_NAME} PRIVATE
             ZLIB::ZLIB OpenSSL::SSL OpenSSL::Crypto ws2_32
-            Dbghelp comsuppw minhook::minhook nlohmann_json httplib::httplib)
+            Dbghelp comsuppw minhook::minhook nlohmann_json httplib::httplib easyloggingpp)
 else(WIN32) #MINGW
     add_definitions("-D_WIN32_WINNT=0x0600")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os -s --static")
     target_link_libraries(${PROJECT_NAME} discord-rpc ssl crypto ws2_32 ssp crypt32 z
             Dbghelp comsuppw minhook::minhook nlohmann_json nlohmann_json::nlohmann_json)
 endif(WIN32)
-add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
+
 target_include_directories(${PROJECT_NAME} PRIVATE "include")
 target_include_directories(${PROJECT_NAME} PRIVATE "include/atomic_queue/include")
