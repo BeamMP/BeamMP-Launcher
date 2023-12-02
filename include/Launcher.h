@@ -4,6 +4,8 @@
 ///
 
 #pragma once
+#define CPPHTTPLIB_OPENSSL_SUPPORT
+#include <httplib.h>
 #include <filesystem>
 #include <thread>
 #include "Memory/IPC.h"
@@ -37,6 +39,7 @@ class Launcher {
    void UpdateCheck();
    void WaitForGame();
    void LaunchGame();
+   void StartProxy();
    void CheckKey();
    void SetupMOD();
 
@@ -86,12 +89,15 @@ class Launcher {
    std::string UserRole{};
    std::string PublicKey{};
    std::thread IPCSystem{};
+   std::thread BackendProxy{};
    std::thread DiscordRPC{};
    std::string ConnectURI{};
    std::string BeamVersion{};
    std::string DiscordMessage{};
    Server ServerHandler{this};
    std::string TargetBuild{"default"};
+   httplib::Server HTTPProxy;
+   int ProxyPort{0};
 
    static inline std::atomic<bool> Shutdown{false}, Exit{false};
    std::unique_ptr<IPC> IPCToGame{};

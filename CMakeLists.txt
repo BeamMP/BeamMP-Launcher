@@ -1,5 +1,7 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.5)
 project(BeamMP-Launcher)
+
+set(CMAKE_CXX_STANDARD 20)
 
 if (WIN32)
     message(STATUS "MSVC -> forcing use of statically-linked runtime.")
@@ -7,11 +9,6 @@ if (WIN32)
     STRING(REPLACE "/MD" "/MT /MP" CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
     STRING(REPLACE "/MDd" "/MTd /MP" CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
     STRING(REPLACE "/MDd" "/MTd /MP" CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
-    find_package(ZLIB REQUIRED)
-    find_package(OpenSSL REQUIRED)
-    find_package(minhook CONFIG REQUIRED)
-    find_package(nlohmann_json CONFIG REQUIRED)
-    find_package(httplib CONFIG REQUIRED)
     #-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static
     set(VcpkgRoot ${_VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET})
     include_directories(${VcpkgRoot}/include)
@@ -19,9 +16,14 @@ if (WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUNICODE")
 endif(WIN32)
 
-set(CMAKE_CXX_STANDARD 20)
-
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
+
+
+find_package(ZLIB REQUIRED)
+find_package(OpenSSL REQUIRED)
+find_package(minhook CONFIG REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
+find_package(httplib CONFIG REQUIRED)
 
 add_executable(${PROJECT_NAME}
         src/main.cpp
@@ -44,11 +46,13 @@ add_executable(${PROJECT_NAME}
 
 if (WIN32)
     if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-        target_link_libraries(${PROJECT_NAME} PRIVATE discord-rpc)
+        target_link_libraries(${PROJECT_NAME} PRIVATE discord-rpc easyloggingpp)
+    else ()
+        target_link_libraries(${PROJECT_NAME} PRIVATE ${VcpkgRoot}/debug/lib/easyloggingpp.lib)
     endif()
     target_link_libraries(${PROJECT_NAME} PRIVATE
             ZLIB::ZLIB OpenSSL::SSL OpenSSL::Crypto ws2_32
-            Dbghelp comsuppw minhook::minhook nlohmann_json httplib::httplib easyloggingpp)
+            Dbghelp comsuppw minhook::minhook nlohmann_json httplib::httplib)
 else(WIN32) #MINGW
     add_definitions("-D_WIN32_WINNT=0x0600")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os -s --static")
@@ -57,4 +61,3 @@ else(WIN32) #MINGW
 endif(WIN32)
 
 target_include_directories(${PROJECT_NAME} PRIVATE "include")
-target_include_directories(${PROJECT_NAME} PRIVATE "include/atomic_queue/include")

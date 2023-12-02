@@ -24,40 +24,46 @@ LONG WINAPI CrashHandler(EXCEPTION_POINTERS* p) {
 Launcher::Launcher(int argc, char* argv[]) :
     CurrentPath(fs::current_path()),
     DiscordMessage("Just launched") {
-    Log::Init();
-    Shutdown.store(false);
-    Exit.store(false);
-    Launcher::StaticAbort(this);
-    DiscordTime = std::time(nullptr);
-    WindowsInit();
-    SetUnhandledExceptionFilter(CrashHandler);
-    LOG(INFO) << "Starting Launcher v" << FullVersion;
+   try {
+      Log::Init();
+      Shutdown.store(false);
+      Exit.store(false);
+      Launcher::StaticAbort(this);
+      DiscordTime = std::time(nullptr);
+      WindowsInit();
+      SetUnhandledExceptionFilter(CrashHandler);
+      LOG(INFO) << "Starting Launcher v" << FullVersion;
+      BackendProxy = std::thread(&Launcher::StartProxy, this);
 
-    fs::path config_path(CurrentPath / "Launcher.toml");
+      fs::path config_path(CurrentPath / "Launcher.toml");
 
-    std::string arg, arg2;
-    if(argc > 2) {
-        arg = argv[1];
-        arg2 = argv[2];
-    } else if (argc > 1) {
-        arg = argv[1];
-    }
-    if (arg.starts_with('0')) {
-        LOG(INFO) << "Debug param in effect";
-        DebugMode = true;
-        Memory::DebugMode = true;
-    } else if (arg2.starts_with("beammp://")) {
-        CurrentPath = arg;
-        config_path = CurrentPath / "Launcher.toml";
-        if (arg2.starts_with("beammp://connect/")) {
+      std::string arg, arg2;
+      if(argc > 2) {
+         arg = argv[1];
+         arg2 = argv[2];
+      } else if (argc > 1) {
+         arg = argv[1];
+      }
+      if (arg.starts_with('0')) {
+         LOG(INFO) << "Debug param in effect";
+         DebugMode = true;
+         Memory::DebugMode = true;
+      } else if (arg2.starts_with("beammp://")) {
+         CurrentPath = arg;
+         config_path = CurrentPath / "Launcher.toml";
+         if (arg2.starts_with("beammp://connect/")) {
             ConnectURI = arg2.substr(17);
-        }
-    } else if (!arg.empty()) {
-        config_path = CurrentPath / arg;
-    }
+         }
+      } else if (!arg.empty()) {
+         config_path = CurrentPath / arg;
+      }
 
-    LoadConfig(config_path);
-    LauncherCache = CurrentPath/"Resources";
+      LoadConfig(config_path);
+      LauncherCache = CurrentPath/"Resources";
+   } catch (const ShutdownException& e) {
+      Abort();
+      throw ShutdownException(e.what());
+   }
 }
 
 void Launcher::Abort() {
@@ -68,6 +74,10 @@ void Launcher::Abort() {
    }
    if (IPCSystem.joinable()) {
       IPCSystem.join();
+   }
+   HTTPProxy.stop();
+   if (BackendProxy.joinable()) {
+      BackendProxy.join();
    }
    if (!MPUserPath.empty()) {
       ResetMods();
@@ -201,6 +211,31 @@ void Launcher::WaitForGame() {
    }
    LOG(INFO) << "Game process was lost";
    GamePID = 0;
+}
+
+void Launcher::StartProxy() {
+   HTTPProxy.Get("/:any", [](const httplib::Request& req, httplib::Response& res) {
+      httplib::Client cli("https://backend.beammp.com");
+      if (auto cli_res = cli.Get(req.path); cli_res) {
+         res.set_content(cli_res->body,cli_res->get_header_value("Content-Type"));
+      } else {
+         res.set_content(to_string(cli_res.error()), "text/plain");
+      }
+   });
+
+   HTTPProxy.Post("/:any", [](const httplib::Request& req, httplib::Response& res) {
+      httplib::Client cli("https://backend.beammp.com");
+      if (auto cli_res = cli.Post(req.path, req.body, req.get_header_value("Content-Type")); cli_res) {
+         res.set_content(cli_res->body,cli_res->get_header_value("Content-Type"));
+      } else {
+        res.set_content(to_string(cli_res.error()), "text/plain");
+      }
+      res.set_content(req.path, "text/plain");
+   });
+
+   ProxyPort = HTTPProxy.bind_to_any_port("0.0.0.0");
+   LOG(INFO) << "HTTP Proxy running on port " << ProxyPort;
+   HTTPProxy.listen_after_bind();
 }
 
 void Launcher::ListenIPC() {

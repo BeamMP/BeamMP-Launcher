@@ -2,9 +2,8 @@
 /// Created by Anonymous275 on 1/17/22
 /// Copyright (c) 2021-present Anonymous275 read the LICENSE file for more info.
 ///
-#define CPPHTTPLIB_OPENSSL_SUPPORT
+
 #include "HttpAPI.h"
-#include <httplib.h>
 #include <cmath>
 #include <fstream>
 #include <iostream>
