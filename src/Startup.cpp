@@ -17,6 +17,10 @@
 #include <thread>
 #include "Http.h"
 #include "Json.h"
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <algorithm>
 
 extern int TraceBack;
 bool Dev = false;
@@ -125,13 +129,58 @@ void CustomPort(int argc, char* argv[]){
     }
 }
 
+std::string toLowerCase(const std::string& str) {
+    std::string lowercased = str;
+    std::transform(lowercased.begin(), lowercased.end(), lowercased.begin(), ::tolower);
+    return lowercased;
+}
+
 void LinuxPatch(){
+    std::string osChoice;
+    std::string filename = "os.conf";
+
     HKEY hKey = nullptr;
     LONG result = RegOpenKeyEx(HKEY_CURRENT_USER, R"(Software\Wine)", 0, KEY_READ, &hKey);
     if (result != ERROR_SUCCESS || getenv("USER") == nullptr)return;
+    info("Wine/Proton Detected! If you are on Windows please delete HKEY_CURRENT_USER\\Software\\Wine in regedit");
     RegCloseKey(hKey);
-    info("Wine/Proton Detected! If you are on windows delete HKEY_CURRENT_USER\\Software\\Wine in regedit");
-    info("Applying patches...");
+    
+    std::ifstream inFile(filename);
+
+    if (inFile.good()) { 
+        std::getline(inFile, osChoice);
+        inFile.close();
+    }
+
+    if (toLowerCase(osChoice) != "linux" && toLowerCase(osChoice) != "macos") {
+        info("Else, if you are using Wine on Linux (Proton, CrosOver, ..) write 'Linux' or MacOS (CrossOver, Whisky, ..) write 'MacOS'. \n Your choice will be saved in os.conf next to the .exe file of BeamMP. \n If you want to change platforme later please delete os.conf file.");
+    }
+    
+    while (toLowerCase(osChoice) != "linux" && toLowerCase(osChoice) != "macos") {
+        std::getline(std::cin, osChoice);
+
+        if (toLowerCase(osChoice) == "linux" || toLowerCase(osChoice) == "macos") {
+            std::ofstream outFile(filename);
+            if (outFile.is_open()) {
+                outFile << osChoice;
+                outFile.close();
+            }
+            else {
+                std::cout << "Warnning : writing to os.conf.\n" << std::endl;
+                info("Warnning : your choice will be not saved.");
+            }
+        }
+        else {
+            std::cout << "Invalid choice. Please enter 'MacOS' or 'Linux'.\n" << std::endl;
+        }
+    }
+
+    if (toLowerCase(osChoice) == "macos") {
+        info("Your platform is MacOS BeamMp wil not apply patch ! :)");
+        return;
+    }
+    
+    info("Applying patches for Linux...");
 
     result = RegCreateKey(HKEY_CURRENT_USER, R"(Software\Valve\Steam\Apps\284160)", &hKey);
 

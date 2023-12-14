@@ -5,3 +5,7 @@ cmake-build-release
 /*.sh
 /*.obj
 /*.exe
+/*.DS_store
+*.DS_store
+/build
+/.vscode
