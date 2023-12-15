@@ -291,36 +291,53 @@ void PreGame(const std::string& GamePath){
     }
 }
 
+void set_headers(httplib::Response& res) {
+    res.set_header("Access-Control-Allow-Origin", "*");
+}
+
 void StartProxy() {
     std::thread proxy([&](){
         httplib::Server HTTPProxy;
+        httplib::Headers headers = {
+                {"User-Agent", "BeamMP-Launcher/" + GetVer() + GetPatch()},
+                {"Accept", "*/*"}
+        };
+        std::string pattern = "/:any1";
+        for (int i = 2; i <= 4; i++) {
+            HTTPProxy.Get(pattern, [&](const httplib::Request &req, httplib::Response &res) {
+                httplib::Client cli("https://backend.beammp.com");
+                set_headers(res);
+                if (req.has_header("X-BMP-Authentication")) {
+                    headers.emplace("X-BMP-Authentication", PrivateKey);
+                }
+                if (req.has_header("X-API-Version")) {
+                    headers.emplace("X-API-Version", req.get_header_value("X-API-Version"));
+                }
+                if (auto cli_res = cli.Get(req.path, headers); cli_res) {
+                    res.set_content(cli_res->body, cli_res->get_header_value("Content-Type"));
+                } else {
+                    res.set_content(to_string(cli_res.error()), "text/plain");
+                }
+            });
 
-        HTTPProxy.Get("/:any", [](const httplib::Request& req, httplib::Response& res) {
-            httplib::Client cli("https://backend.beammp.com");
-            auto headers = req.headers;
-            if (req.has_header("X-BMP-Authentication")) {
-                headers.emplace("X-BMP-Authentication", PrivateKey);
-            }
-            if (auto cli_res = cli.Get(req.path, headers); cli_res) {
-                res.set_content(cli_res->body,cli_res->get_header_value("Content-Type"));
-            } else {
-                res.set_content(to_string(cli_res.error()), "text/plain");
-            }
-        });
-
-        HTTPProxy.Post("/:any", [](const httplib::Request& req, httplib::Response& res) {
-            httplib::Client cli("https://backend.beammp.com");
-            auto headers = req.headers;
-            if (req.has_header("X-BMP-Authentication")) {
-                headers.emplace("X-BMP-Authentication", PrivateKey);
-            }
-            if (auto cli_res = cli.Post(req.path, headers, req.body, req.get_header_value("Content-Type")); cli_res) {
-                res.set_content(cli_res->body,cli_res->get_header_value("Content-Type"));
-            } else {
-                res.set_content(to_string(cli_res.error()), "text/plain");
-            }
-        });
-
+            HTTPProxy.Post(pattern, [&](const httplib::Request &req, httplib::Response &res) {
+                httplib::Client cli("https://backend.beammp.com");
+                set_headers(res);
+                if (req.has_header("X-BMP-Authentication")) {
+                    headers.emplace("X-BMP-Authentication", PrivateKey);
+                }
+                if (req.has_header("X-API-Version")) {
+                    headers.emplace("X-API-Version", req.get_header_value("X-API-Version"));
+                }
+                if (auto cli_res = cli.Post(req.path, headers, req.body,
+                                            req.get_header_value("Content-Type")); cli_res) {
+                    res.set_content(cli_res->body, cli_res->get_header_value("Content-Type"));
+                } else {
+                    res.set_content(to_string(cli_res.error()), "text/plain");
+                }
+            });
+            pattern += "/:any" + std::to_string(i);
+        }
         ProxyPort = HTTPProxy.bind_to_any_port("0.0.0.0");
         HTTPProxy.listen_after_bind();
     });
