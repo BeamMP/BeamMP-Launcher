@@ -7,6 +7,9 @@
 ///
 #pragma once
 #include <string>
+#include <compare>
+#include <vector>
+
 void InitLauncher(int argc, char* argv[]);
 std::string GetEP(char*P = nullptr);
 std::string GetGamePath();
@@ -15,3 +18,11 @@ std::string GetEN();
 void StartProxy();
 void ConfigInit();
 extern bool Dev;
+
+struct VersionParser {
+    explicit VersionParser(const std::string& from_string);
+    std::strong_ordering operator<=>(VersionParser const& rhs) const noexcept;
+    bool operator==(VersionParser const& rhs) const noexcept;
+    std::vector<std::string> split;
+    std::vector<size_t> data;
+};

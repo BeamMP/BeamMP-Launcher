@@ -15,16 +15,45 @@
 #include "Security/Init.h"
 #include <filesystem>
 #include "Startup.h"
+#include "hashpp.h"
 #include "Logger.h"
 #include <fstream>
 #include <thread>
 #include "Http.h"
+
 
 extern int TraceBack;
 bool Dev = false;
 int ProxyPort = 0;
 
 namespace fs = std::filesystem;
+
+VersionParser::VersionParser(const std::string& from_string) {
+    std::string token;
+    std::istringstream tokenStream(from_string);
+    while (std::getline(tokenStream, token, '.')) {
+        data.emplace_back(std::stol(token));
+        split.emplace_back(token);
+    }
+}
+
+std::strong_ordering VersionParser::operator<=>(
+        const VersionParser& rhs) const noexcept {
+    size_t const fields = std::min(data.size(), rhs.data.size());
+    for (size_t i = 0; i != fields; ++i) {
+        if (data[i] == rhs.data[i]) continue;
+        else if (data[i] < rhs.data[i]) return std::strong_ordering::less;
+        else return std::strong_ordering::greater;
+    }
+    if (data.size() == rhs.data.size()) return std::strong_ordering::equal;
+    else if (data.size() > rhs.data.size()) return std::strong_ordering::greater;
+    else return std::strong_ordering::less;
+}
+
+bool VersionParser::operator==(const VersionParser& rhs) const noexcept {
+    return std::is_eq(*this <=> rhs);
+}
+
 
 std::string GetEN(){
     return "BeamMP-Launcher.exe";
@@ -75,44 +104,50 @@ void CheckName(int argc,char* args[]){
         URelaunch(argc,args);
     }
 }
+/*
+ * std::string LatestHash = HTTP::Get("https://backend.beammp.com/sha/launcher?branch=" + TargetBuild + "&pk=" + PublicKey);
+    std::string LatestVersion = HTTP::Get("https://backend.beammp.com/version/launcher?branch=" + TargetBuild + "&pk=" + PublicKey);
 
-void CheckForUpdates(int argc,char*args[],const std::string& CV){
-    std::string link;
-    std::string HTTP = HTTP::Get("https://beammp.com/builds/launcher?version=true");
-    bool fallback = false;
-    if(HTTP.find_first_of("0123456789") == std::string::npos){
-        HTTP = HTTP::Get("https://backup1.beammp.com/builds/launcher?version=true");
-        fallback = true;
-        if(HTTP.find_first_of("0123456789") == std::string::npos) {
-            fatal("Primary Servers Offline! sorry for the inconvenience!");
-        }
-    }
-    if(fallback){
-        link = "https://backup1.beammp.com/builds/launcher?download=true";
-    }else link = "https://beammp.com/builds/launcher?download=true";
+    transform(LatestHash.begin(), LatestHash.end(), LatestHash.begin(), ::tolower);
 
+    std::string FileHash = hashpp::get::getFileHash(hashpp::ALGORITHMS::SHA2_256, (CurrentPath/"BeamMP-Launcher.exe").string());
     std::string EP(GetEP() + GetEN()), Back(GetEP() + "BeamMP-Launcher.back");
 
-    if(fs::exists(Back))remove(Back.c_str());
+    if(FileHash != LatestHash && VersionParser(LatestVersion) > VersionParser(FullVersion)) {
+        LOG(INFO) << "Launcher update found!";
+        fs::remove(CurrentPath/"BeamMP-Launcher.back");
+        fs::rename(CurrentPath/"BeamMP-Launcher.exe", CurrentPath/"BeamMP-Launcher.back");
+        LOG(INFO) << "Downloading Launcher update " << LatestHash;
+        HTTP::Download(
+                "https://backend.beammp.com/builds/launcher?download=true"
+                "&pk=" +
+                PublicKey + "&branch=" + TargetBuild,
+                (CurrentPath/"BeamMP-Launcher.exe").string());
+        throw ShutdownException("Launcher update");
+    }
+ */
+void CheckForUpdates(int argc, char* args[], const std::string& CV) {
+    std::string LatestHash = HTTP::Get("https://backend.beammp.com/sha/launcher?branch=" + Branch + "&pk=" + PublicKey);
+    std::string LatestVersion = HTTP::Get(
+            "https://backend.beammp.com/version/launcher?branch=" + Branch + "&pk=" + PublicKey);
 
-    if(HTTP > CV){
-        system("cls");
-        info("Update found!");
-        info("Updating...");
-        if(std::rename(EP.c_str(), Back.c_str()))error("failed creating a backup!");
+    transform(LatestHash.begin(), LatestHash.end(), LatestHash.begin(), ::tolower);
+    std::string EP(GetEP() + GetEN()), Back(GetEP() + "BeamMP-Launcher.back");
 
-        if(!HTTP::Download(link, EP)){
-            error("Launcher Update failed! trying again...");
-            std::this_thread::sleep_for(std::chrono::seconds(2));
+    std::string FileHash = hashpp::get::getFileHash(hashpp::ALGORITHMS::SHA2_256, EP);
 
-            if(!HTTP::Download(link, EP)){
-                error("Launcher Update failed!");
-                std::this_thread::sleep_for(std::chrono::seconds(5));
-                ReLaunch(argc,args);
-            }
-        }
-        URelaunch(argc,args);
-    }else info("Launcher version is up to date");
+    if (FileHash != LatestHash && VersionParser(LatestVersion) > VersionParser(GetVer()+GetPatch())) {
+        info("Launcher update found!");
+        fs::remove(Back);
+        fs::rename(EP, Back);
+        info("Downloading Launcher update " + LatestHash);
+        HTTP::Download(
+                "https://backend.beammp.com/builds/launcher?download=true"
+                "&pk=" +
+                PublicKey + "&branch=" + Branch,
+                EP);
+        URelaunch(argc, args);
+    } else info("Launcher version is up to date");
     TraceBack++;
 }
 
@@ -178,7 +213,7 @@ void CheckMP(const std::string& Path) {
     try {
         for (auto& p : fs::directory_iterator(Path)){
             if(p.exists() && !p.is_directory()){
-                std::string Name = p.path().filename().u8string();
+                std::string Name = p.path().filename().string();
                 for(char&Ch : Name)Ch = char(tolower(Ch));
                 if(Name != "beammp.zip")fs::remove(p.path());
             }
@@ -224,7 +259,11 @@ void PreGame(const std::string& GamePath){
     CheckMP(GetGamePath() + "mods/multiplayer");
 
     if(!Dev) {
-        info("Downloading mod please wait...");
+        std::string LatestHash = HTTP::Get("https://backend.beammp.com/sha/mod?branch=" + Branch + "&pk=" + PublicKey);
+        transform(LatestHash.begin(), LatestHash.end(), LatestHash.begin(), ::tolower);
+        LatestHash.erase(std::remove_if(LatestHash.begin(), LatestHash.end(),
+                               [](auto const& c ) -> bool { return !std::isalnum(c); } ), LatestHash.end());
+
         try {
             if (!fs::exists(GetGamePath() + "mods/multiplayer")) {
                 fs::create_directories(GetGamePath() + "mods/multiplayer");
@@ -233,20 +272,23 @@ void PreGame(const std::string& GamePath){
         }catch(std::exception&e){
             fatal(e.what());
         }
+
         std::string ZipPath(GetGamePath() + R"(mods\multiplayer\BeamMP.zip)");
 
-        HTTP::Download("https://backend.beammp.com/builds/client?download=true"
-                 "&pk=" + PublicKey + "&branch=" + Branch, ZipPath);
+        std::string FileHash = hashpp::get::getFileHash(hashpp::ALGORITHMS::SHA2_256, ZipPath);
+
+        if (FileHash != LatestHash) {
+            info("Downloading BeamMP Update " + LatestHash);
+            HTTP::Download("https://backend.beammp.com/builds/client?download=true"
+                           "&pk=" + PublicKey + "&branch=" + Branch, ZipPath);
+        }
 
         std::string Target(GetGamePath() + "mods/unpacked/beammp");
 
         if(fs::is_directory(Target)) {
             fs::remove_all(Target);
         }
-
-        //HTTP::Download("beammp.com/builds/client", GetGamePath() + R"(mods\multiplayer\BeamMP.zip)");
     }
-
 }
 
 void StartProxy() {

@@ -80,7 +80,9 @@ void Parse(std::string Data,SOCKET CSocket){
         case 'O': //open default browser with URL
             if(IsAllowedLink(Data.substr(1))) {
                 ShellExecuteA(nullptr, "open", Data.substr(1).c_str(), nullptr, nullptr,SW_SHOW); ///TODO: Look at when working on linux port
+                info("Opening Link \"" + Data.substr(1) + "\"");
             }
+            Data.clear();
             break;
         case 'P':
             Data = Code + std::to_string(ProxyPort);

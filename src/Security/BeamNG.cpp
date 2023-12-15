@@ -144,9 +144,9 @@ void FileList(std::vector<std::string>&a,const std::string& Path){
     for (const auto &entry : fs::directory_iterator(Path)) {
         const auto& DPath = entry.path();
         if (!entry.is_directory()) {
-            a.emplace_back(DPath.u8string());
-        }else if(NameValid(DPath.filename().u8string())){
-            FileList(a, DPath.u8string());
+            a.emplace_back(DPath.string());
+        }else if(NameValid(DPath.filename().string())){
+            FileList(a, DPath.string());
         }
     }
 }
@@ -165,7 +165,7 @@ bool Find(const std::string& FName,const std::string& Path){
 bool FindHack(const std::string& Path){
     bool s = true;
     for (const auto &entry : fs::directory_iterator(Path)) {
-        std::string Name = entry.path().filename().u8string();
+        std::string Name = entry.path().filename().string();
         for(char&c : Name)c = char(tolower(c));
         if(Name == "steam.exe")s = false;
         if(Name.find("greenluma") != -1){
