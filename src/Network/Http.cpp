@@ -15,13 +15,6 @@
 #include <cmath>
 #include <httplib.h>
 
-std::string HTTP::Codes_[] =
-{
- "Success","Unknown","Connection","BindIPAddress",
- "Read","Write","ExceedRedirectCount","Canceled",
- "SSLConnection","SSLLoadingCerts","SSLServerVerification",
- "UnsupportedMultipartBoundaryChars","Compression"
-};
 bool HTTP::isDownload = false;
 std::string HTTP::Get(const std::string &IP) {
     static std::mutex Lock;
@@ -35,7 +28,7 @@ std::string HTTP::Get(const std::string &IP) {
     auto res = cli.Get(IP.substr(pos).c_str(), ProgressBar);
     std::string Ret;
 
-    if(res.error() == 0){
+    if(res){
         if(res->status == 200){
             Ret = res->body;
         }else error(res->reason);
@@ -44,7 +37,7 @@ std::string HTTP::Get(const std::string &IP) {
         if(isDownload) {
             std::cout << "\n";
         }
-        error("HTTP Get failed on " + Codes_[res.error()]);
+        error("HTTP Get failed on " + to_string(res.error()));
     }
 
     return Ret;
@@ -63,23 +56,23 @@ std::string HTTP::Post(const std::string& IP, const std::string& Fields) {
     if(!Fields.empty()) {
         httplib::Result res = cli.Post(IP.substr(pos).c_str(), Fields, "application/json");
 
-        if(res.error() == 0) {
+        if(res) {
             if (res->status != 200) {
                 error(res->reason);
             }
             Ret = res->body;
         }else{
-            error("HTTP Post failed on " + Codes_[res.error()]);
+            error("HTTP Post failed on " + to_string(res.error()));
         }
     }else{
         httplib::Result res = cli.Post(IP.substr(pos).c_str());
-        if(res.error() == 0) {
+        if(res) {
             if (res->status != 200) {
                 error(res->reason);
             }
             Ret = res->body;
         }else{
-            error("HTTP Post failed on " + Codes_[res.error()]);
+            error("HTTP Post failed on " + to_string(res.error()));
         }
     }
 

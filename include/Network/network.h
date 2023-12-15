@@ -14,6 +14,7 @@ extern bool Dev;
 extern int ping;
 
 [[noreturn]] void CoreNetwork();
+extern int ProxyPort;
 extern int ClientID;
 extern int LastPort;
 extern bool ModLoaded;
@@ -27,6 +28,7 @@ extern std::string LastIP;
 extern std::string MStatus;
 extern std::string UlStatus;
 extern std::string PublicKey;
+extern std::string PrivateKey;
 extern std::string ListOfMods;
 int KillSocket(uint64_t Dead);
 void UUl(const std::string& R);

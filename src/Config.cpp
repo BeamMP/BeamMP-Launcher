@@ -2,18 +2,18 @@
 /// Created by Anonymous275 on 2/23/2021
 ///
 
+#include <nlohmann/json.hpp>
 #include "Network/network.h"
 #include <filesystem>
 #include "Logger.h"
 #include <fstream>
-#include "Json.h"
 #include <cstdint>
 namespace fs = std::filesystem;
 
 std::string Branch;
-void ParseConfig(const json::Document& d){
-    if(d["Port"].IsInt()){
-        DEFAULT_PORT = d["Port"].GetInt();
+void ParseConfig(const nlohmann::json& d){
+    if(d["Port"].is_number()){
+        DEFAULT_PORT = d["Port"].get<int>();
     }
     //Default -1
     //Release 1
@@ -21,8 +21,8 @@ void ParseConfig(const json::Document& d){
     //Dev 3
     //Custom 3
 
-    if(d["Build"].IsString()){
-        Branch = d["Build"].GetString();
+    if(d["Build"].is_string()){
+        Branch = d["Build"].get<std::string>();
         for(char& c : Branch)c = char(tolower(c));
     }
 }
@@ -35,10 +35,9 @@ void ConfigInit(){
             std::string Buffer(Size, 0);
             cfg.read(&Buffer[0], Size);
             cfg.close();
-            json::Document d;
-            d.Parse(Buffer.c_str());
-            if(d.HasParseError()){
-                fatal("Config failed to parse make sure it's valid JSON! Code : " + std::to_string(d.GetParseError()));
+            nlohmann::json d = nlohmann::json::parse(Buffer, nullptr, false);
+            if(d.is_discarded()){
+                fatal("Config failed to parse make sure it's valid JSON!");
             }
             ParseConfig(d);
         }else fatal("Failed to open Launcher.cfg!");

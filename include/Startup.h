@@ -12,5 +12,6 @@ std::string GetEP(char*P = nullptr);
 std::string GetGamePath();
 std::string GetVer();
 std::string GetEN();
+void StartProxy();
 void ConfigInit();
 extern bool Dev;

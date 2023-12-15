@@ -5,6 +5,9 @@
 ///
 /// Created by Anonymous275 on 7/16/2020
 ///
+
+#include <nlohmann/json.hpp>
+#include <httplib.h>
 #include "zip_file.h"
 #include <windows.h>
 #include "Discord/discord_info.h"
@@ -16,10 +19,11 @@
 #include <fstream>
 #include <thread>
 #include "Http.h"
-#include "Json.h"
 
 extern int TraceBack;
 bool Dev = false;
+int ProxyPort = 0;
+
 namespace fs = std::filesystem;
 
 std::string GetEN(){
@@ -29,7 +33,7 @@ std::string GetVer(){
     return "2.0";
 }
 std::string GetPatch(){
-    return ".83";
+    return ".84";
 }
 
 std::string GetEP(char*P){
@@ -195,20 +199,16 @@ void EnableMP(){
         std::string Data(Size, 0);
         db.read(&Data[0], Size);
         db.close();
-        json::Document d;
-        d.Parse(Data.c_str());
-        if(Data.at(0) != '{' || d.HasParseError()){
+        nlohmann::json d = nlohmann::json::parse(Data, nullptr, false);
+        if(Data.at(0) != '{' || d.is_discarded()) {
             //error("Failed to parse " + File); //TODO illegal formatting
             return;
         }
-        if(!d["mods"].IsNull() && !d["mods"]["multiplayerbeammp"].IsNull()){
+        if(d.contains("mods") && d["mods"].contains("multiplayerbeammp")){
             d["mods"]["multiplayerbeammp"]["active"] = true;
-            rapidjson::StringBuffer buffer;
-            rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-            d.Accept(writer);
             std::ofstream ofs(File);
             if(ofs.is_open()){
-                ofs << buffer.GetString();
+                ofs << d.dump();
                 ofs.close();
             }else{
                 error("Failed to write " + File);
@@ -247,4 +247,40 @@ void PreGame(const std::string& GamePath){
         //HTTP::Download("beammp.com/builds/client", GetGamePath() + R"(mods\multiplayer\BeamMP.zip)");
     }
 
+}
+
+void StartProxy() {
+    std::thread proxy([&](){
+        httplib::Server HTTPProxy;
+
+        HTTPProxy.Get("/:any", [](const httplib::Request& req, httplib::Response& res) {
+            httplib::Client cli("https://backend.beammp.com");
+            auto headers = req.headers;
+            if (req.has_header("X-BMP-Authentication")) {
+                headers.emplace("X-BMP-Authentication", PrivateKey);
+            }
+            if (auto cli_res = cli.Get(req.path, headers); cli_res) {
+                res.set_content(cli_res->body,cli_res->get_header_value("Content-Type"));
+            } else {
+                res.set_content(to_string(cli_res.error()), "text/plain");
+            }
+        });
+
+        HTTPProxy.Post("/:any", [](const httplib::Request& req, httplib::Response& res) {
+            httplib::Client cli("https://backend.beammp.com");
+            auto headers = req.headers;
+            if (req.has_header("X-BMP-Authentication")) {
+                headers.emplace("X-BMP-Authentication", PrivateKey);
+            }
+            if (auto cli_res = cli.Post(req.path, headers, req.body, req.get_header_value("Content-Type")); cli_res) {
+                res.set_content(cli_res->body,cli_res->get_header_value("Content-Type"));
+            } else {
+                res.set_content(to_string(cli_res.error()), "text/plain");
+            }
+        });
+
+        ProxyPort = HTTPProxy.bind_to_any_port("0.0.0.0");
+        HTTPProxy.listen_after_bind();
+    });
+    proxy.detach();
 }

@@ -5,9 +5,10 @@
 ///
 /// Created by Anonymous275 on 7/20/2020
 ///
+
 #include "Network/network.h"
 #include "Security/Init.h"
-
+#include <regex>
 #include "Http.h"
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -47,6 +48,13 @@ void StartSync(const std::string &Data){
     GS.detach();
     info("Connecting to server");
 }
+
+bool IsAllowedLink(const std::string& Link) {
+    std::regex link_pattern(R"(https:\/\/(?:\w+)?(?:\.)?(?:beammp\.com|discord\.gg))");
+    std::smatch link_match;
+    return std::regex_search(Link,link_match, link_pattern) && link_match.position() == 0;
+}
+
 void Parse(std::string Data,SOCKET CSocket){
     char Code = Data.at(0), SubCode = 0;
     if(Data.length() > 1)SubCode = Data.at(1);
@@ -68,6 +76,14 @@ void Parse(std::string Data,SOCKET CSocket){
             }
             if(ListOfMods == "-")Data = "L";
             else Data = "L"+ListOfMods;
+            break;
+        case 'O': //open default browser with URL
+            if(IsAllowedLink(Data.substr(1))) {
+                ShellExecuteA(nullptr, "open", Data.substr(1).c_str(), nullptr, nullptr,SW_SHOW); ///TODO: Look at when working on linux port
+            }
+            break;
+        case 'P':
+            Data = Code + std::to_string(ProxyPort);
             break;
         case 'U':
             if(SubCode == 'l')Data = UlStatus;

@@ -21,20 +21,21 @@
 }
 
 int main(int argc, char* argv[]) {
-    #ifdef DEBUG
-        std::thread th(flush);
-        th.detach();
-    #endif
+#ifdef DEBUG
+    std::thread th(flush);
+    th.detach();
+#endif
     GetEP(argv[0]);
 
-    InitLauncher(argc,argv);
+    InitLauncher(argc, argv);
 
     try {
         LegitimacyCheck();
-    }catch (std::exception& e){
+    } catch (std::exception &e) {
         fatal("Main 1 : " + std::string(e.what()));
     }
 
+    StartProxy();
     PreGame(GetGameDir());
     InitGame(GetGameDir());
     CoreNetwork();

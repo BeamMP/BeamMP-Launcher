@@ -102,7 +102,7 @@ std::string Auth(SOCKET Sock){
     return Res;
 }
 
-void UpdateUl(bool D,const std::string&msg){
+void UpdateUl(bool D,const std::string& msg){
     if(D)UlStatus = "UlDownloading Resource " + msg;
     else UlStatus = "UlLoading Resource " + msg;
 }
@@ -267,8 +267,10 @@ void SyncResources(SOCKET Sock){
                     if(!fs::exists(GetGamePath() + "mods/multiplayer")){
                         fs::create_directories(GetGamePath() + "mods/multiplayer");
                     }
-                    fs::copy_file(a, GetGamePath() + "mods/multiplayer" + a.substr(a.find_last_of('/')),
-                                  fs::copy_options::overwrite_existing);
+                    auto name = GetGamePath() + "mods/multiplayer" + a.substr(a.find_last_of('/'));
+                    auto tmp_name = name + ".tmp";
+                    fs::copy_file(a,tmp_name,fs::copy_options::overwrite_existing);
+                    fs::rename(tmp_name, name);
                 } catch (std::exception& e) {
                     error("Failed copy to the mods folder! " + std::string(e.what()));
                     Terminate = true;

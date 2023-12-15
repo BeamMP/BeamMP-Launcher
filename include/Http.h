@@ -16,5 +16,4 @@ public:
     static bool ProgressBar(size_t c, size_t t);
 public:
     static bool isDownload;
-    static std::string Codes_[];
 };

@@ -12,9 +12,12 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 
 file(GLOB source_files "src/*.cpp" "src/*/*.cpp" "src/*/*.hpp" "include/*.h"  "include/*/*.h" "include/*/*/*.h")
+find_package(httplib CONFIG REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
 
 add_executable(${PROJECT_NAME} ${source_files})
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "BeamMP-Launcher")
+
 
 if (WIN32)
     find_package(ZLIB REQUIRED)
@@ -23,8 +26,14 @@ if (WIN32)
     set(VcpkgRoot ${_VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET})
     include_directories(${VcpkgRoot}/include)
     link_directories(${VcpkgRoot}/lib)
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${VcpkgRoot}/lib/discord-rpc.lib
-            ZLIB::ZLIB OpenSSL::SSL OpenSSL::Crypto ws2_32)
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+            ZLIB::ZLIB OpenSSL::SSL OpenSSL::Crypto ws2_32 httplib::httplib nlohmann_json::nlohmann_json)
+
+    if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+        target_link_libraries(${PROJECT_NAME} PRIVATE ${VcpkgRoot}/lib/discord-rpc.lib)
+    else ()
+        target_link_libraries(${PROJECT_NAME} PRIVATE ${VcpkgRoot}/debug/lib/discord-rpc.lib)
+    endif()
 else(WIN32) #MINGW
     add_definitions("-D_WIN32_WINNT=0x0600")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os -s --static")

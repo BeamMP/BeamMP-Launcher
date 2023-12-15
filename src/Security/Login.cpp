@@ -6,19 +6,22 @@
 /// Created by Anonymous275 on 11/26/2020
 ///
 
+#include <nlohmann/json.hpp>
 #include "Http.h"
 #include <filesystem>
 #include "Logger.h"
 #include <fstream>
-#include "Json.h"
+
 
 namespace fs = std::filesystem;
 std::string PublicKey;
+std::string PrivateKey;
 extern bool LoginAuth;
 std::string Role;
 
 void UpdateKey(const char* newKey){
     if(newKey && std::isalnum(newKey[0])){
+        PrivateKey = newKey;
         std::ofstream Key("key");
         if(Key.is_open()){
             Key << newKey;
@@ -48,33 +51,31 @@ std::string Login(const std::string& fields){
     }
     info("Attempting to authenticate...");
     std::string Buffer = HTTP::Post("https://auth.beammp.com/userlogin", fields);
-    json::Document d;
-    d.Parse(Buffer.c_str());
+
     if(Buffer == "-1"){
         return GetFail("Failed to communicate with the auth system!");
     }
 
-    if (Buffer.at(0) != '{' || d.HasParseError()) {
+    nlohmann::json d = nlohmann::json::parse(Buffer, nullptr, false);
+
+    if (Buffer.at(0) != '{' || d.is_discarded()) {
         error(Buffer);
         return GetFail("Invalid answer from authentication servers, please try again later!");
     }
-    if(!d["success"].IsNull() && d["success"].GetBool()){
+    if(d.contains("success") && d["success"].get<bool>()){
         LoginAuth = true;
-        if(!d["private_key"].IsNull()){
-            UpdateKey(d["private_key"].GetString());
+        if(!d.contains("private_key")) {
+            UpdateKey(d["private_key"].get<std::string>().c_str());
         }
-        if(!d["public_key"].IsNull()){
-            PublicKey = d["public_key"].GetString();
+        if(!d.contains("public_key")){
+            PublicKey = d["public_key"].get<std::string>();
         }
         info("Authentication successful!");
     }else info("Authentication failed!");
-    if(!d["message"].IsNull()){
-        d.RemoveMember("private_key");
-        d.RemoveMember("public_key");
-        rapidjson::StringBuffer buffer;
-        rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-        d.Accept(writer);
-        return buffer.GetString();
+    if(!d.contains("message")){
+        d.erase("private_key");
+        d.erase("public_key");
+        return d.dump();
     }
     return GetFail("Invalid message parsing!");
 }
@@ -97,18 +98,18 @@ void CheckLocalKey(){
 
             Buffer = HTTP::Post("https://auth.beammp.com/userlogin", R"({"pk":")" + Buffer + "\"}");
 
-            json::Document d;
-            d.Parse(Buffer.c_str());
-            if (Buffer == "-1" || Buffer.at(0) != '{' || d.HasParseError()) {
+            nlohmann::json d = nlohmann::json::parse(Buffer, nullptr, false);
+
+            if (Buffer == "-1" || Buffer.at(0) != '{' || d.is_discarded()) {
                 error(Buffer);
                 info("Invalid answer from authentication servers.");
                 UpdateKey(nullptr);
             }
-            if(d["success"].GetBool()){
+            if(d["success"].get<bool>()){
                 LoginAuth = true;
-                UpdateKey(d["private_key"].GetString());
-                PublicKey = d["public_key"].GetString();
-                Role = d["role"].GetString();
+                UpdateKey(d["private_key"].get<std::string>().c_str());
+                PublicKey = d["public_key"].get<std::string>();
+                Role = d["role"].get<std::string>();
                 //info(Role);
             }else{
                 info("Auto-Authentication unsuccessful please re-login!");
