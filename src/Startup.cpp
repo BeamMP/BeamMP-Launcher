@@ -104,28 +104,7 @@ void CheckName(int argc,char* args[]){
         URelaunch(argc,args);
     }
 }
-/*
- * std::string LatestHash = HTTP::Get("https://backend.beammp.com/sha/launcher?branch=" + TargetBuild + "&pk=" + PublicKey);
-    std::string LatestVersion = HTTP::Get("https://backend.beammp.com/version/launcher?branch=" + TargetBuild + "&pk=" + PublicKey);
 
-    transform(LatestHash.begin(), LatestHash.end(), LatestHash.begin(), ::tolower);
-
-    std::string FileHash = hashpp::get::getFileHash(hashpp::ALGORITHMS::SHA2_256, (CurrentPath/"BeamMP-Launcher.exe").string());
-    std::string EP(GetEP() + GetEN()), Back(GetEP() + "BeamMP-Launcher.back");
-
-    if(FileHash != LatestHash && VersionParser(LatestVersion) > VersionParser(FullVersion)) {
-        LOG(INFO) << "Launcher update found!";
-        fs::remove(CurrentPath/"BeamMP-Launcher.back");
-        fs::rename(CurrentPath/"BeamMP-Launcher.exe", CurrentPath/"BeamMP-Launcher.back");
-        LOG(INFO) << "Downloading Launcher update " << LatestHash;
-        HTTP::Download(
-                "https://backend.beammp.com/builds/launcher?download=true"
-                "&pk=" +
-                PublicKey + "&branch=" + TargetBuild,
-                (CurrentPath/"BeamMP-Launcher.exe").string());
-        throw ShutdownException("Launcher update");
-    }
- */
 void CheckForUpdates(int argc, char* args[], const std::string& CV) {
     std::string LatestHash = HTTP::Get("https://backend.beammp.com/sha/launcher?branch=" + Branch + "&pk=" + PublicKey);
     std::string LatestVersion = HTTP::Get(
