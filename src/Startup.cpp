@@ -272,6 +272,8 @@ void PreGame(const std::string& GamePath){
 
 void set_headers(httplib::Response& res) {
     res.set_header("Access-Control-Allow-Origin", "*");
+    res.set_header("Access-Control-Request-Method", "POST, OPTIONS, GET");
+    res.set_header("Access-Control-Request-Headers", "X-API-Version");
 }
 
 void StartProxy() {
