@@ -5,3 +5,5 @@ cmake-build-release
 /*.sh
 /*.obj
 /*.exe
+bin/
+compile_commands.json
