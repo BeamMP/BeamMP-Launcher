@@ -1,0 +1,3 @@
+[submodule "deps/BeamMP-Protocol"]
+	path = deps/BeamMP-Protocol
+	url = https://github.com/BeamMP/BeamMP-Protocol

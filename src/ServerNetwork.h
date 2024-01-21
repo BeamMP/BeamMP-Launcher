@@ -31,12 +31,16 @@ private:
 
     void handle_packet(const bmp::Packet& packet);
     void handle_identification(const bmp::Packet& packet);
+    void handle_authentication(const bmp::Packet& packet);
+    void handle_mod_download(const bmp::Packet& packet);
 
     io_context m_io {};
     ip::tcp::socket m_tcp_socket { m_io };
     ip::udp::socket m_udp_socket { m_io };
 
     bmp::State m_state {};
+
+    uint64_t m_udp_magic {};
 
     Launcher& m_launcher;
 

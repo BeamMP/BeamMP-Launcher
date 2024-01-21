@@ -886,3 +886,7 @@ void Launcher::udp_send(const std::string& data) {
     to_send.insert(to_send.end(), vec.begin(), vec.end());
     m_udp_socket.send_to(buffer(to_send.data(), to_send.size()), m_udp_endpoint);
 }
+std::string Launcher::get_public_key() {
+    return m_identity->PublicKey;
+}
+

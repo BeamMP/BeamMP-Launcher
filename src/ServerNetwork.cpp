@@ -1,9 +1,12 @@
 #include "ServerNetwork.h"
 #include "ClientInfo.h"
+#include "Identity.h"
 #include "ImplementationInfo.h"
 #include "Launcher.h"
 #include "ProtocolVersion.h"
 #include "ServerInfo.h"
+#include "Util.h"
+#include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
 
 ServerNetwork::ServerNetwork(Launcher& launcher, const ip::tcp::endpoint& ep)
@@ -30,6 +33,7 @@ void ServerNetwork::run() {
         .purpose = bmp::Purpose::ProtocolVersion,
         .raw_data = std::vector<uint8_t>(6),
     };
+    spdlog::trace("Protocol version: v{}.{}.{}", 1, 0, 0);
     struct bmp::ProtocolVersion version {
         .version = {
             .major = 1,
@@ -47,6 +51,14 @@ void ServerNetwork::run() {
 }
 
 void ServerNetwork::handle_packet(const bmp::Packet& packet) {
+    // handle ping immediately
+    if (m_state > bmp::State::Identification && packet.purpose == bmp::Purpose::Ping) {
+        bmp::Packet pong {
+            .purpose = bmp::Purpose::Ping,
+        };
+        tcp_write(pong);
+        return;
+    }
     switch (m_state) {
     case bmp::State::None:
         m_state = bmp::State::Identification;
@@ -55,14 +67,89 @@ void ServerNetwork::handle_packet(const bmp::Packet& packet) {
         handle_identification(packet);
         break;
     case bmp::State::Authentication:
+        handle_authentication(packet);
         break;
     case bmp::State::ModDownload:
+        handle_mod_download(packet);
         break;
     case bmp::State::SessionSetup:
         break;
     case bmp::State::Playing:
         break;
     case bmp::State::Leaving:
+        break;
+    }
+}
+
+void ServerNetwork::handle_mod_download(const bmp::Packet& packet) {
+    switch (packet.purpose) {
+    case bmp::Purpose::ModsInfo: {
+        auto data = packet.get_readable_data();
+        auto mods_info = nlohmann::json::parse(data.begin(), data.end());
+        spdlog::info("Got info about {} mod(s)", mods_info.size());
+        for (const auto& mod : mods_info) {
+            spdlog::warn("Mod download not implemented, but data is: {}", mod.dump(4));
+        }
+        // TODO: implement mod download
+        // for now we just pretend we're all good!
+        bmp::Packet ok {
+            .purpose = bmp::Purpose::ModsSyncDone,
+        };
+        spdlog::info("Done syncing mods");
+        tcp_write(ok);
+        break;
+    }
+    case bmp::Purpose::StateChangeSessionSetup: {
+        spdlog::info("Starting session setup");
+        m_state = bmp::State::SessionSetup;
+        break;
+    }
+    default:
+        spdlog::error("Got 0x{:x} in state {}. This is not allowed. Disconnecting", uint16_t(packet.purpose), int(m_state));
+        // todo: disconnect gracefully
+        break;
+    }
+}
+
+void ServerNetwork::handle_authentication(const bmp::Packet& packet) {
+    switch (packet.purpose) {
+    case bmp::Purpose::AuthOk: {
+        spdlog::info("Authentication succeeded");
+        uint32_t player_id;
+        bmp::deserialize(player_id, packet.get_readable_data());
+        spdlog::debug("Player id: {}", player_id);
+        break;
+    }
+    case bmp::Purpose::AuthFailed: {
+        auto data = packet.get_readable_data();
+        spdlog::error("Authentication failed: {}", std::string(data.begin(), data.end()));
+        break;
+    }
+    case bmp::Purpose::PlayerRejected: {
+        auto data = packet.get_readable_data();
+        spdlog::error("Server rejected me: {}", std::string(data.begin(), data.end()));
+        break;
+    }
+    case bmp::Purpose::StartUDP: {
+        bmp::deserialize(m_udp_magic, packet.get_readable_data());
+        spdlog::debug("UDP start, got magic 0x{:x}", m_udp_magic);
+        m_udp_ep = ip::udp::endpoint(m_tcp_ep.address(), m_tcp_ep.port());
+        m_udp_socket.open(m_tcp_ep.address().is_v4() ? ip::udp::v4() : ip::udp::v6());
+        auto copy = bmp::Packet {
+            .purpose = bmp::Purpose::StartUDP,
+            .raw_data = packet.get_readable_data(),
+        };
+        udp_write(copy);
+        break;
+    }
+    case bmp::Purpose::StateChangeModDownload: {
+        spdlog::info("Starting mod sync");
+        m_state = bmp::State::ModDownload;
+        break;
+    }
+    default:
+        spdlog::error("Got 0x{:x} in state {}. This is not allowed. Disconnecting", uint16_t(packet.purpose), int(m_state));
+        // todo: disconnect gracefully
         break;
     }
 }
@@ -106,6 +193,13 @@ void ServerNetwork::handle_identification(const bmp::Packet& packet) {
     case bmp::Purpose::StateChangeAuthentication: {
         spdlog::debug("Starting authentication");
         m_state = bmp::State::Authentication;
+        // TODO: make the launcher provide login properly!
+        auto pubkey = m_launcher.get_public_key();
+        bmp::Packet pubkey_packet {
+            .purpose = bmp::Purpose::PlayerPublicKey,
+            .raw_data = std::vector<uint8_t>(pubkey.begin(), pubkey.end())
+        };
+        tcp_write(pubkey_packet);
         break;
     }
     default:

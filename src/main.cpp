@@ -1,5 +1,8 @@
 #include "Launcher.h"
 #include "Platform.h"
+#include "ServerNetwork.h"
+#include <boost/system/detail/errc.hpp>
+#include <boost/system/detail/error_category.hpp>
 #include <iostream>
 #include <thread>
 
@@ -16,8 +19,10 @@ int main(int argc, char** argv) {
     bool enable_dev = false;
     int custom_port = 0;
     std::string_view invalid_arg;
+    std::string all_args = std::string { argv[0] } + " ";
     for (int i = 1; i < argc; ++i) {
         std::string_view arg(argv[i]);
+        all_args += "'" + std::string(arg) + "' ";
         std::string_view next(i + 1 < argc ? argv[i + 1] : "");
         // --debug flag enables debug printing in console
         if (arg == "--debug") {
@@ -37,18 +42,30 @@ int main(int argc, char** argv) {
     }
     setup_logger(enable_debug || enable_dev);
 
-    spdlog::debug("Debug enabled");
+    spdlog::trace("BeamMP Launcher invoked as: {}", all_args);
+
+    if (enable_debug) {
+        spdlog::debug("Debug mode enabled");
+    }
+    if (enable_dev) {
+        spdlog::debug("Development mode enabled");
+    }
+    if (custom_port != 0) {
+        spdlog::debug("Custom port set: {}", custom_port);
+    }
 
     if (!invalid_arg.empty()) {
-        spdlog::warn("Invalid argument passed via commandline switches: '{}'. This argument was ignored.", invalid_arg);
+        spdlog::warn("One or more invalid argument(s) passed via commandline switches, last one: '{}'. This argument was ignored.", invalid_arg);
     }
 
     plat::clear_screen();
     plat::set_console_title(fmt::format("BeamMP Launcher v{}.{}.{}", PRJ_VERSION_MAJOR, PRJ_VERSION_MINOR, PRJ_VERSION_PATCH));
+    spdlog::trace("BeamMP Launcher v{}.{}.{}", PRJ_VERSION_MAJOR, PRJ_VERSION_MINOR, PRJ_VERSION_PATCH);
 
     spdlog::info("BeamMP Launcher v{}.{}.{} is a PRE-RELEASE build. Please report any errors immediately at https://github.com/BeamMP/BeamMP-Launcher.",
         PRJ_VERSION_MAJOR, PRJ_VERSION_MINOR, PRJ_VERSION_PATCH);
 
+    /*
     Launcher launcher {};
 
     std::filesystem::path arg0(argv[0]);
@@ -73,7 +90,19 @@ int main(int argc, char** argv) {
     }
 
     launcher.start_network();
+*/
+    Launcher launcher {};
 
+    std::filesystem::path arg0(argv[0]);
+    launcher.set_exe_name(arg0.filename().generic_string());
+    launcher.set_exe_path(arg0.parent_path());
+
+    try {
+        ServerNetwork sn(launcher, ip::tcp::endpoint(ip::address::from_string("127.0.0.1"), 30814));
+        sn.run();
+    } catch (const std::exception& e) {
+        spdlog::error("Connection to server closed: {}", e.what());
+    }
     spdlog::info("Shutting down.");
 }
 
@@ -88,11 +117,12 @@ void setup_logger(bool debug) {
 
     auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("Launcher.log", true);
     file_sink->set_level(spdlog::level::trace);
+    file_sink->set_pattern("[%H:%M:%S.%e] [%t] [%L] %v");
 
     default_logger = std::make_shared<spdlog::logger>(spdlog::logger("default", { console_sink, file_sink }));
 
     default_logger->set_level(spdlog::level::trace);
-    default_logger->flush_on(spdlog::level::info);
+    default_logger->flush_on(spdlog::level::trace);
 
     spdlog::set_default_logger(default_logger);
 

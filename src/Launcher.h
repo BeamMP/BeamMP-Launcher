@@ -31,6 +31,8 @@ public:
 
     void start_network();
 
+    std::string get_public_key();
+
 private:
     /// Thread main function for the http(s) proxy thread.
     void proxy_main();
