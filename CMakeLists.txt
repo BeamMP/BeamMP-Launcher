@@ -151,6 +151,11 @@ if(${PROJECT_NAME}_ENABLE_UNIT_TESTING)
     target_compile_features(${PROJECT_NAME}-tests PRIVATE ${PRJ_COMPILE_FEATURES})
     target_compile_definitions(${PROJECT_NAME}-tests PRIVATE ${PRJ_DEFINITIONS} ${PRJ_WARNINGS})
     set_project_warnings(${PROJECT_NAME}-tests)
+    if (WIN32)
+        target_compile_definitions(${PROJECT_NAME}-tests PRIVATE -DPLATFORM_WINDOWS=1)
+    else ()
+        target_compile_definitions(${PROJECT_NAME}-tests PRIVATE -DPLATFORM_LINUX=1)
+    endif ()
 endif()
 
 
