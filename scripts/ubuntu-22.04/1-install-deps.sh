@@ -4,4 +4,4 @@ set -ex
 
 apt-get update -y
 
-apt-get install -y curl zip unzip tar cmake make git g++ ninja-build
+apt-get install -y curl zip unzip tar cmake make git g++ ninja-build pkg-config
