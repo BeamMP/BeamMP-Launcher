@@ -251,7 +251,7 @@ bmp::Packet ServerNetwork::udp_read(ip::udp::endpoint& out_ep) {
     bmp::Header header {};
     auto offset = header.deserialize_from(s_buffer);
     packet.raw_data.resize(header.size);
-    std::copy(s_buffer.begin() + offset, s_buffer.begin() + offset + header.size, packet.raw_data.begin());
+    std::copy(s_buffer.begin() + long(offset), s_buffer.begin() + long(offset) + header.size, packet.raw_data.begin());
     return packet;
 }
 
@@ -267,6 +267,14 @@ void ServerNetwork::handle_session_setup(const bmp::Packet& packet) {
     case bmp::Purpose::PlayersVehiclesInfo: {
         spdlog::debug("Players and vehicles info: {} bytes ({} bytes on arrival)", packet.get_readable_data().size(), packet.raw_data.size());
         // TODO: Send to game
+        bmp::Packet ready {
+            .purpose = bmp::Purpose::SessionReady,
+        };
+        tcp_write(ready);
+        break;
+    }
+    case bmp::Purpose::StateChangePlaying: {
+        spdlog::debug("Playing!");
         break;
     }
     default:
