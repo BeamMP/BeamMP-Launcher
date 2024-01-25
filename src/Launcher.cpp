@@ -15,6 +15,7 @@
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
 #include <vector>
+#include <charconv>
 
 using namespace boost::asio;
 
