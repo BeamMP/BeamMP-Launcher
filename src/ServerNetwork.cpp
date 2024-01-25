@@ -5,6 +5,7 @@
 #include "Launcher.h"
 #include "ProtocolVersion.h"
 #include "ServerInfo.h"
+#include "Transport.h"
 #include "Util.h"
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
@@ -73,6 +74,7 @@ void ServerNetwork::handle_packet(const bmp::Packet& packet) {
         handle_mod_download(packet);
         break;
     case bmp::State::SessionSetup:
+        handle_session_setup(packet);
         break;
     case bmp::State::Playing:
         break;
@@ -97,6 +99,13 @@ void ServerNetwork::handle_mod_download(const bmp::Packet& packet) {
         };
         spdlog::info("Done syncing mods");
         tcp_write(ok);
+        break;
+    }
+    case bmp::Purpose::MapInfo: {
+        auto data = packet.get_readable_data();
+        std::string map(data.begin(), data.end());
+        // TODO: Send to game
+        spdlog::debug("Map: '{}'", map);
         break;
     }
     case bmp::Purpose::StateChangeSessionSetup: {
@@ -252,4 +261,17 @@ void ServerNetwork::udp_write(bmp::Packet& packet) {
     auto offset = header.serialize_to(data);
     std::copy(packet.raw_data.begin(), packet.raw_data.end(), data.begin() + static_cast<long>(offset));
     m_udp_socket.send_to(buffer(data), m_udp_ep, {});
+}
+void ServerNetwork::handle_session_setup(const bmp::Packet& packet) {
+    switch (packet.purpose) {
+    case bmp::Purpose::PlayersVehiclesInfo: {
+        spdlog::debug("Players and vehicles info: {} bytes ({} bytes on arrival)", packet.get_readable_data().size(), packet.raw_data.size());
+        // TODO: Send to game
+        break;
+    }
+    default:
+        spdlog::error("Got 0x{:x} in state {}. This is not allowed. Disconnecting", uint16_t(packet.purpose), int(m_state));
+        // todo: disconnect gracefully
+        break;
+    }
 }
