@@ -115,7 +115,7 @@ void Launcher::check_for_updates(int argc, char** argv) {
 
     transform(LatestHash.begin(), LatestHash.end(), LatestHash.begin(), ::tolower);
     std::string EP = (m_exe_path.get() / m_exe_name.get()).generic_string();
-    std::string Back = m_exe_path.get() / "BeamMP-Launcher.back";
+    std::string Back = (m_exe_path.get() / "BeamMP-Launcher.back").generic_string();
 
     std::string FileHash = sha256_file(EP);
 
@@ -195,11 +195,11 @@ void Launcher::pre_game() {
 
     auto ZipPath(std::filesystem::path(m_config->game_dir) / "mods/multiplayer/BeamMP.zip");
 
-    std::string FileHash = sha256_file(ZipPath);
+    std::string FileHash = sha256_file(ZipPath.generic_string());
 
     if (FileHash != LatestHash) {
         spdlog::info("Downloading BeamMP Update " + LatestHash);
-        HTTP::Download(fmt::format("https://backend.beammp.com/builds/client?download=true&pk={}&branch={}", m_identity->PublicKey, m_config->branch), ZipPath);
+        HTTP::Download(fmt::format("https://backend.beammp.com/builds/client?download=true&pk={}&branch={}", m_identity->PublicKey, m_config->branch), ZipPath.generic_string());
     }
 
     auto Target = std::filesystem::path(m_config->game_dir) / "mods/unpacked/beammp";
@@ -268,7 +268,7 @@ void Launcher::game_main() {
 #if defined(PLATFORM_LINUX)
     auto game_path = (std::filesystem::path(m_config->game_dir) / "BinLinux/BeamNG.drive.x64").generic_string();
 #elif defined(PLATFORM_WINDOWS)
-    auto game_path = (m_game_dir.get() / "Bin64/BeamNG.drive.x64.exe").generic_string();
+    auto game_path = (std::filesystem::path(m_config->game_dir) / "Bin64/BeamNG.drive.x64.exe").generic_string();
 #endif
     boost::process::child game(game_path, boost::process::std_out > boost::process::null);
     std::filesystem::current_path(path);

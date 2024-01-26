@@ -65,7 +65,7 @@ int main(int argc, char** argv) {
     spdlog::info("BeamMP Launcher v{}.{}.{} is a PRE-RELEASE build. Please report any errors immediately at https://github.com/BeamMP/BeamMP-Launcher.",
         PRJ_VERSION_MAJOR, PRJ_VERSION_MINOR, PRJ_VERSION_PATCH);
 
-    /*
+    
     Launcher launcher {};
 
     std::filesystem::path arg0(argv[0]);
@@ -77,7 +77,7 @@ int main(int argc, char** argv) {
     }
 
     if (!enable_dev) {
-        launcher.check_for_updates(argc, argv);
+        //&launcher.check_for_updates(argc, argv);
     } else {
         spdlog::debug("Skipping update check due to dev mode");
     }
@@ -90,7 +90,7 @@ int main(int argc, char** argv) {
     }
 
     launcher.start_network();
-*/
+    /*
     Launcher launcher {};
 
     std::filesystem::path arg0(argv[0]);
@@ -104,6 +104,7 @@ int main(int argc, char** argv) {
         spdlog::error("Connection to server closed: {}", e.what());
     }
     spdlog::info("Shutting down.");
+    */
 }
 
 void setup_logger(bool debug) {

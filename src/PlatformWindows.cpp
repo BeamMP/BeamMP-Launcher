@@ -3,6 +3,11 @@
 #if defined(PLATFORM_WINDOWS)
 #include <spdlog/spdlog.h>
 #include <windows.h>
+#include <iostream>
+
+#include <Shlobj.h>
+// include after shlobj
+#include <Shlobj_core.h>
 
 void plat::ReLaunch(int argc, char** argv) {
     std::string Arg;
@@ -28,7 +33,7 @@ void plat::URelaunch(int argc, char** argv) {
     exit(1);
 }
 void plat::set_console_title(const std::string& title) {
-    SetConsoleTitleA(title);
+    SetConsoleTitleA(title.c_str());
 }
 void plat::clear_screen() {
     system("cls");
@@ -135,27 +140,27 @@ std::string plat::get_game_dir_magically() {
 }
 
 static int CALLBACK BrowseCallbackProc(HWND hwnd, UINT uMsg, LPARAM lParam, LPARAM lpData) {
-
     if (uMsg == BFFM_INITIALIZED) {
         std::string tmp = (const char*)lpData;
-        std::cout << "path: " << tmp << std::endl;
         SendMessage(hwnd, BFFM_SETSELECTION, TRUE, lpData);
     }
-
     return 0;
 }
-std::string plat::ask_for_folder() {
-    TCHAR path[MAX_PATH];
 
-    const char* path_param = saved_path.c_str();
+static std::string impl_ask_for_folder() {
+    TCHAR path[MAX_PATH];
+    std::memset(path, 0, MAX_PATH);
+
+    std::wstring wsaved_path(L"C:\\");
+    const wchar_t* path_param = wsaved_path.c_str();
 
     BROWSEINFO bi = { 0 };
-    bi.lpszTitle = ("Browse for folder...");
+    bi.lpszTitle = ("Browse for BeamNG.drive folder...");
     bi.ulFlags = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE;
     bi.lpfn = BrowseCallbackProc;
     bi.lParam = (LPARAM)path_param;
 
-    LPITEMIDLIST pidl = SHBrowseForFolder(&bi);
+    LPITEMIDLIST pidl = SHBrowseForFolderA(&bi);
 
     if (pidl != 0) {
         // get the name of the folder and put it in path
@@ -172,6 +177,17 @@ std::string plat::ask_for_folder() {
     }
 
     return "";
+}
+
+#include <filesystem>
+
+std::string plat::ask_for_folder() {
+    auto folder = impl_ask_for_folder();
+    while (!std::filesystem::exists(std::filesystem::path(folder) / "BeamNG.drive.exe")) {
+        spdlog::error("This folder ('{}') doesn't contain 'BeamNG.drive.exe', please try again.\n", folder);
+        folder = impl_ask_for_folder();
+    }
+    return folder;
 }
 
 #endif

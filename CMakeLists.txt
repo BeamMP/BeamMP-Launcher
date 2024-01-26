@@ -12,6 +12,9 @@ project(
     LANGUAGES CXX
 )
 
+message(STATUS "MSVC -> forcing use of statically-linked runtime.")
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
 include(cmake/StandardSettings.cmake)
 include(cmake/StaticAnalyzers.cmake)
 include(cmake/Git.cmake)
@@ -68,6 +71,7 @@ set(PRJ_LIBRARIES
     Boost::system
     Boost::iostreams
     Boost::thread
+    Boost::filesystem
     cryptopp::cryptopp
     ZLIB::ZLIB
     OpenSSL::SSL
@@ -81,7 +85,7 @@ find_package(fmt CONFIG REQUIRED)
 find_package(doctest CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(httplib CONFIG REQUIRED)
-find_package(Boost REQUIRED COMPONENTS system iostreams thread)
+find_package(Boost REQUIRED COMPONENTS system iostreams thread filesystem)
 find_package(cryptopp CONFIG REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(OpenSSL REQUIRED)
@@ -115,10 +119,6 @@ include(cmake/CompilerWarnings.cmake)
 
 # set MT library for msvc - this is required (says documentation)
 # linux/mac/etc should simply ignore this by default.
-message(STATUS "MSVC -> forcing use of statically-linked runtime.")
-STRING(REPLACE "/MD" "/MT" CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
-STRING(REPLACE "/MDd" "/MTd" CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 
 set(PRJ_DEFINITIONS ${PRJ_DEFINITIONS}
     PRJ_VERSION_MAJOR=${PROJECT_VERSION_MAJOR}
