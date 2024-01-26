@@ -77,6 +77,7 @@ void ServerNetwork::handle_packet(const bmp::Packet& packet) {
         handle_session_setup(packet);
         break;
     case bmp::State::Playing:
+        handle_playing(packet);
         break;
     case bmp::State::Leaving:
         break;
@@ -274,7 +275,7 @@ void ServerNetwork::handle_session_setup(const bmp::Packet& packet) {
         break;
     }
     case bmp::Purpose::StateChangePlaying: {
-        spdlog::debug("Playing!");
+        spdlog::info("Playing!");
         break;
     }
     default:
@@ -283,3 +284,13 @@ void ServerNetwork::handle_session_setup(const bmp::Packet& packet) {
         break;
     }
 }
+
+void ServerNetwork::handle_playing(const bmp::Packet& packet) {
+    switch (packet.purpose) {
+    default:
+        spdlog::error("Got 0x{:x} in state {}. This is not allowed. Disconnecting", uint16_t(packet.purpose), int(m_state));
+        // todo: disconnect gracefully
+        break;
+    }
+}
+

@@ -34,6 +34,7 @@ private:
     void handle_authentication(const bmp::Packet& packet);
     void handle_mod_download(const bmp::Packet& packet);
     void handle_session_setup(const bmp::Packet& packet);
+    void handle_playing(const bmp::Packet& packet);
 
     io_context m_io {};
     ip::tcp::socket m_tcp_socket { m_io };
