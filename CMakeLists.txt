@@ -40,7 +40,6 @@ set(PRJ_HEADERS
 # add all source files (.cpp) to this, except the one with main()
 set(PRJ_SOURCES
     src/Launcher.cpp
-    src/main.cpp
     src/Launcher.cpp
     src/PlatformWindows.cpp
     src/PlatformLinux.cpp
