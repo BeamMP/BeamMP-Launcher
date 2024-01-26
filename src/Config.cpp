@@ -1,58 +1,41 @@
-///
-/// Created by Anonymous275 on 2/23/2021
-///
+#include "Config.h"
 
-#include <nlohmann/json.hpp>
-#include "Network/network.h"
+#include <boost/iostreams/device/mapped_file.hpp>
 #include <filesystem>
-#include "Logger.h"
 #include <fstream>
-#include <cstdint>
-namespace fs = std::filesystem;
+#include <nlohmann/json.hpp>
 
-std::string Branch;
-void ParseConfig(const nlohmann::json& d){
-    if(d["Port"].is_number()){
-        DEFAULT_PORT = d["Port"].get<int>();
-    }
-    //Default -1
-    //Release 1
-    //EA 2
-    //Dev 3
-    //Custom 3
-
-    if(d["Build"].is_string()){
-        Branch = d["Build"].get<std::string>();
-        for(char& c : Branch)c = char(tolower(c));
-    }
-}
-
-void ConfigInit(){
-    if(fs::exists("Launcher.cfg")){
-        std::ifstream cfg("Launcher.cfg");
-        if(cfg.is_open()){
-            auto Size = fs::file_size("Launcher.cfg");
-            std::string Buffer(Size, 0);
-            cfg.read(&Buffer[0], Size);
-            cfg.close();
-            nlohmann::json d = nlohmann::json::parse(Buffer, nullptr, false);
-            if(d.is_discarded()){
-                fatal("Config failed to parse make sure it's valid JSON!");
-            }
-            ParseConfig(d);
-        }else fatal("Failed to open Launcher.cfg!");
-    }else{
-        std::ofstream cfg("Launcher.cfg");
-        if(cfg.is_open()){
-            cfg <<
-            R"({
-"Port": 4444,
-"Build": "Default"
-})";
-            cfg.close();
-        }else{
-            fatal("Failed to write config on disk!");
+Config::Config() {
+    if (std::filesystem::exists("Launcher.cfg")) {
+        boost::iostreams::mapped_file cfg("Launcher.cfg", boost::iostreams::mapped_file::mapmode::readonly);
+        nlohmann::json d = nlohmann::json::parse(cfg.const_data(), nullptr, false);
+        if (d.is_discarded()) {
+            is_valid = false;
         }
+        // parse config
+        if (d["Port"].is_number()) {
+            port = d["Port"].get<int>();
+        }
+        if (d["Build"].is_string()) {
+            branch = d["Build"].get<std::string>();
+            for (char& c : branch) {
+                c = char(tolower(c));
+            }
+        }
+        if (d["GameDir"].is_string()) {
+            game_dir = d["GameDir"].get<std::string>();
+        }
+    } else {
+        write_to_file();
     }
 }
 
+void Config::write_to_file() const {
+    nlohmann::json d {
+        { "Port", port },
+        { "Branch", branch },
+        { "GameDir", game_dir },
+    };
+    std::ofstream of("Launcher.cfg", std::ios::trunc);
+    of << d.dump(4);
+}

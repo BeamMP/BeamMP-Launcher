@@ -1,0 +1,18 @@
+{
+  "name": "my-project",
+  "version-string": "0.1.0",
+  "dependencies": [
+    "fmt",
+    "doctest",
+    "spdlog",
+    "openssl",
+    "cpp-httplib",
+    "boost-system",
+    "boost-iostreams",
+    "boost-process",
+    "boost-thread",
+    "nlohmann-json",
+    "cryptopp",
+    "zstd"
+  ]
+}
