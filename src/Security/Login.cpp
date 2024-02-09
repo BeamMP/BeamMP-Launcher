@@ -51,37 +51,41 @@ std::string Login(const std::string& fields){
         return "";
     }
     info("Attempting to authenticate...");
-    std::string Buffer = HTTP::Post("https://auth.beammp.com/userlogin", fields);
+    try {
+        std::string Buffer = HTTP::Post("https://auth.beammp.com/userlogin", fields);
 
-    if(Buffer == "-1"){
-        return GetFail("Failed to communicate with the auth system!");
-    }
+        if(Buffer == "-1"){
+            return GetFail("Failed to communicate with the auth system!");
+        }
 
-    nlohmann::json d = nlohmann::json::parse(Buffer, nullptr, false);
+        nlohmann::json d = nlohmann::json::parse(Buffer, nullptr, false);
 
-    if (Buffer.at(0) != '{' || d.is_discarded()) {
-        error(Buffer);
-        return GetFail("Invalid answer from authentication servers, please try again later!");
+        if (Buffer.at(0) != '{' || d.is_discarded()) {
+            error(Buffer);
+            return GetFail("Invalid answer from authentication servers, please try again later!");
+        }
+        if(d.contains("success") && d["success"].get<bool>()){
+            LoginAuth = true;
+            if (d.contains("username")) {
+                Username = d["username"].get<std::string>();
+            }
+            if(!d.contains("private_key")) {
+                UpdateKey(d["private_key"].get<std::string>().c_str());
+            }
+            if(!d.contains("public_key")){
+                PublicKey = d["public_key"].get<std::string>();
+            }
+            info("Authentication successful!");
+        }else info("Authentication failed!");
+        if(!d.contains("message")){
+            d.erase("private_key");
+            d.erase("public_key");
+            return d.dump();
+        }
+        return GetFail("Invalid message parsing!");
+    } catch (const std::exception& e) {
+        error(e.what());
     }
-    if(d.contains("success") && d["success"].get<bool>()){
-        LoginAuth = true;
-        if (d.contains("username")) {
-            Username = d["username"].get<std::string>();
-        }
-        if(!d.contains("private_key")) {
-            UpdateKey(d["private_key"].get<std::string>().c_str());
-        }
-        if(!d.contains("public_key")){
-            PublicKey = d["public_key"].get<std::string>();
-        }
-        info("Authentication successful!");
-    }else info("Authentication failed!");
-    if(!d.contains("message")){
-        d.erase("private_key");
-        d.erase("public_key");
-        return d.dump();
-    }
-    return GetFail("Invalid message parsing!");
 }
 
 void CheckLocalKey(){
