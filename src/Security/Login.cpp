@@ -69,10 +69,10 @@ std::string Login(const std::string& fields){
             if (d.contains("username")) {
                 Username = d["username"].get<std::string>();
             }
-            if(!d.contains("private_key")) {
+            if(d.contains("private_key")) {
                 UpdateKey(d["private_key"].get<std::string>().c_str());
             }
-            if(!d.contains("public_key")){
+            if(d.contains("public_key")){
                 PublicKey = d["public_key"].get<std::string>();
             }
             info("Authentication successful!");
