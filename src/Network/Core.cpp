@@ -25,6 +25,7 @@ int DEFAULT_PORT = 4444;
 bool Terminate = false;
 bool LoginAuth = false;
 std::string Username = "";
+std::string UserRole = "";
 std::string UlStatus;
 std::string MStatus;
 bool ModLoaded;
@@ -127,7 +128,7 @@ void Parse(std::string Data,SOCKET CSocket){
             break;
         case 'N':
             if (SubCode == 'c'){
-                Data = "N{\"Auth\":"+std::to_string(LoginAuth)+",\"username\":\"" + Username + "\"}";
+                Data = "N{\"Auth\":"+std::to_string(LoginAuth)+",\"username\":\"" + Username + "\",\"role\":\"" + UserRole + "\"}";
             }else{
                 Data = "N" + Login(Data.substr(Data.find(':') + 1));
             }

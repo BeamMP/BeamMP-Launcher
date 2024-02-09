@@ -18,6 +18,7 @@ std::string PublicKey;
 std::string PrivateKey;
 extern bool LoginAuth;
 extern std::string Username;
+extern std::string UserRole;
 std::string Role;
 
 void UpdateKey(const char* newKey){
@@ -68,6 +69,9 @@ std::string Login(const std::string& fields){
             LoginAuth = true;
             if (d.contains("username")) {
                 Username = d["username"].get<std::string>();
+            }
+            if (d.contains("role")) {
+                UserRole = d["role"].get<std::string>();
             }
             if(d.contains("private_key")) {
                 UpdateKey(d["private_key"].get<std::string>().c_str());
