@@ -128,6 +128,16 @@ void Parse(std::string Data,SOCKET CSocket){
             break;
         case 'N':
             if (SubCode == 'c'){
+                nlohmann::json Auth = {
+                    {"Auth", LoginAuth ? 1 : 0 },
+                };
+                if (!Username.empty()) {
+                    Auth["username"] = Username;
+                }
+                if (!UserRole.empty()) {
+                    Auth["role"] = UserRole;
+                }
+                Data = Auth.dump();
                 Data = "N{\"Auth\":"+std::to_string(LoginAuth)+",\"username\":\"" + Username + "\",\"role\":\"" + UserRole + "\"}";
             }else{
                 Data = "N" + Login(Data.substr(Data.find(':') + 1));
