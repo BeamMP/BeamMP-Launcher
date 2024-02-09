@@ -46,6 +46,8 @@ std::string GetFail(const std::string& R){
 
 std::string Login(const std::string& fields){
     if(fields == "LO"){
+        Username = "";
+        UserRole = "";
         LoginAuth = false;
         UpdateKey(nullptr);
         return "";
