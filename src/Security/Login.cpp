@@ -89,7 +89,7 @@ std::string Login(const std::string& fields){
         }
         return GetFail("Invalid message parsing!");
     } catch (const std::exception& e) {
-        error(e.what());
+        return GetFail(e.what());
     }
 }
 
