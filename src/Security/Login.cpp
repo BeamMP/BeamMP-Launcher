@@ -17,6 +17,7 @@ namespace fs = std::filesystem;
 std::string PublicKey;
 std::string PrivateKey;
 extern bool LoginAuth;
+extern std::string Username;
 std::string Role;
 
 void UpdateKey(const char* newKey){
@@ -64,6 +65,9 @@ std::string Login(const std::string& fields){
     }
     if(d.contains("success") && d["success"].get<bool>()){
         LoginAuth = true;
+        if (d.contains("username")) {
+            Username = d["username"].get<std::string>();
+        }
         if(!d.contains("private_key")) {
             UpdateKey(d["private_key"].get<std::string>().c_str());
         }
