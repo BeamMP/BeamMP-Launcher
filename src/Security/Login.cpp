@@ -81,6 +81,7 @@ std::string Login(const std::string& fields){
         d.erase("public_key");
         return d.dump();
     }
+    debug(std::string("Backend returned: '") + Buffer + "'")
     return GetFail("Invalid message parsing!");
 }
 
