@@ -19,7 +19,6 @@ std::string PrivateKey;
 extern bool LoginAuth;
 extern std::string Username;
 extern std::string UserRole;
-std::string Role;
 
 void UpdateKey(const char* newKey){
     if(newKey && std::isalnum(newKey[0])){
@@ -121,7 +120,12 @@ void CheckLocalKey(){
                 LoginAuth = true;
                 UpdateKey(d["private_key"].get<std::string>().c_str());
                 PublicKey = d["public_key"].get<std::string>();
-                Role = d["role"].get<std::string>();
+                if (d.contains("username")) {
+                    Username = d["username"].get<std::string>();
+                }
+                if (d.contains("role")) {
+                    UserRole = d["role"].get<std::string>();
+                }
                 //info(Role);
             }else{
                 info("Auto-Authentication unsuccessful please re-login!");
