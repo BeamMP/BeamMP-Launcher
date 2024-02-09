@@ -14,6 +14,7 @@
 #include <ws2tcpip.h>
 #include "Startup.h"
 #include "Logger.h"
+#include <nlohmann/json.hpp>
 #include <charconv>
 #include <thread>
 #include <set>
@@ -138,7 +139,6 @@ void Parse(std::string Data,SOCKET CSocket){
                     Auth["role"] = UserRole;
                 }
                 Data = Auth.dump();
-                Data = "N{\"Auth\":"+std::to_string(LoginAuth)+",\"username\":\"" + Username + "\",\"role\":\"" + UserRole + "\"}";
             }else{
                 Data = "N" + Login(Data.substr(Data.find(':') + 1));
             }
