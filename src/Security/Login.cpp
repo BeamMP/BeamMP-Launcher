@@ -77,7 +77,7 @@ std::string Login(const std::string& fields){
             }
             info("Authentication successful!");
         }else info("Authentication failed!");
-        if(!d.contains("message")){
+        if(d.contains("message")){
             d.erase("private_key");
             d.erase("public_key");
             return d.dump();
