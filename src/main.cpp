@@ -1,14 +1,15 @@
-#include "Launcher.h"
-#include "Platform.h"
-#include "ServerNetwork.h"
 #include <boost/system/detail/errc.hpp>
 #include <boost/system/detail/error_category.hpp>
-#include <iostream>
-#include <thread>
-
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
+
+#include "ClientNetwork.h"
+#include "Launcher.h"
+#include "Platform.h"
+#include "ServerNetwork.h"
+#include <iostream>
+#include <thread>
 
 /// Sets up a file- and console logger and makes it the default spdlog logger.
 static void setup_logger(bool debug = false);
@@ -65,7 +66,6 @@ int main(int argc, char** argv) {
     spdlog::info("BeamMP Launcher v{}.{}.{} is a PRE-RELEASE build. Please report any errors immediately at https://github.com/BeamMP/BeamMP-Launcher.",
         PRJ_VERSION_MAJOR, PRJ_VERSION_MINOR, PRJ_VERSION_PATCH);
 
-    
     Launcher launcher {};
 
     std::filesystem::path arg0(argv[0]);
@@ -73,7 +73,7 @@ int main(int argc, char** argv) {
     launcher.set_exe_path(arg0.parent_path());
 
     if (custom_port > 0) {
-        launcher.set_port(custom_port);
+        // launcher.set_port(custom_port);
     }
 
     if (!enable_dev) {
@@ -89,7 +89,12 @@ int main(int argc, char** argv) {
         launcher.start_game();
     }
 
-    launcher.start_network();
+    ClientNetwork cn(4444);
+
+    cn.run();
+
+    // old: launcher.start_network();
+
     /*
     Launcher launcher {};
 

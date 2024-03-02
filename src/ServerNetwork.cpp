@@ -2,7 +2,6 @@
 #include "ClientInfo.h"
 #include "Identity.h"
 #include "ImplementationInfo.h"
-#include "Launcher.h"
 #include "ProtocolVersion.h"
 #include "ServerInfo.h"
 #include "Transport.h"
@@ -10,9 +9,8 @@
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
 
-ServerNetwork::ServerNetwork(Launcher& launcher, const ip::tcp::endpoint& ep)
-    : m_launcher(launcher)
-    , m_tcp_ep(ep) {
+ServerNetwork::ServerNetwork(const ip::tcp::endpoint& ep)
+    : m_tcp_ep(ep) {
     spdlog::debug("Server network created");
 }
 
@@ -203,11 +201,10 @@ void ServerNetwork::handle_identification(const bmp::Packet& packet) {
     case bmp::Purpose::StateChangeAuthentication: {
         spdlog::debug("Starting authentication");
         m_state = bmp::State::Authentication;
-        // TODO: make the launcher provide login properly!
-        auto pubkey = m_launcher.get_public_key();
+        Identity ident{};
         bmp::Packet pubkey_packet {
             .purpose = bmp::Purpose::PlayerPublicKey,
-            .raw_data = std::vector<uint8_t>(pubkey.begin(), pubkey.end())
+            .raw_data = std::vector<uint8_t>(ident.PublicKey.begin(), ident.PublicKey.end())
         };
         tcp_write(pubkey_packet);
         break;

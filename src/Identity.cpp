@@ -33,7 +33,7 @@ void Identity::check_local_key() {
 
             if (Buffer == "-1" || Buffer.at(0) != '{' || d.is_discarded()) {
                 spdlog::error(Buffer);
-                spdlog::info("Invalid answer from authentication servers.");
+                spdlog::info("Invalid answer from authentication servers. Check your internet connection and see if you can reach https://beammp.com.");
                 update_key(nullptr);
             }
             if (d["success"].get<bool>()) {

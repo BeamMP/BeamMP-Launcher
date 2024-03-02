@@ -36,6 +36,7 @@ set(PRJ_HEADERS
     src/Compression.h
     src/Config.h
     src/ServerNetwork.h
+    src/ClientNetwork.h
 )
 # add all source files (.cpp) to this, except the one with main()
 set(PRJ_SOURCES
@@ -49,6 +50,7 @@ set(PRJ_SOURCES
     src/Hashing.cpp
     src/Config.cpp
     src/ServerNetwork.cpp
+    src/ClientNetwork.cpp
 )
 # set the source file containing main()
 set(PRJ_MAIN src/main.cpp)

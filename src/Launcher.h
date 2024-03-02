@@ -16,8 +16,6 @@ public:
     Launcher();
     ~Launcher();
 
-    void set_port(int p);
-
     void check_for_updates(int argc, char** argv);
 
     void set_exe_name(const std::string& name) { m_exe_name = name; }
@@ -29,8 +27,6 @@ public:
 
     void start_game();
 
-    void start_network();
-
     std::string get_public_key();
 
 private:
@@ -40,47 +36,11 @@ private:
     /// Thread main function for the game thread.
     void game_main();
 
-    /// Thread main function for the clien thread (the one that talks to the server)
-    void tcp_client_main();
-
-    void tcp_game_main();
-
-    void udp_main();
-
-    void auto_ping();
-
     void parse_config();
 
     static void check_mp(const std::string& path);
 
     void enable_mp();
-
-    void net_core_main();
-
-    void reset_status();
-
-    void game_loop();
-
-    void handle_core_packet(const std::vector<char>& RawData);
-
-    bool start_sync(const std::string& Data);
-
-    void server_parse(const std::string& data);
-
-    void udp_send(const std::string& data);
-    void server_send(const std::string& data, bool Res);
-    void tcp_send(const std::string& data);
-    void send_large(const std::string& data);
-    void tcp_send(const std::vector<uint8_t>& data);
-    std::string tcp_recv();
-    std::string udp_recv();
-    void game_send(const std::string& data);
-
-    Sync<int> m_proxy_port;
-
-    Sync<int> m_ping;
-
-    Sync<int> m_client_id;
 
     Sync<bool> m_mod_loaded { false };
 
