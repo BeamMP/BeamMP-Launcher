@@ -4,6 +4,7 @@
 #include "ClientState.h"
 #include "Launcher.h"
 #include "Sync.h"
+#include "Version.h"
 
 #include <boost/asio.hpp>
 #include <nlohmann/json.hpp>
@@ -35,7 +36,13 @@ private:
     void handle_server_playing(ip::tcp::socket& socket, bmp::ClientPacket& packet);
     void handle_server_leaving(ip::tcp::socket& socket, bmp::ClientPacket& packet);
 
+    void disconnect(ip::tcp::socket& socket, const std::string& reason);
+
     static std::vector<uint8_t> json_to_vec(const nlohmann::json& json);
+    static nlohmann::json vec_to_json(const std::vector<uint8_t>& vec);
+
+    Version m_mod_version;
+    Version m_game_version;
 
     uint16_t m_listen_port {};
     io_context m_io {};

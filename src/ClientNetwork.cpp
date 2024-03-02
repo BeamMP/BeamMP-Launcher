@@ -1,5 +1,6 @@
 #include "ClientNetwork.h"
 #include "ClientPacket.h"
+#include "ClientTransport.h"
 
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
@@ -124,6 +125,49 @@ void ClientNetwork::handle_packet(ip::tcp::socket& socket, bmp::ClientPacket& pa
 }
 
 void ClientNetwork::handle_client_identification(ip::tcp::socket& socket, bmp::ClientPacket& packet) {
+    switch (packet.purpose) {
+    case bmp::ClientPurpose::GameInfo: {
+        try {
+            auto game_info = vec_to_json(packet.get_readable_data());
+            std::string impl = game_info.at("implementation");
+            std::vector<int> mod_version = game_info.at("mod_version");
+            std::vector<int> game_version = game_info.at("game_version");
+            std::vector<int> protocol_version = game_info.at("protocol_version");
+            if (protocol_version.at(0) != 1) {
+                disconnect(socket, fmt::format("Incompatible protocol version, expected v{}", "1.x.x"));
+                return;
+            }
+            m_mod_version = Version { uint8_t(mod_version.at(0)), uint8_t(mod_version.at(1)), uint8_t(mod_version.at(2)) };
+            m_game_version = Version { uint8_t(game_version.at(0)), uint8_t(game_version.at(1)), uint8_t(game_version.at(2)) };
+            spdlog::info("Connected to {} (mod v{}, game v{}, protocol v{}.{}.{}",
+                impl,
+                m_mod_version.to_string(),
+                m_game_version.to_string(),
+                protocol_version.at(0),
+                protocol_version.at(1), protocol_version.at(2));
+        } catch (const std::exception& e) {
+            spdlog::error("Failed to read json for purpose 0x{:x}: {}", uint16_t(packet.purpose), e.what());
+            disconnect(socket, fmt::format("Invalid json in purpose 0x{:x}, see launcher logs for more info", uint16_t(packet.purpose)));
+        }
+        bmp::ClientPacket state_change {
+            .purpose = bmp::ClientPurpose::StateChangeLogin,
+        };
+        client_tcp_write(socket, state_change);
+        break;
+    }
+    default:
+        disconnect(socket, fmt::format("Invalid packet purpose in state 0x{:x}: 0x{:x}", uint16_t(m_client_state), uint16_t(packet.purpose)));
+        break;
+    }
+}
+
+void ClientNetwork::disconnect(ip::tcp::socket& socket, const std::string& reason) {
+    bmp::ClientPacket error {
+        .purpose = bmp::ClientPurpose::Error,
+        .raw_data = json_to_vec({ "message", reason })
+    };
+    client_tcp_write(socket, error);
+    socket.close();
 }
 
 void ClientNetwork::handle_login(ip::tcp::socket& socket, bmp::ClientPacket& packet) {
@@ -180,4 +224,7 @@ void ClientNetwork::client_tcp_write(ip::tcp::socket& socket, bmp::ClientPacket&
 std::vector<uint8_t> ClientNetwork::json_to_vec(const nlohmann::json& value) {
     auto str = value.dump();
     return std::vector<uint8_t>(str.begin(), str.end());
+}
+nlohmann::json ClientNetwork::vec_to_json(const std::vector<uint8_t>& vec) {
+    return json::parse(std::string(vec.begin(), vec.end()));
 }
