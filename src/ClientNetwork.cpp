@@ -79,8 +79,14 @@ void ClientNetwork::handle_connection(ip::tcp::socket&& socket) {
 
     // packet read and respond loop
     while (!*m_shutdown) {
-        auto packet = client_tcp_read();
-        handle_packet(packet);
+        try {
+            auto packet = client_tcp_read();
+            handle_packet(packet);
+        } catch (const std::exception& e) {
+            spdlog::error("Unhandled exception in connection handler, connection closing.");
+            spdlog::debug("Exception: {}", e.what());
+            m_game_socket.close();
+        }
     }
 }
 
@@ -151,11 +157,6 @@ void ClientNetwork::handle_client_identification(bmp::ClientPacket& packet) {
             spdlog::error("Failed to read json for purpose 0x{:x}: {}", uint16_t(packet.purpose), e.what());
             disconnect(fmt::format("Invalid json in purpose 0x{:x}, see launcher logs for more info", uint16_t(packet.purpose)));
         }
-        bmp::ClientPacket state_change {
-            .purpose = bmp::ClientPurpose::StateChangeLogin,
-        };
-        client_tcp_write(state_change);
-
         start_login();
         break;
     }
@@ -166,28 +167,49 @@ void ClientNetwork::handle_client_identification(bmp::ClientPacket& packet) {
 }
 
 void ClientNetwork::start_login() {
+    bmp::ClientPacket state_change {
+        .purpose = bmp::ClientPurpose::StateChangeLogin,
+    };
+    client_tcp_write(state_change);
+
+    m_client_state = bmp::ClientState::Login;
 
     if (ident::is_login_cached()) {
         auto login = ident::login_cached();
+        // case in which the login is cached and login was successful:
+        // we just send the login result and continue to the next state.
         if (login.has_value()) {
+            *m_identity = login.value();
             bmp::ClientPacket login_result {
                 .purpose = bmp::ClientPurpose::LoginResult,
                 .raw_data = json_to_vec({
                     { "success", true },
-                    { "message", login.value().Message },
-                    { "username", login.value().Username },
-                    { "role", login.value().Role },
+                    { "message", m_identity->Message },
+                    { "username", m_identity->Username },
+                    { "role", m_identity->Role },
                 }),
             };
             client_tcp_write(login_result);
+            bmp::ClientPacket change_to_quickjoin {
+                .purpose = bmp::ClientPurpose::StateChangeQuickJoin,
+            };
+            client_tcp_write(change_to_quickjoin);
+            m_client_state = bmp::ClientState::QuickJoin;
+            return; // done
+        } else {
+            spdlog::warn("Failed to automatically login with cached/saved login details: {}", login.error());
+            spdlog::info("Trying normal login");
         }
+        // fallthrough to normal login
     }
+
     // first packet in login
     // TODO: send LoginResult if already logged in.
     bmp::ClientPacket ask_for_creds {
         .purpose = bmp::ClientPurpose::AskForCredentials,
     };
     client_tcp_write(ask_for_creds);
+    // wait for response, so return
 }
 
 void ClientNetwork::disconnect(const std::string& reason) {
@@ -207,9 +229,21 @@ void ClientNetwork::handle_login(bmp::ClientPacket& packet) {
             std::string username = creds.at("username");
             std::string password = creds.at("password");
             bool remember = creds.at("remember");
-            // TODO: Respect 'remember'
             spdlog::debug("Got credentials username: '{}', password: ({} chars) (remember: {})", username, password.size(), remember ? "yes" : "no");
-            // CONTINUE HERE
+            // login!
+            auto result = ident::login(username, password, remember);
+            if (result.has_error()) {
+                bmp::ClientPacket login_fail {
+                    .purpose = bmp::ClientPurpose::LoginResult,
+                    .raw_data = json_to_vec({
+                        { "success", false },
+                        { "message", result.error() },
+                    }),
+                };
+                client_tcp_write(login_fail);
+                return;
+            }
+            *m_identity = result.value();
         } catch (const std::exception& e) {
             spdlog::error("Failed to read json for purpose 0x{:x}: {}", uint16_t(packet.purpose), e.what());
             disconnect(fmt::format("Invalid json in purpose 0x{:x}, see launcher logs for more info", uint16_t(packet.purpose)));

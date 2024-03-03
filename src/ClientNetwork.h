@@ -45,7 +45,7 @@ private:
     Version m_mod_version;
     Version m_game_version;
 
-    ident::Identity m_identity {};
+    Sync<ident::Identity> m_identity {};
 
     uint16_t m_listen_port {};
     io_context m_io {};

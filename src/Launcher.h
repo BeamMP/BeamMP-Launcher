@@ -53,7 +53,6 @@ private:
     boost::scoped_thread<> m_udp_thread;
     boost::scoped_thread<> m_ping_thread;
 
-    Sync<Identity> m_identity {};
     Sync<std::string> m_exe_name;
     Sync<std::filesystem::path> m_exe_path;
     boost::asio::io_context m_io {};

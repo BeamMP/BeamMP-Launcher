@@ -92,7 +92,7 @@ Result<ident::Identity, std::string> ident::detail::login(const std::string& jso
             return id;
         } else {
             spdlog::info("Auto-Authentication unsuccessful please re-login!");
-            return std::string("Failed to auto-login with saved details, please login again.");
+            return json["message"].is_string() ? json["message"].get<std::string>() : "Unknown error, please log in again.";
         }
     } catch (const std::exception& e) {
         spdlog::error("Incomplete or invalid answer from auth servers. Please try logging in again.");
