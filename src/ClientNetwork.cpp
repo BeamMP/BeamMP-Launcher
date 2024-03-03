@@ -241,9 +241,28 @@ void ClientNetwork::handle_login(bmp::ClientPacket& packet) {
                     }),
                 };
                 client_tcp_write(login_fail);
+                bmp::ClientPacket retry {
+                    .purpose = bmp::ClientPurpose::AskForCredentials,
+                };
+                client_tcp_write(retry);
                 return;
             }
             *m_identity = result.value();
+            bmp::ClientPacket login_result {
+                .purpose = bmp::ClientPurpose::LoginResult,
+                .raw_data = json_to_vec({
+                    { "success", true },
+                    { "message", m_identity->Message },
+                    { "username", m_identity->Username },
+                    { "role", m_identity->Role },
+                }),
+            };
+            client_tcp_write(login_result);
+            bmp::ClientPacket change_to_quickjoin {
+                .purpose = bmp::ClientPurpose::StateChangeQuickJoin,
+            };
+            client_tcp_write(change_to_quickjoin);
+            m_client_state = bmp::ClientState::QuickJoin;
         } catch (const std::exception& e) {
             spdlog::error("Failed to read json for purpose 0x{:x}: {}", uint16_t(packet.purpose), e.what());
             disconnect(fmt::format("Invalid json in purpose 0x{:x}, see launcher logs for more info", uint16_t(packet.purpose)));
