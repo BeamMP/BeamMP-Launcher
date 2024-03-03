@@ -52,27 +52,11 @@ private:
 
     boost::scoped_thread<> m_proxy_thread { &Launcher::proxy_main, this };
     boost::scoped_thread<> m_game_thread;
-    boost::scoped_thread<> m_client_thread;
-    boost::scoped_thread<> m_tcp_game_thread;
-    boost::scoped_thread<> m_udp_thread;
-    boost::scoped_thread<> m_ping_thread;
+    boost::scoped_thread<> m_client_network_thread;
+    boost::scoped_thread<> m_server_network_thread;
 
     Sync<std::string> m_exe_name;
     Sync<std::filesystem::path> m_exe_path;
     boost::asio::io_context m_io {};
-    boost::asio::ip::tcp::socket m_game_socket;
-    boost::asio::ip::tcp::socket m_core_socket;
-    boost::asio::ip::tcp::socket m_tcp_socket;
-    boost::asio::ip::udp::socket m_udp_socket;
-    boost::asio::ip::udp::endpoint m_udp_endpoint;
     Sync<bool> m_shutdown { false };
-    Sync<std::chrono::high_resolution_clock::time_point> m_ping_start;
-    Sync<std::chrono::high_resolution_clock::time_point> m_ping_end;
-
-    Sync<std::string> m_m_status {};
-    Sync<std::string> m_ul_status {};
-
-    Sync<std::set<std::string>> m_conf_list;
-
-    Sync<std::string> m_list_of_mods {};
 };

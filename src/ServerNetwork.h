@@ -10,7 +10,7 @@ class Launcher;
 
 class ServerNetwork {
 public:
-    ServerNetwork(const ip::tcp::endpoint& ep);
+    ServerNetwork(Launcher& launcher, const ip::tcp::endpoint& ep);
     ~ServerNetwork();
 
     /// Starts and runs the connection to the server.
@@ -46,4 +46,6 @@ private:
 
     ip::tcp::endpoint m_tcp_ep;
     ip::udp::endpoint m_udp_ep;
+
+    Launcher& launcher;
 };

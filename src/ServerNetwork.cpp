@@ -9,8 +9,9 @@
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
 
-ServerNetwork::ServerNetwork(const ip::tcp::endpoint& ep)
-    : m_tcp_ep(ep) {
+ServerNetwork::ServerNetwork(Launcher& launcher, const ip::tcp::endpoint& ep)
+    : m_tcp_ep(ep)
+    , launcher(launcher) {
     spdlog::debug("Server network created");
 }
 

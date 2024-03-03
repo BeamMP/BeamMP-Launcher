@@ -54,8 +54,9 @@ void ClientNetwork::run() {
     } while (!*m_shutdown);
 }
 
-ClientNetwork::ClientNetwork(uint16_t port)
-    : m_listen_port(port) {
+ClientNetwork::ClientNetwork(Launcher& launcher, uint16_t port)
+    : m_listen_port(port)
+    , launcher(launcher) {
     spdlog::debug("Client network created");
 }
 

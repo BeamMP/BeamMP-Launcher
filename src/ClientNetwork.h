@@ -13,7 +13,7 @@ using namespace boost::asio;
 
 class ClientNetwork {
 public:
-    ClientNetwork(uint16_t port);
+    ClientNetwork(Launcher& launcher, uint16_t port);
 
     ~ClientNetwork();
 
@@ -56,4 +56,6 @@ private:
     ip::tcp::socket m_game_socket { m_io };
     Sync<bool> m_shutdown { false };
     bmp::ClientState m_client_state;
+
+    Launcher& launcher;
 };

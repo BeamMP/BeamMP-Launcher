@@ -22,11 +22,7 @@ using namespace boost::asio;
 
 namespace fs = std::filesystem;
 
-Launcher::Launcher()
-    : m_game_socket(m_io)
-    , m_core_socket(m_io)
-    , m_tcp_socket(m_io)
-    , m_udp_socket(m_io) {
+Launcher::Launcher() {
     spdlog::debug("Launcher startup");
     m_config = Config {};
     if (!m_config->is_valid) {
@@ -194,7 +190,7 @@ void Launcher::pre_game() {
 
     if (FileHash != LatestHash) {
         spdlog::info("Downloading BeamMP Update " + LatestHash);
-        HTTP::Download(fmt::format("https://backend.beammp.com/builds/client?download=true&pk={}&branch={}", m_identity->PublicKey, m_config->branch), ZipPath.generic_string());
+        HTTP::Download(fmt::format("https://backend.beammp.com/builds/client?download=true&pk={}&branch={}", identity->PublicKey, m_config->branch), ZipPath.generic_string());
     }
 
     auto Target = std::filesystem::path(m_config->game_dir) / "mods/unpacked/beammp";
