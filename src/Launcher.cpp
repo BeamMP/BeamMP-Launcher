@@ -2,11 +2,13 @@
 #include "Compression.h"
 #include "Hashing.h"
 #include "Http.h"
+#include "Identity.h"
 #include "Platform.h"
 #include "Version.h"
 #include <boost/asio.hpp>
 #include <boost/iostreams/device/mapped_file.hpp>
 #include <boost/process.hpp>
+#include <charconv>
 #include <chrono>
 #include <filesystem>
 #include <fmt/format.h>
@@ -15,7 +17,6 @@
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
 #include <vector>
-#include <charconv>
 
 using namespace boost::asio;
 
@@ -31,6 +32,8 @@ Launcher::Launcher()
     if (!m_config->is_valid) {
         spdlog::error("Launcher config invalid!");
     }
+    // try logging in immediately, for later update requests and such stuff
+    try_auto_login();
 }
 
 /// Sets shared headers for all backend proxy messages
@@ -52,7 +55,7 @@ void Launcher::proxy_main() {
             httplib::Client cli("https://backend.beammp.com");
             proxy_set_headers(res);
             if (req.has_header("X-BMP-Authentication")) {
-                headers.emplace("X-BMP-Authentication", m_identity->PrivateKey);
+                headers.emplace("X-BMP-Authentication", identity->PrivateKey);
             }
             if (req.has_header("X-API-Version")) {
                 headers.emplace("X-API-Version", req.get_header_value("X-API-Version"));
@@ -68,7 +71,7 @@ void Launcher::proxy_main() {
             httplib::Client cli("https://backend.beammp.com");
             proxy_set_headers(res);
             if (req.has_header("X-BMP-Authentication")) {
-                headers.emplace("X-BMP-Authentication", m_identity->PrivateKey);
+                headers.emplace("X-BMP-Authentication", identity->PrivateKey);
             }
             if (req.has_header("X-API-Version")) {
                 headers.emplace("X-API-Version", req.get_header_value("X-API-Version"));
@@ -95,13 +98,12 @@ void Launcher::parse_config() {
 }
 
 void Launcher::check_for_updates(int argc, char** argv) {
-    std::string LatestHash = HTTP::Get(fmt::format("https://backend.beammp.com/sha/launcher?branch={}&pk={}", m_config->branch, m_identity->PublicKey));
-    std::string LatestVersion = HTTP::Get(fmt::format("https://backend.beammp.com/version/launcher?branch={}&pk={}", m_config->branch, m_identity->PublicKey));
-
+    std::string LatestHash = HTTP::Get(fmt::format("https://backend.beammp.com/sha/launcher?branch={}&pk={}", m_config->branch, identity->PublicKey));
+    std::string LatestVersion = HTTP::Get(fmt::format("https://backend.beammp.com/version/launcher?branch={}&pk={}", m_config->branch,identity->PublicKey));
     std::string DownloadURL = fmt::format("https://backend.beammp.com/builds/launcher?download=true"
                                           "&pk={}"
                                           "&branch={}",
-        m_identity->PublicKey, m_config->branch);
+        identity->PublicKey, m_config->branch);
 
     spdlog::debug("Latest hash: {}", LatestHash);
     spdlog::debug("Latest version: {}", LatestVersion);
@@ -170,7 +172,7 @@ void Launcher::pre_game() {
 
     check_mp((std::filesystem::path(m_config->game_dir) / "mods/multiplayer").generic_string());
 
-    std::string LatestHash = HTTP::Get(fmt::format("https://backend.beammp.com/sha/mod?branch={}&pk={}", m_config->branch, m_identity->PublicKey));
+    std::string LatestHash = HTTP::Get(fmt::format("https://backend.beammp.com/sha/mod?branch={}&pk={}", m_config->branch, identity->PublicKey));
     transform(LatestHash.begin(), LatestHash.end(), LatestHash.begin(), ::tolower);
     LatestHash.erase(std::remove_if(LatestHash.begin(), LatestHash.end(),
                          [](auto const& c) -> bool { return !std::isalnum(c); }),
@@ -277,5 +279,12 @@ void Launcher::game_main() {
 void Launcher::start_game() {
     m_game_thread = boost::scoped_thread<>(&Launcher::game_main, this);
 }
-
+void Launcher::try_auto_login() {
+    if (identity->PublicKey.empty() && ident::is_login_cached()) {
+        auto login = ident::login_cached();
+        if (login.has_value()) {
+            *identity = login.value();
+        }
+    }
+}
 

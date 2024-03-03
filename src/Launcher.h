@@ -29,6 +29,8 @@ public:
 
     std::string get_public_key();
 
+    Sync<ident::Identity> identity {};
+
 private:
     /// Thread main function for the http(s) proxy thread.
     void proxy_main();
@@ -41,6 +43,8 @@ private:
     static void check_mp(const std::string& path);
 
     void enable_mp();
+
+    void try_auto_login();
 
     Sync<bool> m_mod_loaded { false };
 
