@@ -1,9 +1,11 @@
 #include "Launcher.h"
+#include "ClientNetwork.h"
 #include "Compression.h"
 #include "Hashing.h"
 #include "Http.h"
 #include "Identity.h"
 #include "Platform.h"
+#include "ServerNetwork.h"
 #include "Version.h"
 #include <boost/asio.hpp>
 #include <boost/iostreams/device/mapped_file.hpp>
@@ -30,6 +32,12 @@ Launcher::Launcher() {
     }
     // try logging in immediately, for later update requests and such stuff
     try_auto_login();
+
+    client_network = std::make_unique<ClientNetwork>(*this, m_config->port);
+
+    m_client_network_thread = boost::scoped_thread<>([&] {
+        client_network->run();
+    });
 }
 
 /// Sets shared headers for all backend proxy messages
@@ -95,7 +103,7 @@ void Launcher::parse_config() {
 
 void Launcher::check_for_updates(int argc, char** argv) {
     std::string LatestHash = HTTP::Get(fmt::format("https://backend.beammp.com/sha/launcher?branch={}&pk={}", m_config->branch, identity->PublicKey));
-    std::string LatestVersion = HTTP::Get(fmt::format("https://backend.beammp.com/version/launcher?branch={}&pk={}", m_config->branch,identity->PublicKey));
+    std::string LatestVersion = HTTP::Get(fmt::format("https://backend.beammp.com/version/launcher?branch={}&pk={}", m_config->branch, identity->PublicKey));
     std::string DownloadURL = fmt::format("https://backend.beammp.com/builds/launcher?download=true"
                                           "&pk={}"
                                           "&branch={}",
@@ -284,3 +292,35 @@ void Launcher::try_auto_login() {
     }
 }
 
+Result<void, std::string> Launcher::start_server_network(const std::string& host, uint16_t port) {
+    ip::tcp::resolver resolver(m_io);
+    boost::system::error_code ec;
+    auto resolved = resolver.resolve(host, std::to_string(port), ec);
+    if (ec) {
+        spdlog::error("Failed to resolve '{}': {}", host, ec.message());
+        return fmt::format("Failed to resolve '{}': {}", host, ec.message());
+    }
+    bool connected = false;
+
+    for (const auto& addr : resolved) {
+        try {
+            server_network = std::make_unique<ServerNetwork>(*this, addr.endpoint());
+            spdlog::info("Resolved and connected to '[{}]:{}'",
+                addr.endpoint().address().to_string(),
+                addr.endpoint().port());
+            connected = true;
+            break;
+        } catch (...) {
+            // ignore
+        }
+    }
+    if (!connected) {
+        spdlog::error("Failed to connect to [{}]:{}", host, port);
+        return fmt::format("Failed to connect to [{}]:{}", host, port);
+    } else {
+        m_server_network_thread = boost::scoped_thread<>([&] {
+            server_network->run();
+        });
+    }
+    return outcome::success();
+}

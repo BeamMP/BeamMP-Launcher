@@ -19,6 +19,8 @@ public:
 
     void run();
 
+
+
 private:
     void handle_connection(ip::tcp::socket&& socket);
     bmp::ClientPacket client_tcp_read();
@@ -45,9 +47,6 @@ private:
 
     static std::vector<uint8_t> json_to_vec(const nlohmann::json& json);
     static nlohmann::json vec_to_json(const std::vector<uint8_t>& vec);
-
-    Version m_mod_version;
-    Version m_game_version;
 
     Sync<ident::Identity> m_identity {};
 

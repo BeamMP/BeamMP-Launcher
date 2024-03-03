@@ -2,6 +2,7 @@
 #include "ClientPacket.h"
 #include "ClientTransport.h"
 #include "Http.h"
+#include "Launcher.h"
 #include "Identity.h"
 
 #include <nlohmann/json.hpp>
@@ -93,12 +94,12 @@ void ClientNetwork::handle_connection(ip::tcp::socket&& socket) {
 }
 
 void ClientNetwork::handle_packet(bmp::ClientPacket& packet) {
-    spdlog::trace("Got client packet: purpose: 0x{:x}, flags: 0x{:x}, pid: {}, vid: {}, size: {}",
+    spdlog::debug("Got client packet: purpose: 0x{:x}, flags: 0x{:x}, pid: {}, vid: {}, size: {}",
         uint16_t(packet.purpose),
         uint8_t(packet.flags),
         packet.pid, packet.vid,
         packet.get_readable_data().size());
-    spdlog::trace("Client State: 0x{:x}", int(m_client_state));
+    spdlog::debug("Client State: 0x{:x}", int(m_client_state));
 
     switch (m_client_state) {
     case bmp::ClientIdentification:
@@ -147,12 +148,12 @@ void ClientNetwork::handle_client_identification(bmp::ClientPacket& packet) {
                 disconnect(fmt::format("Incompatible protocol version, expected v{}", "1.x.x"));
                 return;
             }
-            m_mod_version = Version { uint8_t(mod_version.at(0)), uint8_t(mod_version.at(1)), uint8_t(mod_version.at(2)) };
-            m_game_version = Version { uint8_t(game_version.at(0)), uint8_t(game_version.at(1)), uint8_t(game_version.at(2)) };
+            *launcher.mod_version = Version { uint8_t(mod_version.at(0)), uint8_t(mod_version.at(1)), uint8_t(mod_version.at(2)) };
+            *launcher.game_version = Version { uint8_t(game_version.at(0)), uint8_t(game_version.at(1)), uint8_t(game_version.at(2)) };
             spdlog::info("Connected to {} (mod v{}, game v{}, protocol v{}.{}.{}",
                 impl,
-                m_mod_version.to_string(),
-                m_game_version.to_string(),
+                launcher.mod_version->to_string(),
+                launcher.game_version->to_string(),
                 protocol_version.at(0),
                 protocol_version.at(1), protocol_version.at(2));
         } catch (const std::exception& e) {

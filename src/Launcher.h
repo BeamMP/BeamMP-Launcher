@@ -3,6 +3,7 @@
 #include "Config.h"
 #include "Identity.h"
 #include "Sync.h"
+#include "Version.h"
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ip/udp.hpp>
 #include <boost/thread/scoped_thread.hpp>
@@ -10,6 +11,9 @@
 #include <set>
 #include <string>
 #include <thread>
+
+class ClientNetwork;
+class ServerNetwork;
 
 class Launcher {
 public:
@@ -30,6 +34,14 @@ public:
     std::string get_public_key();
 
     Sync<ident::Identity> identity {};
+
+    Result<void, std::string> start_server_network(const std::string& host, uint16_t port);
+
+    Sync<Version> mod_version {};
+    Sync<Version> game_version {};
+
+    std::unique_ptr<ClientNetwork> client_network {};
+    std::unique_ptr<ServerNetwork> server_network {};
 
 private:
     /// Thread main function for the http(s) proxy thread.

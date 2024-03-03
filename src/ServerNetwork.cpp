@@ -2,6 +2,7 @@
 #include "ClientInfo.h"
 #include "Identity.h"
 #include "ImplementationInfo.h"
+#include "Launcher.h"
 #include "ProtocolVersion.h"
 #include "ServerInfo.h"
 #include "Transport.h"
@@ -13,6 +14,11 @@ ServerNetwork::ServerNetwork(Launcher& launcher, const ip::tcp::endpoint& ep)
     : m_tcp_ep(ep)
     , launcher(launcher) {
     spdlog::debug("Server network created");
+    boost::system::error_code ec;
+    m_tcp_socket.connect(m_tcp_ep, ec);
+    if (ec) {
+        throw std::runtime_error(ec.message());
+    }
 }
 
 ServerNetwork::~ServerNetwork() {
@@ -20,12 +26,6 @@ ServerNetwork::~ServerNetwork() {
 }
 
 void ServerNetwork::run() {
-    boost::system::error_code ec;
-    m_tcp_socket.connect(m_tcp_ep, ec);
-    if (ec) {
-        spdlog::error("Failed to connect to [{}]:{}: {}", m_tcp_ep.address().to_string(), m_tcp_ep.port(), ec.message());
-        throw std::runtime_error(ec.message());
-    }
     // start the connection by going to the identification state and sending
     // the first packet in the identification protocol (protocol version)
     m_state = bmp::State::Identification;
@@ -171,11 +171,18 @@ void ServerNetwork::handle_identification(const bmp::Packet& packet) {
             .purpose = bmp::Purpose::ClientInfo,
             .raw_data = std::vector<uint8_t>(1024),
         };
-        // TODO: Game and mod version
         struct bmp::ClientInfo ci {
             .program_version = { .major = PRJ_VERSION_MAJOR, .minor = PRJ_VERSION_MINOR, .patch = PRJ_VERSION_PATCH },
-            .game_version = { .major = 4, .minor = 5, .patch = 6 },
-            .mod_version = { .major = 1, .minor = 2, .patch = 3 },
+            .game_version = { 
+                    .major = launcher.game_version->major, 
+                    .minor = launcher.game_version->minor, 
+                    .patch = launcher.game_version->patch, 
+                },
+            .mod_version = { 
+                    .major = launcher.mod_version->major, 
+                    .minor = launcher.mod_version->minor, 
+                    .patch = launcher.mod_version->patch, 
+                },
             .implementation = bmp::ImplementationInfo {
                 .value = "Official BeamMP Launcher",
             },
@@ -202,10 +209,10 @@ void ServerNetwork::handle_identification(const bmp::Packet& packet) {
     case bmp::Purpose::StateChangeAuthentication: {
         spdlog::debug("Starting authentication");
         m_state = bmp::State::Authentication;
-        Identity ident{};
+        auto ident = launcher.identity.synchronize();
         bmp::Packet pubkey_packet {
             .purpose = bmp::Purpose::PlayerPublicKey,
-            .raw_data = std::vector<uint8_t>(ident.PublicKey.begin(), ident.PublicKey.end())
+            .raw_data = std::vector<uint8_t>(ident->PublicKey.begin(), ident->PublicKey.end())
         };
         tcp_write(pubkey_packet);
         break;
@@ -291,4 +298,3 @@ void ServerNetwork::handle_playing(const bmp::Packet& packet) {
         break;
     }
 }
-

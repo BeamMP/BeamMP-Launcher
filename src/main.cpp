@@ -89,9 +89,11 @@ int main(int argc, char** argv) {
         launcher.start_game();
     }
 
-    ClientNetwork cn(4444);
+    while (true) {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
 
-    cn.run();
+    //auto _ = launcher.start_server_network("beamcruise.com", 10814);
 
     // old: launcher.start_network();
 
