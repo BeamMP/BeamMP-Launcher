@@ -89,6 +89,7 @@ void ClientNetwork::handle_connection(ip::tcp::socket&& socket) {
             spdlog::error("Unhandled exception in connection handler, connection closing.");
             spdlog::debug("Exception: {}", e.what());
             m_game_socket.close();
+            break;
         }
     }
 }
