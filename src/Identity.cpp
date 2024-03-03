@@ -41,6 +41,7 @@ void Identity::check_local_key() {
                 spdlog::info("{}", d["message"].get<std::string>());
                 update_key(d["private_key"].get<std::string>().c_str());
                 PublicKey = d["public_key"].get<std::string>();
+                Username = d["username"].get<std::string>();
                 Role = d["role"].get<std::string>();
             } else {
                 spdlog::info("Auto-Authentication unsuccessful please re-login!");

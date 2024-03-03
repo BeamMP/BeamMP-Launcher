@@ -1,6 +1,7 @@
 #include "ClientNetwork.h"
 #include "ClientPacket.h"
 #include "ClientTransport.h"
+#include "Identity.h"
 
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
@@ -153,6 +154,13 @@ void ClientNetwork::handle_client_identification(ip::tcp::socket& socket, bmp::C
             .purpose = bmp::ClientPurpose::StateChangeLogin,
         };
         client_tcp_write(socket, state_change);
+
+        // first packet in login
+        // TODO: send LoginResult if already logged in.
+        bmp::ClientPacket ask_for_creds {
+            .purpose = bmp::ClientPurpose::AskForCredentials,
+        };
+        client_tcp_write(socket, ask_for_creds);
         break;
     }
     default:
@@ -171,6 +179,25 @@ void ClientNetwork::disconnect(ip::tcp::socket& socket, const std::string& reaso
 }
 
 void ClientNetwork::handle_login(ip::tcp::socket& socket, bmp::ClientPacket& packet) {
+    switch (packet.purpose) {
+    case bmp::ClientPurpose::Credentials:
+        try {
+            auto creds = vec_to_json(packet.get_readable_data());
+            std::string username = creds.at("username");
+            std::string password = creds.at("password");
+            bool remember = creds.at("remember");
+            // TODO: Respect 'remember'
+            spdlog::debug("Got credentials username: '{}', password: ({} chars) (remember: {})", username, password.size(), remember ? "yes" : "no");
+            // CONTINUE HERE
+        } catch (const std::exception& e) {
+            spdlog::error("Failed to read json for purpose 0x{:x}: {}", uint16_t(packet.purpose), e.what());
+            disconnect(socket, fmt::format("Invalid json in purpose 0x{:x}, see launcher logs for more info", uint16_t(packet.purpose)));
+        }
+        break;
+    default:
+        disconnect(socket, fmt::format("Invalid packet purpose in state 0x{:x}: 0x{:x}", uint16_t(m_client_state), uint16_t(packet.purpose)));
+        break;
+    }
 }
 
 void ClientNetwork::handle_quick_join(ip::tcp::socket& socket, bmp::ClientPacket& packet) {

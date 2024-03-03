@@ -7,9 +7,10 @@ struct Identity {
     void check_local_key();
 
     bool LoginAuth { false };
-    std::string PublicKey;
-    std::string PrivateKey;
-    std::string Role;
+    std::string PublicKey {};
+    std::string PrivateKey {};
+    std::string Role {};
+    std::string Username {};
 
     std::string login(const std::string& fields);
 
