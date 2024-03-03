@@ -21,10 +21,10 @@ Result<ident::Identity, std::string> ident::login_cached() noexcept {
         return fmt::format("Failed to read cached key: {}", e.what());
     }
 
-    std::string pk_json {};
+    std::string private_key_json {};
 
     try {
-        pk_json = nlohmann::json {
+        private_key_json = nlohmann::json {
             { "pk", private_key }
         }.dump();
     } catch (const std::exception& e) {
@@ -33,7 +33,7 @@ Result<ident::Identity, std::string> ident::login_cached() noexcept {
     }
 
     // login and remember (again)
-    return detail::login(pk_json, true);
+    return detail::login(private_key_json, true);
 }
 
 bool ident::is_login_cached() noexcept {
