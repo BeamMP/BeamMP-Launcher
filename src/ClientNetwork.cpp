@@ -14,20 +14,20 @@ void ClientNetwork::run() {
     boost::system::error_code ec;
     listener.open(listen_ep.protocol(), ec);
     if (ec) {
-        spdlog::error("Failed to open socket: {}", ec.message());
+        spdlog::error("Failed to open m_game_socket: {}", ec.message());
         return;
     }
-    socket_base::linger linger_opt {};
+    ip::tcp::socket::linger linger_opt {};
     linger_opt.enabled(false);
     listener.set_option(linger_opt, ec);
     if (ec) {
-        spdlog::error("Failed to set up listening socket to not linger / reuse address. "
-                      "This may cause the socket to refuse to bind(). spdlog::error: {}",
+        spdlog::error("Failed to set up listening m_game_socket to not linger / reuse address. "
+                      "This may cause the m_game_socket to refuse to bind(). spdlog::error: {}",
             ec.message());
     }
 
     ip::tcp::acceptor acceptor(m_io, listen_ep);
-    acceptor.listen(socket_base::max_listen_connections, ec);
+    acceptor.listen(ip::tcp::socket::max_listen_connections, ec);
     if (ec) {
         spdlog::error("listen() failed, which is needed for the launcher to operate. "
                       "Shutting down. spdlog::error: {}",
@@ -63,6 +63,7 @@ ClientNetwork::~ClientNetwork() {
 }
 
 void ClientNetwork::handle_connection(ip::tcp::socket&& socket) {
+    m_game_socket = std::move(socket);
     // immediately send launcher info (first step of client identification)
     m_client_state = bmp::ClientState::ClientIdentification;
 
@@ -74,16 +75,16 @@ void ClientNetwork::handle_connection(ip::tcp::socket&& socket) {
             { "version", { PRJ_VERSION_MAJOR, PRJ_VERSION_MINOR, PRJ_VERSION_PATCH } },
             { "mod_cache_path", "/idk sorry/" }, // TODO: mod_cache_path in LauncherInfo
         });
-    client_tcp_write(socket, info_packet);
+    client_tcp_write(info_packet);
 
     // packet read and respond loop
     while (!*m_shutdown) {
-        auto packet = client_tcp_read(socket);
-        handle_packet(socket, packet);
+        auto packet = client_tcp_read();
+        handle_packet(packet);
     }
 }
 
-void ClientNetwork::handle_packet(ip::tcp::socket& socket, bmp::ClientPacket& packet) {
+void ClientNetwork::handle_packet(bmp::ClientPacket& packet) {
     spdlog::trace("Got client packet: purpose: 0x{:x}, flags: 0x{:x}, pid: {}, vid: {}, size: {}",
         uint16_t(packet.purpose),
         uint8_t(packet.flags),
@@ -93,39 +94,39 @@ void ClientNetwork::handle_packet(ip::tcp::socket& socket, bmp::ClientPacket& pa
 
     switch (m_client_state) {
     case bmp::ClientIdentification:
-        handle_client_identification(socket, packet);
+        handle_client_identification(packet);
         break;
     case bmp::Login:
-        handle_login(socket, packet);
+        handle_login(packet);
         break;
     case bmp::QuickJoin:
-        handle_quick_join(socket, packet);
+        handle_quick_join(packet);
         break;
     case bmp::Browsing:
-        handle_browsing(socket, packet);
+        handle_browsing(packet);
         break;
     case bmp::ServerIdentification:
-        handle_server_identification(socket, packet);
+        handle_server_identification(packet);
         break;
     case bmp::ServerAuthentication:
-        handle_server_authentication(socket, packet);
+        handle_server_authentication(packet);
         break;
     case bmp::ServerModDownload:
-        handle_server_mod_download(socket, packet);
+        handle_server_mod_download(packet);
         break;
     case bmp::ServerSessionSetup:
-        handle_server_session_setup(socket, packet);
+        handle_server_session_setup(packet);
         break;
     case bmp::ServerPlaying:
-        handle_server_playing(socket, packet);
+        handle_server_playing(packet);
         break;
     case bmp::ServerLeaving:
-        handle_server_leaving(socket, packet);
+        handle_server_leaving(packet);
         break;
     }
 }
 
-void ClientNetwork::handle_client_identification(ip::tcp::socket& socket, bmp::ClientPacket& packet) {
+void ClientNetwork::handle_client_identification(bmp::ClientPacket& packet) {
     switch (packet.purpose) {
     case bmp::ClientPurpose::GameInfo: {
         try {
@@ -135,7 +136,7 @@ void ClientNetwork::handle_client_identification(ip::tcp::socket& socket, bmp::C
             std::vector<int> game_version = game_info.at("game_version");
             std::vector<int> protocol_version = game_info.at("protocol_version");
             if (protocol_version.at(0) != 1) {
-                disconnect(socket, fmt::format("Incompatible protocol version, expected v{}", "1.x.x"));
+                disconnect(fmt::format("Incompatible protocol version, expected v{}", "1.x.x"));
                 return;
             }
             m_mod_version = Version { uint8_t(mod_version.at(0)), uint8_t(mod_version.at(1)), uint8_t(mod_version.at(2)) };
@@ -148,37 +149,57 @@ void ClientNetwork::handle_client_identification(ip::tcp::socket& socket, bmp::C
                 protocol_version.at(1), protocol_version.at(2));
         } catch (const std::exception& e) {
             spdlog::error("Failed to read json for purpose 0x{:x}: {}", uint16_t(packet.purpose), e.what());
-            disconnect(socket, fmt::format("Invalid json in purpose 0x{:x}, see launcher logs for more info", uint16_t(packet.purpose)));
+            disconnect(fmt::format("Invalid json in purpose 0x{:x}, see launcher logs for more info", uint16_t(packet.purpose)));
         }
         bmp::ClientPacket state_change {
             .purpose = bmp::ClientPurpose::StateChangeLogin,
         };
-        client_tcp_write(socket, state_change);
+        client_tcp_write(state_change);
 
-        // first packet in login
-        // TODO: send LoginResult if already logged in.
-        bmp::ClientPacket ask_for_creds {
-            .purpose = bmp::ClientPurpose::AskForCredentials,
-        };
-        client_tcp_write(socket, ask_for_creds);
+        start_login();
         break;
     }
     default:
-        disconnect(socket, fmt::format("Invalid packet purpose in state 0x{:x}: 0x{:x}", uint16_t(m_client_state), uint16_t(packet.purpose)));
+        disconnect(fmt::format("Invalid packet purpose in state 0x{:x}: 0x{:x}", uint16_t(m_client_state), uint16_t(packet.purpose)));
         break;
     }
 }
 
-void ClientNetwork::disconnect(ip::tcp::socket& socket, const std::string& reason) {
+void ClientNetwork::start_login() {
+
+    if (ident::is_login_cached()) {
+        auto login = ident::login_cached();
+        if (login.has_value()) {
+            bmp::ClientPacket login_result {
+                .purpose = bmp::ClientPurpose::LoginResult,
+                .raw_data = json_to_vec({
+                    { "success", true },
+                    { "message", login.value().Message },
+                    { "username", login.value().Username },
+                    { "role", login.value().Role },
+                }),
+            };
+            client_tcp_write(login_result);
+        }
+    }
+    // first packet in login
+    // TODO: send LoginResult if already logged in.
+    bmp::ClientPacket ask_for_creds {
+        .purpose = bmp::ClientPurpose::AskForCredentials,
+    };
+    client_tcp_write(ask_for_creds);
+}
+
+void ClientNetwork::disconnect(const std::string& reason) {
     bmp::ClientPacket error {
         .purpose = bmp::ClientPurpose::Error,
         .raw_data = json_to_vec({ "message", reason })
     };
-    client_tcp_write(socket, error);
-    socket.close();
+    client_tcp_write(error);
+    m_game_socket.close();
 }
 
-void ClientNetwork::handle_login(ip::tcp::socket& socket, bmp::ClientPacket& packet) {
+void ClientNetwork::handle_login(bmp::ClientPacket& packet) {
     switch (packet.purpose) {
     case bmp::ClientPurpose::Credentials:
         try {
@@ -191,62 +212,62 @@ void ClientNetwork::handle_login(ip::tcp::socket& socket, bmp::ClientPacket& pac
             // CONTINUE HERE
         } catch (const std::exception& e) {
             spdlog::error("Failed to read json for purpose 0x{:x}: {}", uint16_t(packet.purpose), e.what());
-            disconnect(socket, fmt::format("Invalid json in purpose 0x{:x}, see launcher logs for more info", uint16_t(packet.purpose)));
+            disconnect(fmt::format("Invalid json in purpose 0x{:x}, see launcher logs for more info", uint16_t(packet.purpose)));
         }
         break;
     default:
-        disconnect(socket, fmt::format("Invalid packet purpose in state 0x{:x}: 0x{:x}", uint16_t(m_client_state), uint16_t(packet.purpose)));
+        disconnect(fmt::format("Invalid packet purpose in state 0x{:x}: 0x{:x}", uint16_t(m_client_state), uint16_t(packet.purpose)));
         break;
     }
 }
 
-void ClientNetwork::handle_quick_join(ip::tcp::socket& socket, bmp::ClientPacket& packet) {
+void ClientNetwork::handle_quick_join(bmp::ClientPacket& packet) {
 }
 
-void ClientNetwork::handle_browsing(ip::tcp::socket& socket, bmp::ClientPacket& packet) {
+void ClientNetwork::handle_browsing(bmp::ClientPacket& packet) {
 }
 
-void ClientNetwork::handle_server_identification(ip::tcp::socket& socket, bmp::ClientPacket& packet) {
+void ClientNetwork::handle_server_identification(bmp::ClientPacket& packet) {
 }
 
-void ClientNetwork::handle_server_authentication(ip::tcp::socket& socket, bmp::ClientPacket& packet) {
+void ClientNetwork::handle_server_authentication(bmp::ClientPacket& packet) {
 }
 
-void ClientNetwork::handle_server_mod_download(ip::tcp::socket& socket, bmp::ClientPacket& packet) {
+void ClientNetwork::handle_server_mod_download(bmp::ClientPacket& packet) {
 }
 
-void ClientNetwork::handle_server_session_setup(ip::tcp::socket& socket, bmp::ClientPacket& packet) {
+void ClientNetwork::handle_server_session_setup(bmp::ClientPacket& packet) {
 }
 
-void ClientNetwork::handle_server_playing(ip::tcp::socket& socket, bmp::ClientPacket& packet) {
+void ClientNetwork::handle_server_playing(bmp::ClientPacket& packet) {
 }
 
-void ClientNetwork::handle_server_leaving(ip::tcp::socket& socket, bmp::ClientPacket& packet) {
+void ClientNetwork::handle_server_leaving(bmp::ClientPacket& packet) {
 }
 
-bmp::ClientPacket ClientNetwork::client_tcp_read(ip::tcp::socket& socket) {
+bmp::ClientPacket ClientNetwork::client_tcp_read() {
     bmp::ClientPacket packet {};
     std::vector<uint8_t> header_buffer(bmp::ClientHeader::SERIALIZED_SIZE);
-    read(socket, buffer(header_buffer));
+    read(m_game_socket, buffer(header_buffer));
     bmp::ClientHeader hdr {};
     hdr.deserialize_from(header_buffer);
     // vector eaten up by now, recv again
     packet.raw_data.resize(hdr.data_size);
-    read(socket, buffer(packet.raw_data));
+    read(m_game_socket, buffer(packet.raw_data));
     packet.purpose = hdr.purpose;
     packet.flags = hdr.flags;
     return packet;
 }
 
-void ClientNetwork::client_tcp_write(ip::tcp::socket& socket, bmp::ClientPacket& packet) {
+void ClientNetwork::client_tcp_write(bmp::ClientPacket& packet) {
     // finalize the packet (compress etc) and produce header
     auto header = packet.finalize();
     // serialize header
     std::vector<uint8_t> header_data(bmp::ClientHeader::SERIALIZED_SIZE);
     header.serialize_to(header_data);
     // write header and packet data
-    write(socket, buffer(header_data));
-    write(socket, buffer(packet.raw_data));
+    write(m_game_socket, buffer(header_data));
+    write(m_game_socket, buffer(packet.raw_data));
 }
 std::vector<uint8_t> ClientNetwork::json_to_vec(const nlohmann::json& value) {
     auto str = value.dump();
