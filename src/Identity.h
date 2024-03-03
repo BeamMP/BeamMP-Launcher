@@ -1,7 +1,7 @@
 #pragma once
+#include "Result.h"
 #include <filesystem>
 #include <string>
-#include "Result.h"
 
 namespace ident {
 
@@ -20,7 +20,7 @@ bool is_login_cached() noexcept;
 
 Result<Identity, std::string> login_cached() noexcept;
 
-Result<Identity, std::string> login(const std::string& username_or_email, const std::string& password);
+Result<Identity, std::string> login(const std::string& username_or_email, const std::string& password, bool remember);
 
 namespace detail {
 
@@ -31,4 +31,3 @@ namespace detail {
 }
 
 }
-
