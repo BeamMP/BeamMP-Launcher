@@ -11,6 +11,7 @@
     "boost-iostreams",
     "boost-process",
     "boost-thread",
+    "boost-outcome",
     "nlohmann-json",
     "cryptopp",
     "zstd"

@@ -73,6 +73,7 @@ set(PRJ_LIBRARIES
     Boost::iostreams
     Boost::thread
     Boost::filesystem
+    Boost::outcome
     cryptopp::cryptopp
     ZLIB::ZLIB
     OpenSSL::SSL
@@ -86,7 +87,7 @@ find_package(fmt CONFIG REQUIRED)
 find_package(doctest CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(httplib CONFIG REQUIRED)
-find_package(Boost REQUIRED COMPONENTS system iostreams thread filesystem)
+find_package(Boost REQUIRED COMPONENTS system iostreams thread filesystem outcome)
 find_package(cryptopp CONFIG REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(OpenSSL REQUIRED)
