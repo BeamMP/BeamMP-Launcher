@@ -423,7 +423,7 @@ void ClientNetwork::start_browsing() {
 
 Result<nlohmann::json, std::string> ClientNetwork::load_server_list() noexcept {
     try {
-        auto list = HTTP::Get("https://backend.beammp.com/servers-list");
+        auto list = HTTP::Get("https://backend.beammp.com/servers-info");
         if (list == "-1") {
             return outcome::failure("Failed to fetch server list, see launcher log for more information.");
         }
