@@ -390,12 +390,13 @@ void ClientNetwork::client_tcp_write(bmp::ClientPacket& packet) {
     // copy packet data (yes i know ugh) to the `data` in order to send it in one go
     std::copy(packet.raw_data.begin(), packet.raw_data.end(), data.begin() + long(offset));
     boost::asio::async_write(m_game_socket, buffer(data),
-        [this](auto ec, auto) {
+        [this, packet](auto ec, auto) {
             if (ec) {
                 spdlog::error("Failed to write a packet: {}", ec.message());
                 disconnect("Failed to send data to game");
             } else {
                 // ok! sent all data
+                spdlog::debug("Sent packet: 0x{:x}", int(packet.purpose));
             }
         });
 }
