@@ -193,12 +193,8 @@ void ClientNetwork::start_login() {
                     { "role", m_identity->Role },
                 }),
             };
-            client_tcp_write(login_result);
-            bmp::ClientPacket change_to_quickjoin {
-                .purpose = bmp::ClientPurpose::StateChangeQuickJoin,
-            };
-            client_tcp_write(change_to_quickjoin);
-            m_client_state = bmp::ClientState::QuickJoin;
+            // move on to quick join right away
+            start_quick_join();
             return; // done
         } else {
             spdlog::warn("Failed to automatically login with cached/saved login details: {}", login.error());
