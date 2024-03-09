@@ -14,6 +14,7 @@ Result<ident::Identity, std::string> ident::login_cached() noexcept {
         std::ifstream key_file(ident::KEYFILE);
         if (key_file.is_open()) {
             auto size = fs::file_size(ident::KEYFILE);
+            private_key.resize(size);
             key_file.read(&private_key[0], static_cast<long>(size));
             key_file.close();
         }
