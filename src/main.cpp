@@ -89,6 +89,8 @@ int main(int argc, char** argv) {
         launcher.start_game();
     }
 
+    launcher.client_network->handle_server_packet(bmp::Packet {});
+
     while (true) {
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }

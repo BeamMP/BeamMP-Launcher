@@ -1,11 +1,15 @@
 #include "ServerNetwork.h"
 #include "ClientInfo.h"
+#include "ClientPacket.h"
+#include "ClientTransport.h"
 #include "Identity.h"
 #include "ImplementationInfo.h"
 #include "Launcher.h"
+#include "Packet.h"
 #include "ProtocolVersion.h"
 #include "ServerInfo.h"
 #include "Transport.h"
+#include "ClientNetwork.h"
 #include "Util.h"
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
@@ -19,6 +23,7 @@ ServerNetwork::ServerNetwork(Launcher& launcher, const ip::tcp::endpoint& ep)
     if (ec) {
         throw std::runtime_error(ec.message());
     }
+    launcher.client_network->handle_server_packet(bmp::Packet {});
 }
 
 ServerNetwork::~ServerNetwork() {

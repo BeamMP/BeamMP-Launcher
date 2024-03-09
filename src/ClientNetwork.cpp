@@ -2,8 +2,8 @@
 #include "ClientPacket.h"
 #include "ClientTransport.h"
 #include "Http.h"
-#include "Launcher.h"
 #include "Identity.h"
+#include "Launcher.h"
 
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
@@ -28,8 +28,8 @@ void ClientNetwork::run() {
             ec.message());
     }
 
-    ip::tcp::acceptor acceptor(m_io, listen_ep);
-    acceptor.listen(ip::tcp::socket::max_listen_connections, ec);
+    m_acceptor = ip::tcp::acceptor(m_io, listen_ep);
+    m_acceptor.listen(ip::tcp::socket::max_listen_connections, ec);
     if (ec) {
         spdlog::error("listen() failed, which is needed for the launcher to operate. "
                       "Shutting down. spdlog::error: {}",
@@ -37,22 +37,8 @@ void ClientNetwork::run() {
         std::this_thread::sleep_for(std::chrono::seconds(3));
         std::exit(1);
     }
-    do {
-        try {
-            spdlog::info("Waiting for the game to connect");
-            ip::tcp::endpoint game_ep;
-            auto game = acceptor.accept(game_ep, ec);
-            if (ec) {
-                spdlog::error("Failed to accept: {}", ec.message());
-            }
-            spdlog::info("Game connected!");
-            spdlog::debug("Game: [{}]:{}", game_ep.address().to_string(), game_ep.port());
-            handle_connection(std::move(game));
-            spdlog::warn("Game disconnected!");
-        } catch (const std::exception& e) {
-            spdlog::error("Fatal error in core network: {}", e.what());
-        }
-    } while (!*m_shutdown);
+    start_accept();
+    m_io.run();
 }
 
 ClientNetwork::ClientNetwork(Launcher& launcher, uint16_t port)
@@ -65,8 +51,7 @@ ClientNetwork::~ClientNetwork() {
     spdlog::debug("Client network destroyed");
 }
 
-void ClientNetwork::handle_connection(ip::tcp::socket&& socket) {
-    m_game_socket = std::move(socket);
+void ClientNetwork::handle_connection() {
     // immediately send launcher info (first step of client identification)
     m_client_state = bmp::ClientState::ClientIdentification;
 
@@ -80,18 +65,21 @@ void ClientNetwork::handle_connection(ip::tcp::socket&& socket) {
         });
     client_tcp_write(info_packet);
 
+    client_tcp_read([this](auto&& packet) {
+        handle_packet(packet);
+    });
+
     // packet read and respond loop
-    while (!*m_shutdown) {
-        try {
-            auto packet = client_tcp_read();
-            handle_packet(packet);
-        } catch (const std::exception& e) {
-            spdlog::error("Unhandled exception in connection handler, connection closing.");
-            spdlog::debug("Exception: {}", e.what());
-            m_game_socket.close();
-            break;
-        }
-    }
+    /*
+    try {
+        auto packet = client_tcp_read();
+        handle_packet(packet);
+    } catch (const std::exception& e) {
+        spdlog::error("Unhandled exception in connection handler, connection closing.");
+        spdlog::debug("Exception: {}", e.what());
+        m_game_socket.close();
+        break;
+    }*/
 }
 
 void ClientNetwork::handle_packet(bmp::ClientPacket& packet) {
@@ -213,12 +201,14 @@ void ClientNetwork::start_login() {
 }
 
 void ClientNetwork::disconnect(const std::string& reason) {
+    spdlog::debug("Disconnecting game: {}", reason);
     bmp::ClientPacket error {
         .purpose = bmp::ClientPurpose::Error,
         .raw_data = json_to_vec({ "message", reason })
     };
     client_tcp_write(error);
     m_game_socket.close();
+    start_accept();
 }
 
 void ClientNetwork::handle_login(bmp::ClientPacket& packet) {
@@ -366,30 +356,50 @@ void ClientNetwork::handle_server_leaving(bmp::ClientPacket& packet) {
     }
 }
 
-bmp::ClientPacket ClientNetwork::client_tcp_read() {
-    bmp::ClientPacket packet {};
-    std::vector<uint8_t> header_buffer(bmp::ClientHeader::SERIALIZED_SIZE);
-    read(m_game_socket, buffer(header_buffer));
-    bmp::ClientHeader hdr {};
-    hdr.deserialize_from(header_buffer);
-    // vector eaten up by now, recv again
-    packet.raw_data.resize(hdr.data_size);
-    read(m_game_socket, buffer(packet.raw_data));
-    packet.purpose = hdr.purpose;
-    packet.flags = hdr.flags;
-    return packet;
+void ClientNetwork::client_tcp_read(std::function<void(bmp::ClientPacket&&)> handler) {
+    m_tmp_header_buffer.resize(bmp::ClientHeader::SERIALIZED_SIZE);
+    boost::asio::async_read(m_game_socket, buffer(m_tmp_header_buffer),
+        bind_executor(m_strand, [this, handler](auto ec, auto) {
+            if (ec) {
+                disconnect(fmt::format("Failed to read from game: {}", ec.message()));
+            } else {
+                bmp::ClientHeader hdr {};
+                hdr.deserialize_from(m_tmp_header_buffer);
+                // vector eaten up by now, recv again
+                m_tmp_packet.raw_data.resize(hdr.data_size);
+                m_tmp_packet.purpose = hdr.purpose;
+                m_tmp_packet.flags = hdr.flags;
+                boost::asio::async_read(m_game_socket, buffer(m_tmp_packet.raw_data),
+                    bind_executor(m_strand, [handler, this](auto ec, auto) {
+                        if (ec) {
+                            disconnect(fmt::format("Failed to read from game: {}", ec.message()));
+                        } else {
+                            // ok!
+                            handler(std::move(m_tmp_packet));
+                        }
+                    }));
+            }
+        }));
 }
 
 void ClientNetwork::client_tcp_write(bmp::ClientPacket& packet) {
-    // finalize the packet (compress etc) and produce header
     auto header = packet.finalize();
     // serialize header
-    std::vector<uint8_t> header_data(bmp::ClientHeader::SERIALIZED_SIZE);
-    header.serialize_to(header_data);
-    // write header and packet data
-    write(m_game_socket, buffer(header_data));
-    write(m_game_socket, buffer(packet.raw_data));
+    std::vector<uint8_t> data(bmp::ClientHeader::SERIALIZED_SIZE + packet.raw_data.size());
+    auto offset = header.serialize_to(data);
+    // copy packet data (yes i know ugh) to the `data` in order to send it in one go
+    std::copy(packet.raw_data.begin(), packet.raw_data.end(), data.begin() + long(offset));
+    boost::asio::async_write(m_game_socket, buffer(data),
+        [this](auto ec, auto) {
+            if (ec) {
+                spdlog::error("Failed to write a packet: {}", ec.message());
+                disconnect("Failed to send data to game");
+            } else {
+                // ok! sent all data
+            }
+        });
 }
+
 std::vector<uint8_t> ClientNetwork::json_to_vec(const nlohmann::json& value) {
     auto str = value.dump();
     return std::vector<uint8_t>(str.begin(), str.end());
@@ -428,4 +438,74 @@ Result<nlohmann::json, std::string> ClientNetwork::load_server_list() noexcept {
     } catch (const std::exception& e) {
         return outcome::failure(fmt::format("Failed to fetch server list from backend: {}", e.what()));
     }
+}
+void ClientNetwork::handle_server_packet(bmp::Packet&& packet) {
+    post(m_io, [packet, this] {
+        spdlog::info("HELLO WORLD: {}", m_listen_port);
+        switch (packet.purpose) {
+        case bmp::Invalid:
+            break;
+        case bmp::ProtocolVersion:
+        case bmp::ProtocolVersionOk:
+        case bmp::ProtocolVersionBad:
+        case bmp::ClientInfo:
+        case bmp::ServerInfo:
+        case bmp::PlayerPublicKey:
+        case bmp::AuthOk:
+        case bmp::AuthFailed:
+        case bmp::PlayerRejected:
+        case bmp::StartUDP:
+        case bmp::ModsInfo:
+        case bmp::MapInfo:
+        case bmp::ModRequest:
+        case bmp::ModResponse:
+        case bmp::ModRequestInvalid:
+        case bmp::ModsSyncDone:
+        case bmp::PlayersVehiclesInfo:
+        case bmp::SessionReady:
+        case bmp::Ping:
+        case bmp::VehicleSpawn:
+        case bmp::VehicleDelete:
+        case bmp::VehicleReset:
+        case bmp::VehicleEdited:
+        case bmp::VehicleCouplerChanged:
+        case bmp::SpectatorSwitched:
+        case bmp::ApplyInput:
+        case bmp::ApplyElectrics:
+        case bmp::ApplyNodes:
+        case bmp::ApplyBreakgroups:
+        case bmp::ApplyPowertrain:
+        case bmp::ApplyPosition:
+        case bmp::ChatMessage:
+        case bmp::Event:
+        case bmp::PlayerJoined:
+        case bmp::PlayerLeft:
+        case bmp::PlayerPingUpdate:
+        case bmp::Notification:
+        case bmp::Kicked:
+        case bmp::StateChangeIdentification:
+        case bmp::StateChangeAuthentication:
+        case bmp::StateChangeModDownload:
+        case bmp::StateChangeSessionSetup:
+        case bmp::StateChangePlaying:
+        case bmp::StateChangeLeaving:
+            break;
+        }
+    });
+}
+
+void ClientNetwork::start_accept() {
+    m_acceptor.async_accept(m_game_socket, [this](const auto& ec) { handle_accept(ec); });
+}
+
+void ClientNetwork::handle_accept(boost::system::error_code ec) {
+    if (ec) {
+        spdlog::error("Failed accepting game connection: {}", ec.message());
+    } else {
+        spdlog::info("Game connected!");
+        auto game_ep = m_game_socket.remote_endpoint();
+        spdlog::debug("Game: [{}]:{}", game_ep.address().to_string(), game_ep.port());
+        handle_connection();
+    }
+    // TODO: We should probably accept() again somewhere once the game disconnected
 }

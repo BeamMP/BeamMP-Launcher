@@ -3,6 +3,7 @@
 #include "ClientPacket.h"
 #include "ClientState.h"
 #include "Launcher.h"
+#include "Packet.h"
 #include "Sync.h"
 #include "Version.h"
 
@@ -19,11 +20,14 @@ public:
 
     void run();
 
-
+    void handle_server_packet(bmp::Packet&& packet);
 
 private:
-    void handle_connection(ip::tcp::socket&& socket);
-    bmp::ClientPacket client_tcp_read();
+    void start_accept();
+    void handle_accept(boost::system::error_code ec);
+
+    void handle_connection();
+    void client_tcp_read(std::function<void(bmp::ClientPacket&&)> handler);
     void client_tcp_write(bmp::ClientPacket& packet);
 
     void handle_packet(bmp::ClientPacket& packet);
@@ -55,6 +59,13 @@ private:
     ip::tcp::socket m_game_socket { m_io };
     Sync<bool> m_shutdown { false };
     bmp::ClientState m_client_state;
+
+    ip::tcp::acceptor m_acceptor { m_io };
+    boost::asio::strand<ip::tcp::socket::executor_type> m_strand { m_game_socket.get_executor() };
+
+    // temporary packet and header buffer for async reads
+    bmp::ClientPacket m_tmp_packet {};
+    std::vector<uint8_t> m_tmp_header_buffer {};
 
     Launcher& launcher;
 };
