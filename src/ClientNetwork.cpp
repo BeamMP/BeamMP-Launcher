@@ -151,7 +151,7 @@ void ClientNetwork::handle_client_identification(bmp::ClientPacket& packet) {
             }
             *launcher.mod_version = Version { uint8_t(mod_version.at(0)), uint8_t(mod_version.at(1)), uint8_t(mod_version.at(2)) };
             *launcher.game_version = Version { uint8_t(game_version.at(0)), uint8_t(game_version.at(1)), uint8_t(game_version.at(2)) };
-            spdlog::info("Connected to {} (mod v{}, game v{}, protocol v{}.{}.{}",
+            spdlog::info("Connected to {} (mod v{}, game v{}, protocol v{}.{}.{})",
                 impl,
                 launcher.mod_version->to_string(),
                 launcher.game_version->to_string(),
