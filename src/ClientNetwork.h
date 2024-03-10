@@ -26,9 +26,11 @@ private:
     void start_accept();
     void handle_accept(boost::system::error_code ec);
 
+    void start_read();
+
     void handle_connection();
     void client_tcp_read(std::function<void(bmp::ClientPacket&&)> handler);
-    void client_tcp_write(bmp::ClientPacket& packet);
+    void client_tcp_write(bmp::ClientPacket&& packet, std::function<void(boost::system::error_code)> handler = nullptr);
 
     void handle_packet(bmp::ClientPacket& packet);
     void handle_client_identification(bmp::ClientPacket& packet);
