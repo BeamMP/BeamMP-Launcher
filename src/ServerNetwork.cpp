@@ -48,7 +48,7 @@ void ServerNetwork::run() {
     version.serialize_to(version_packet.raw_data);
     tcp_write(std::move(version_packet));
 
-    start_read();
+    start_tcp_read();
 
     m_io.run();
 }
@@ -277,16 +277,21 @@ void ServerNetwork::tcp_write(bmp::Packet&& packet, std::function<void(boost::sy
         });
 }
 
-bmp::Packet ServerNetwork::udp_read(ip::udp::endpoint& out_ep) {
+void ServerNetwork::udp_read(std::function<void(ip::udp::endpoint&&, bmp::Packet&&)> handler) {
     // maximum we can ever expect from udp
-    static thread_local std::vector<uint8_t> s_buffer(std::numeric_limits<uint16_t>::max());
-    m_udp_socket.receive_from(buffer(s_buffer), out_ep, {});
-    bmp::Packet packet;
-    bmp::Header header {};
-    auto offset = header.deserialize_from(s_buffer);
-    packet.raw_data.resize(header.size);
-    std::copy(s_buffer.begin() + long(offset), s_buffer.begin() + long(offset) + header.size, packet.raw_data.begin());
-    return packet;
+    auto ep = std::make_shared<ip::udp::endpoint>();
+    m_udp_socket.async_receive_from(buffer(m_tmp_udp_buffer), *ep, [this, ep, handler](auto ec, auto) {
+        if (ec) {
+            spdlog::error("Failed to receive UDP from server: {}", ec.message());
+        } else {
+            bmp::Packet packet;
+            bmp::Header header {};
+            auto offset = header.deserialize_from(m_tmp_udp_buffer);
+            packet.raw_data.resize(header.size);
+            std::copy(m_tmp_udp_buffer.begin() + long(offset), m_tmp_udp_buffer.begin() + long(offset) + header.size, packet.raw_data.begin());
+            handler(std::move(*ep), std::move(packet));
+        }
+    });
 }
 
 void ServerNetwork::udp_write(bmp::Packet& packet) {
@@ -332,10 +337,18 @@ void ServerNetwork::handle_playing(const bmp::Packet& packet) {
     }
 }
 
-void ServerNetwork::start_read() {
+void ServerNetwork::start_tcp_read() {
     tcp_read([this](auto&& packet) {
         spdlog::debug("Got packet 0x{:x} from server", int(packet.purpose));
         handle_packet(packet);
-        start_read();
+        start_tcp_read();
+    });
+}
+
+void ServerNetwork::start_udp_read() {
+    udp_read([this](auto&& ep, auto&& packet) {
+        spdlog::debug("Got packet 0x{:x} from server via UDP", int(packet.purpose));
+        handle_packet(packet);
+        start_udp_read();
     });
 }

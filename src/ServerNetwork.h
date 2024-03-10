@@ -19,7 +19,8 @@ public:
     void run();
 
 private:
-    void start_read();
+    void start_tcp_read();
+    void start_udp_read();
 
     /// Reads a single packet from the TCP stream. Blocks all other reads (not writes).
     void tcp_read(std::function<void(bmp::Packet&&)> handler);
@@ -27,7 +28,7 @@ private:
     void tcp_write(bmp::Packet&& packet, std::function<void(boost::system::error_code)> handler = nullptr);
 
     /// Reads a packet from the given UDP socket, returning the client's endpoint as an out-argument.
-    bmp::Packet udp_read(ip::udp::endpoint& out_ep);
+    void udp_read(std::function<void(ip::udp::endpoint&&, bmp::Packet&&)> handler);
     /// Sends a packet to the specified UDP endpoint via the UDP socket.
     void udp_write(bmp::Packet& packet);
 
@@ -45,6 +46,8 @@ private:
     // these two tmp fields are used for temporary reading into by read, don't use anywhere else please
     bmp::Packet m_tmp_packet {};
     std::vector<uint8_t> m_tmp_header_buffer {};
+    // this is used by udp read, don't touch
+    std::vector<uint8_t> m_tmp_udp_buffer { static_cast<unsigned char>(std::numeric_limits<uint16_t>::max()) };
 
     bmp::State m_state {};
 
