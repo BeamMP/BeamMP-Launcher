@@ -53,7 +53,7 @@ void ServerNetwork::run() {
     m_io.run();
 }
 
-void ServerNetwork::handle_packet(const bmp::Packet& packet) {
+void ServerNetwork::handle_packet(bmp::Packet&& packet) {
     // handle ping immediately
     if (m_state > bmp::State::Identification && packet.purpose == bmp::Purpose::Ping) {
         tcp_write(bmp::Packet {
@@ -83,6 +83,8 @@ void ServerNetwork::handle_packet(const bmp::Packet& packet) {
     case bmp::State::Leaving:
         break;
     }
+
+    launcher.client_network->handle_server_packet(std::move(packet));
 }
 
 void ServerNetwork::handle_mod_download(const bmp::Packet& packet) {
@@ -263,7 +265,7 @@ void ServerNetwork::tcp_write(bmp::Packet&& packet, std::function<void(boost::sy
     };
     boost::asio::async_write(m_tcp_socket, buffers,
         [this, header_data, owned_packet, handler](auto ec, auto size) {
-            spdlog::debug("Wrote {} bytes for 0x{:x} to server", size, int(owned_packet->purpose));
+            spdlog::trace("Wrote {} bytes for 0x{:x} to server", size, int(owned_packet->purpose));
             if (handler) {
                 handler(ec);
             } else {
@@ -271,7 +273,7 @@ void ServerNetwork::tcp_write(bmp::Packet&& packet, std::function<void(boost::sy
                     spdlog::error("Failed to send packet of type 0x{:x} to server", int(owned_packet->purpose));
                 } else {
                     // ok!
-                    spdlog::debug("Sent packet of type 0x{:x} to server", int(owned_packet->purpose));
+                    spdlog::trace("Sent packet of type 0x{:x} to server", int(owned_packet->purpose));
                 }
             }
         });
@@ -303,7 +305,7 @@ void ServerNetwork::udp_write(bmp::Packet& packet) {
         if (ec) {
             spdlog::error("Failed to UDP write to server: {}", ec.message());
         } else {
-            spdlog::info("Wrote {} bytes to server via UDP", size);
+            spdlog::trace("Wrote {} bytes to server via UDP", size);
         }
     });
 }
@@ -340,7 +342,7 @@ void ServerNetwork::handle_playing(const bmp::Packet& packet) {
 void ServerNetwork::start_tcp_read() {
     tcp_read([this](auto&& packet) {
         spdlog::debug("Got packet 0x{:x} from server", int(packet.purpose));
-        handle_packet(packet);
+        handle_packet(std::move(packet));
         start_tcp_read();
     });
 }
@@ -348,7 +350,7 @@ void ServerNetwork::start_tcp_read() {
 void ServerNetwork::start_udp_read() {
     udp_read([this](auto&& ep, auto&& packet) {
         spdlog::debug("Got packet 0x{:x} from server via UDP", int(packet.purpose));
-        handle_packet(packet);
+        handle_packet(std::move(packet));
         start_udp_read();
     });
 }

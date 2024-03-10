@@ -48,6 +48,11 @@ private:
     void start_login();
     void start_quick_join();
     void start_browsing();
+    void start_server_identification();
+    void start_server_authentication();
+    void start_server_mod_download();
+    void start_server_session_setup();
+    void start_server_playing();
 
     Result<std::vector<uint8_t>, std::string> load_server_list() noexcept;
 

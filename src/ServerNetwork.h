@@ -32,7 +32,7 @@ private:
     /// Sends a packet to the specified UDP endpoint via the UDP socket.
     void udp_write(bmp::Packet& packet);
 
-    void handle_packet(const bmp::Packet& packet);
+    void handle_packet(bmp::Packet&& packet);
     void handle_identification(const bmp::Packet& packet);
     void handle_authentication(const bmp::Packet& packet);
     void handle_mod_download(const bmp::Packet& packet);

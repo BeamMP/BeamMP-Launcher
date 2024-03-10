@@ -4,6 +4,8 @@
 #include "Http.h"
 #include "Identity.h"
 #include "Launcher.h"
+#include "Transport.h"
+#include "Util.h"
 
 #include <boost/asio/socket_base.hpp>
 #include <nlohmann/json.hpp>
@@ -297,6 +299,7 @@ void ClientNetwork::handle_browsing(bmp::ClientPacket& packet) {
                 });
             } else {
                 spdlog::info("Connected to server!");
+                start_server_identification();
             }
         } catch (const std::exception& e) {
             spdlog::error("Failed to read json for purpose 0x{:x}: {}", uint16_t(packet.purpose), e.what());
@@ -370,7 +373,7 @@ void ClientNetwork::client_tcp_read(std::function<void(bmp::ClientPacket&&)> han
                 m_tmp_packet.raw_data.resize(hdr.data_size);
                 m_tmp_packet.purpose = hdr.purpose;
                 m_tmp_packet.flags = hdr.flags;
-                spdlog::debug("Got header: purpose: 0x{:x}, flags: 0x{:x}, pid: {}, vid: {}, size: {}",
+                spdlog::trace("Got header: purpose: 0x{:x}, flags: 0x{:x}, pid: {}, vid: {}, size: {}",
                     uint16_t(m_tmp_packet.purpose),
                     uint8_t(m_tmp_packet.flags),
                     m_tmp_packet.pid, m_tmp_packet.vid,
@@ -401,7 +404,7 @@ void ClientNetwork::client_tcp_write(bmp::ClientPacket&& packet, std::function<v
     };
     boost::asio::async_write(m_game_socket, buffers,
         [this, header_data, owned_packet, handler](auto ec, auto size) {
-            spdlog::debug("Wrote {} bytes for 0x{:x}", size, int(owned_packet->purpose));
+            spdlog::trace("Wrote {} bytes for 0x{:x}", size, int(owned_packet->purpose));
             if (handler) {
                 handler(ec);
             } else {
@@ -453,27 +456,80 @@ Result<std::vector<uint8_t>, std::string> ClientNetwork::load_server_list() noex
 }
 void ClientNetwork::handle_server_packet(bmp::Packet&& packet) {
     post(m_io, [packet, this] {
-        spdlog::info("HELLO WORLD: {}", m_listen_port);
         switch (packet.purpose) {
-        case bmp::Invalid:
-            break;
-        case bmp::ProtocolVersion:
-        case bmp::ProtocolVersionOk:
         case bmp::ProtocolVersionBad:
+            client_tcp_write(bmp::ClientPacket {
+                .purpose = bmp::ClientPurpose::ConnectError,
+                .raw_data = json_to_vec({ "message", "Server is outdated or too new - protocol is incompatible. Please try a different server and make sure your Launcher and Mod are up-to-date." }),
+            });
+            start_browsing();
+            break;
+        case bmp::ProtocolVersionOk:
+            start_server_authentication();
+            break;
+        case bmp::AuthOk:
+            uint32_t player_id;
+            bmp::deserialize(player_id, packet.get_readable_data());
+            client_tcp_write(bmp::ClientPacket {
+                .purpose = bmp::ClientPurpose::AuthenticationOk,
+                .raw_data = json_to_vec({ "pid", player_id }),
+            });
+            start_server_mod_download();
+            break;
+        case bmp::AuthFailed:
+            client_tcp_write(bmp::ClientPacket {
+                .purpose = bmp::ClientPurpose::AuthenticationError,
+                .raw_data = json_to_vec(
+                    { "message",
+                        std::string(
+                            packet.get_readable_data().begin(),
+                            packet.get_readable_data().end()) }),
+            });
+            start_browsing();
+            break;
+        case bmp::PlayerRejected:
+            client_tcp_write(bmp::ClientPacket {
+                .purpose = bmp::ClientPurpose::PlayerRejected,
+                .raw_data = json_to_vec(
+                    { "message",
+                        std::string(
+                            packet.get_readable_data().begin(),
+                            packet.get_readable_data().end()) }),
+            });
+            start_browsing();
+            break;
+        case bmp::ModsInfo:
+            client_tcp_write(bmp::ClientPacket {
+                .purpose = bmp::ClientPurpose::ModSyncStatus,
+                .raw_data = json_to_vec(json::array()), // TODO: send more here i guess
+            });
+            spdlog::debug("Mod stuff not implemented, skipping to session setup");
+            break;
+        case bmp::MapInfo: {
+            auto data = packet.get_readable_data();
+            auto map = std::string(data.begin(), data.end());
+                spdlog::debug("Map: '{}'", map);
+            client_tcp_write(bmp::ClientPacket {
+                .purpose = bmp::ClientPurpose::MapInfo,
+                .raw_data = json_to_vec({ "map", map }),
+            });
+            start_server_session_setup();
+        } break;
+        case bmp::PlayersVehiclesInfo:
+            client_tcp_write(bmp::ClientPacket {
+                .purpose = bmp::ClientPurpose::PlayersAndVehiclesInfo,
+                .raw_data = packet.get_readable_data(),
+            });
+            start_server_playing();
+            break;
         case bmp::ClientInfo:
         case bmp::ServerInfo:
         case bmp::PlayerPublicKey:
-        case bmp::AuthOk:
-        case bmp::AuthFailed:
-        case bmp::PlayerRejected:
         case bmp::StartUDP:
-        case bmp::ModsInfo:
-        case bmp::MapInfo:
         case bmp::ModRequest:
         case bmp::ModResponse:
         case bmp::ModRequestInvalid:
         case bmp::ModsSyncDone:
-        case bmp::PlayersVehiclesInfo:
         case bmp::SessionReady:
         case bmp::Ping:
         case bmp::VehicleSpawn:
@@ -502,6 +558,9 @@ void ClientNetwork::handle_server_packet(bmp::Packet&& packet) {
         case bmp::StateChangePlaying:
         case bmp::StateChangeLeaving:
             break;
+        case bmp::Invalid:
+        case bmp::ProtocolVersion:
+            break;
         }
     });
 }
@@ -520,4 +579,38 @@ void ClientNetwork::handle_accept(boost::system::error_code ec) {
         handle_connection();
     }
     // TODO: We should probably accept() again somewhere once the game disconnected
+}
+void ClientNetwork::start_server_identification() {
+    client_tcp_write(bmp::ClientPacket {
+        .purpose = bmp::ClientPurpose::StateChangeServerIdentification,
+    });
+    m_client_state = bmp::ClientState::ServerIdentification;
+}
+
+void ClientNetwork::start_server_authentication() {
+    client_tcp_write(bmp::ClientPacket {
+        .purpose = bmp::ClientPurpose::StateChangeServerAuthentication,
+    });
+    m_client_state = bmp::ClientState::ServerAuthentication;
+}
+
+void ClientNetwork::start_server_mod_download() {
+    client_tcp_write(bmp::ClientPacket {
+        .purpose = bmp::ClientPurpose::StateChangeServerModDownload,
+    });
+    m_client_state = bmp::ClientState::ServerModDownload;
+}
+
+void ClientNetwork::start_server_session_setup() {
+    client_tcp_write(bmp::ClientPacket {
+        .purpose = bmp::ClientPurpose::StateChangeServerSessionSetup,
+    });
+    m_client_state = bmp::ClientState::ServerSessionSetup;
+}
+
+void ClientNetwork::start_server_playing() {
+    client_tcp_write(bmp::ClientPacket {
+        .purpose = bmp::ClientPurpose::StateChangeServerPlaying,
+    });
+    m_client_state = bmp::ClientState::ServerPlaying;
 }
