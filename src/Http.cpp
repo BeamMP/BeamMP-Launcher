@@ -13,10 +13,16 @@ std::string HTTP::Get(const std::string &IP) {
 
     auto pos = IP.find('/',10);
 
+
     httplib::Client cli(IP.substr(0, pos).c_str());
     cli.set_connection_timeout(std::chrono::seconds(10));
     cli.set_follow_location(true);
-    auto res = cli.Get(IP.substr(pos).c_str());
+    
+    httplib::Headers headers {
+        { "Accept-Encoding", "gzip" }
+    };
+
+    auto res = cli.Get(IP.substr(pos).c_str(), headers);
     std::string Ret;
 
     if(res){

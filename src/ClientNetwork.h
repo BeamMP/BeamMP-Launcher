@@ -47,7 +47,7 @@ private:
     void start_quick_join();
     void start_browsing();
 
-    Result<nlohmann::json, std::string> load_server_list() noexcept;
+    Result<std::vector<uint8_t>, std::string> load_server_list() noexcept;
 
     static std::vector<uint8_t> json_to_vec(const nlohmann::json& json);
     static nlohmann::json vec_to_json(const std::vector<uint8_t>& vec);

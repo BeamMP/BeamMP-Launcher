@@ -61,7 +61,7 @@ set(PRJ_INCLUDE_DIRS src)
 # set compile features (e.g. standard version)
 set(PRJ_COMPILE_FEATURES cxx_std_20)
 # set #defines (test enable/disable not included here)
-set(PRJ_DEFINITIONS CPPHTTPLIB_OPENSSL_SUPPORT)
+set(PRJ_DEFINITIONS CPPHTTPLIB_OPENSSL_SUPPORT CPPHTTPLIB_ZLIB_SUPPORT)
 # add all libraries used by the project (WARNING: also set them in vcpkg.json!)
 set(PRJ_LIBRARIES 
     fmt::fmt

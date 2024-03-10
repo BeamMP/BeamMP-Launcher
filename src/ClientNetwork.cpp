@@ -276,7 +276,7 @@ void ClientNetwork::handle_browsing(bmp::ClientPacket& packet) {
         if (list.has_value()) {
             bmp::ClientPacket response {
                 .purpose = bmp::ClientPurpose::ServerListResponse,
-                .raw_data = json_to_vec(list.value()),
+                .raw_data = list.value(),
             };
             client_tcp_write(response);
         } else {
@@ -385,12 +385,12 @@ void ClientNetwork::client_tcp_read(std::function<void(bmp::ClientPacket&&)> han
 void ClientNetwork::client_tcp_write(bmp::ClientPacket& packet) {
     auto header = packet.finalize();
     // serialize header
-    std::vector<uint8_t> data(bmp::ClientHeader::SERIALIZED_SIZE + packet.raw_data.size());
-    auto offset = header.serialize_to(data);
+    auto data = std::make_shared<std::vector<uint8_t>>(bmp::ClientHeader::SERIALIZED_SIZE + packet.raw_data.size());
+    auto offset = header.serialize_to(*data);
     // copy packet data (yes i know ugh) to the `data` in order to send it in one go
-    std::copy(packet.raw_data.begin(), packet.raw_data.end(), data.begin() + long(offset));
-    boost::asio::async_write(m_game_socket, buffer(data),
-        [this, packet](auto ec, auto) {
+    std::copy(packet.raw_data.begin(), packet.raw_data.end(), data->begin() + long(offset));
+    boost::asio::async_write(m_game_socket, buffer(*data),
+        [this, packet, data](auto ec, auto) {
             if (ec) {
                 spdlog::error("Failed to write a packet: {}", ec.message());
                 disconnect("Failed to send data to game");
@@ -428,14 +428,13 @@ void ClientNetwork::start_browsing() {
     m_client_state = bmp::ClientState::Browsing;
 }
 
-Result<nlohmann::json, std::string> ClientNetwork::load_server_list() noexcept {
+Result<std::vector<uint8_t>, std::string> ClientNetwork::load_server_list() noexcept {
     try {
-        auto list = HTTP::Get("https://backend.beammp.com/servers-info");
+        auto list = HTTP::Get("https://backend.beammp.com/servers-info/");
         if (list == "-1") {
             return outcome::failure("Failed to fetch server list, see launcher log for more information.");
         }
-        json result = json::parse(list);
-        return outcome::success(result);
+        return outcome::success(std::vector<uint8_t>(list.begin(), list.end()));
     } catch (const std::exception& e) {
         return outcome::failure(fmt::format("Failed to fetch server list from backend: {}", e.what()));
     }
