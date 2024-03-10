@@ -73,18 +73,6 @@ void ClientNetwork::handle_connection() {
             }) });
 
     start_read();
-
-    // packet read and respond loop
-    /*
-    try {
-        auto packet = client_tcp_read();
-        handle_packet(packet);
-    } catch (const std::exception& e) {
-        spdlog::error("Unhandled exception in connection handler, connection closing.");
-        spdlog::debug("Exception: {}", e.what());
-        m_game_socket.close();
-        break;
-    }*/
 }
 
 void ClientNetwork::handle_packet(bmp::ClientPacket& packet) {
@@ -300,6 +288,16 @@ void ClientNetwork::handle_browsing(bmp::ClientPacket& packet) {
             std::string host = details.at("host");
             uint16_t port = details.at("port");
             spdlog::info("Game requesting to connect to server [{}]:{}", host, port);
+            auto connect_result = launcher.start_server_network(host, port);
+            if (connect_result.has_error()) {
+                spdlog::error("Failed to connect to server: {}", connect_result.error());
+                client_tcp_write(bmp::ClientPacket {
+                    .purpose = bmp::ClientPurpose::ConnectError,
+                    .raw_data = json_to_vec({ "message", connect_result.error() }),
+                });
+            } else {
+                spdlog::info("Connected to server!");
+            }
         } catch (const std::exception& e) {
             spdlog::error("Failed to read json for purpose 0x{:x}: {}", uint16_t(packet.purpose), e.what());
             disconnect(fmt::format("Invalid json in purpose 0x{:x}, see launcher logs for more info", uint16_t(packet.purpose)));

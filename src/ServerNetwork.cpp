@@ -1,5 +1,6 @@
 #include "ServerNetwork.h"
 #include "ClientInfo.h"
+#include "ClientNetwork.h"
 #include "ClientPacket.h"
 #include "ClientTransport.h"
 #include "Identity.h"
@@ -9,7 +10,6 @@
 #include "ProtocolVersion.h"
 #include "ServerInfo.h"
 #include "Transport.h"
-#include "ClientNetwork.h"
 #include "Util.h"
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
@@ -23,7 +23,6 @@ ServerNetwork::ServerNetwork(Launcher& launcher, const ip::tcp::endpoint& ep)
     if (ec) {
         throw std::runtime_error(ec.message());
     }
-    launcher.client_network->handle_server_packet(bmp::Packet {});
 }
 
 ServerNetwork::~ServerNetwork() {
@@ -47,21 +46,19 @@ void ServerNetwork::run() {
         },
     };
     version.serialize_to(version_packet.raw_data);
-    tcp_write(version_packet);
-    // main tcp recv loop
-    while (true) {
-        auto packet = tcp_read();
-        handle_packet(packet);
-    }
+    tcp_write(std::move(version_packet));
+
+    start_read();
+
+    m_io.run();
 }
 
 void ServerNetwork::handle_packet(const bmp::Packet& packet) {
     // handle ping immediately
     if (m_state > bmp::State::Identification && packet.purpose == bmp::Purpose::Ping) {
-        bmp::Packet pong {
+        tcp_write(bmp::Packet {
             .purpose = bmp::Purpose::Ping,
-        };
-        tcp_write(pong);
+        });
         return;
     }
     switch (m_state) {
@@ -99,11 +96,10 @@ void ServerNetwork::handle_mod_download(const bmp::Packet& packet) {
         }
         // TODO: implement mod download
         // for now we just pretend we're all good!
-        bmp::Packet ok {
+        tcp_write(bmp::Packet {
             .purpose = bmp::Purpose::ModsSyncDone,
-        };
+        });
         spdlog::info("Done syncing mods");
-        tcp_write(ok);
         break;
     }
     case bmp::Purpose::MapInfo: {
@@ -178,23 +174,23 @@ void ServerNetwork::handle_identification(const bmp::Packet& packet) {
         };
         struct bmp::ClientInfo ci {
             .program_version = { .major = PRJ_VERSION_MAJOR, .minor = PRJ_VERSION_MINOR, .patch = PRJ_VERSION_PATCH },
-            .game_version = { 
-                    .major = launcher.game_version->major, 
-                    .minor = launcher.game_version->minor, 
-                    .patch = launcher.game_version->patch, 
-                },
-            .mod_version = { 
-                    .major = launcher.mod_version->major, 
-                    .minor = launcher.mod_version->minor, 
-                    .patch = launcher.mod_version->patch, 
-                },
+            .game_version = {
+                .major = launcher.game_version->major,
+                .minor = launcher.game_version->minor,
+                .patch = launcher.game_version->patch,
+            },
+            .mod_version = {
+                .major = launcher.mod_version->major,
+                .minor = launcher.mod_version->minor,
+                .patch = launcher.mod_version->patch,
+            },
             .implementation = bmp::ImplementationInfo {
                 .value = "Official BeamMP Launcher",
             },
         };
         auto sz = ci.serialize_to(ci_packet.raw_data);
         ci_packet.raw_data.resize(sz);
-        tcp_write(ci_packet);
+        tcp_write(std::move(ci_packet));
         break;
     }
     case bmp::Purpose::ProtocolVersionBad:
@@ -215,11 +211,9 @@ void ServerNetwork::handle_identification(const bmp::Packet& packet) {
         spdlog::debug("Starting authentication");
         m_state = bmp::State::Authentication;
         auto ident = launcher.identity.synchronize();
-        bmp::Packet pubkey_packet {
+        tcp_write(bmp::Packet {
             .purpose = bmp::Purpose::PlayerPublicKey,
-            .raw_data = std::vector<uint8_t>(ident->PublicKey.begin(), ident->PublicKey.end())
-        };
-        tcp_write(pubkey_packet);
+            .raw_data = std::vector<uint8_t>(ident->PublicKey.begin(), ident->PublicKey.end()) });
         break;
     }
     default:
@@ -229,29 +223,58 @@ void ServerNetwork::handle_identification(const bmp::Packet& packet) {
     }
 }
 
-bmp::Packet ServerNetwork::tcp_read() {
-    bmp::Packet packet {};
-    std::vector<uint8_t> header_buffer(bmp::Header::SERIALIZED_SIZE);
-    read(m_tcp_socket, buffer(header_buffer));
-    bmp::Header hdr {};
-    hdr.deserialize_from(header_buffer);
-    // vector eaten up by now, recv again
-    packet.raw_data.resize(hdr.size);
-    read(m_tcp_socket, buffer(packet.raw_data));
-    packet.purpose = hdr.purpose;
-    packet.flags = hdr.flags;
-    return packet;
+void ServerNetwork::tcp_read(std::function<void(bmp::Packet&&)> handler) {
+    m_tmp_header_buffer.resize(bmp::Header::SERIALIZED_SIZE);
+    boost::asio::async_read(m_tcp_socket, buffer(m_tmp_header_buffer),
+        [this, handler](auto ec, auto) {
+            if (ec) {
+                spdlog::error("Failed to read from server: {}", ec.message());
+            } else {
+                bmp::Header hdr {};
+                hdr.deserialize_from(m_tmp_header_buffer);
+                // vector eaten up by now, recv again
+                m_tmp_packet.raw_data.resize(hdr.size);
+                m_tmp_packet.purpose = hdr.purpose;
+                m_tmp_packet.flags = hdr.flags;
+                boost::asio::async_read(m_tcp_socket, buffer(m_tmp_packet.raw_data),
+                    [handler, this](auto ec, auto) {
+                        if (ec) {
+                            spdlog::error("Failed to read from server: {}", ec.message());
+                        } else {
+                            // ok!
+                            handler(std::move(m_tmp_packet));
+                        }
+                    });
+            }
+        });
 }
 
-void ServerNetwork::tcp_write(bmp::Packet& packet) {
+void ServerNetwork::tcp_write(bmp::Packet&& packet, std::function<void(boost::system::error_code)> handler) {
     // finalize the packet (compress etc) and produce header
     auto header = packet.finalize();
+
+    auto owned_packet = std::make_shared<bmp::Packet>(std::move(packet));
     // serialize header
-    std::vector<uint8_t> header_data(bmp::Header::SERIALIZED_SIZE);
-    header.serialize_to(header_data);
-    // write header and packet data
-    write(m_tcp_socket, buffer(header_data));
-    write(m_tcp_socket, buffer(packet.raw_data));
+    auto header_data = std::make_shared<std::vector<uint8_t>>(bmp::Header::SERIALIZED_SIZE);
+    header.serialize_to(*header_data);
+    std::array<const_buffer, 2> buffers = {
+        buffer(*header_data),
+        buffer(owned_packet->raw_data)
+    };
+    boost::asio::async_write(m_tcp_socket, buffers,
+        [this, header_data, owned_packet, handler](auto ec, auto size) {
+            spdlog::debug("Wrote {} bytes for 0x{:x} to server", size, int(owned_packet->purpose));
+            if (handler) {
+                handler(ec);
+            } else {
+                if (ec) {
+                    spdlog::error("Failed to send packet of type 0x{:x} to server", int(owned_packet->purpose));
+                } else {
+                    // ok!
+                    spdlog::debug("Sent packet of type 0x{:x} to server", int(owned_packet->purpose));
+                }
+            }
+        });
 }
 
 bmp::Packet ServerNetwork::udp_read(ip::udp::endpoint& out_ep) {
@@ -268,20 +291,25 @@ bmp::Packet ServerNetwork::udp_read(ip::udp::endpoint& out_ep) {
 
 void ServerNetwork::udp_write(bmp::Packet& packet) {
     auto header = packet.finalize();
-    std::vector<uint8_t> data(header.size + bmp::Header::SERIALIZED_SIZE);
-    auto offset = header.serialize_to(data);
-    std::copy(packet.raw_data.begin(), packet.raw_data.end(), data.begin() + static_cast<long>(offset));
-    m_udp_socket.send_to(buffer(data), m_udp_ep, {});
+    auto data = std::make_shared<std::vector<uint8_t>>(header.size + bmp::Header::SERIALIZED_SIZE);
+    auto offset = header.serialize_to(*data);
+    std::copy(packet.raw_data.begin(), packet.raw_data.end(), data->begin() + static_cast<long>(offset));
+    m_udp_socket.async_send_to(buffer(*data), m_udp_ep, [data](auto ec, auto size) {
+        if (ec) {
+            spdlog::error("Failed to UDP write to server: {}", ec.message());
+        } else {
+            spdlog::info("Wrote {} bytes to server via UDP", size);
+        }
+    });
 }
 void ServerNetwork::handle_session_setup(const bmp::Packet& packet) {
     switch (packet.purpose) {
     case bmp::Purpose::PlayersVehiclesInfo: {
         spdlog::debug("Players and vehicles info: {} bytes ({} bytes on arrival)", packet.get_readable_data().size(), packet.raw_data.size());
         // TODO: Send to game
-        bmp::Packet ready {
+        tcp_write(bmp::Packet {
             .purpose = bmp::Purpose::SessionReady,
-        };
-        tcp_write(ready);
+        });
         break;
     }
     case bmp::Purpose::StateChangePlaying: {
@@ -302,4 +330,12 @@ void ServerNetwork::handle_playing(const bmp::Packet& packet) {
         // todo: disconnect gracefully
         break;
     }
+}
+
+void ServerNetwork::start_read() {
+    tcp_read([this](auto&& packet) {
+        spdlog::debug("Got packet 0x{:x} from server", int(packet.purpose));
+        handle_packet(packet);
+        start_read();
+    });
 }
