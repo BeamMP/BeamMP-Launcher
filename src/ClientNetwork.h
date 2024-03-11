@@ -8,6 +8,7 @@
 #include "Version.h"
 
 #include <boost/asio.hpp>
+#include <deque>
 #include <nlohmann/json.hpp>
 
 using namespace boost::asio;
@@ -31,6 +32,13 @@ private:
     void handle_connection();
     void client_tcp_read(std::function<void(bmp::ClientPacket&&)> handler);
     void client_tcp_write(bmp::ClientPacket&& packet, std::function<void(boost::system::error_code)> handler = nullptr);
+
+    struct OutPacket {
+        bmp::ClientPacket packet;
+        std::function<void(boost::system::error_code)> handler;
+    };
+    std::deque<OutPacket> m_outbox {};
+    void client_tcp_write_impl();
 
     void handle_packet(bmp::ClientPacket& packet);
     void handle_client_identification(bmp::ClientPacket& packet);
@@ -68,7 +76,8 @@ private:
     bmp::ClientState m_client_state;
 
     ip::tcp::acceptor m_acceptor { m_io };
-    boost::asio::strand<ip::tcp::socket::executor_type> m_strand { m_game_socket.get_executor() };
+    boost::asio::io_context::strand m_read_strand { m_io };
+    boost::asio::io_context::strand m_write_strand { m_io };
 
     // temporary packet and header buffer for async reads
     bmp::ClientPacket m_tmp_packet {};
