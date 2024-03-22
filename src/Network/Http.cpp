@@ -29,15 +29,17 @@ std::string HTTP::Get(const std::string &IP) {
     std::string Ret;
 
     if(res){
-        if(res->status == 200){
+        if (res->status == 200) {
             Ret = res->body;
-        }else error(res->reason);
-
+        }
+        else {
+            error("Failed to GET '" + IP + "': " + res->reason + ", ssl verify = " + std::to_string(cli.get_openssl_verify_result()));
+        }
     }else{
         if(isDownload) {
             std::cout << "\n";
         }
-        error("HTTP Get failed on " + to_string(res.error()));
+        error("HTTP Get failed on " + to_string(res.error()) + ", ssl verify = " + std::to_string(cli.get_openssl_verify_result()));
     }
 
     return Ret;
@@ -62,7 +64,7 @@ std::string HTTP::Post(const std::string& IP, const std::string& Fields) {
             }
             Ret = res->body;
         }else{
-            error("HTTP Post failed on " + to_string(res.error()));
+            error("HTTP Post failed on " + to_string(res.error()) + ", ssl verify = " + std::to_string(cli.get_openssl_verify_result()));
         }
     }else{
         httplib::Result res = cli.Post(IP.substr(pos).c_str());
@@ -72,7 +74,7 @@ std::string HTTP::Post(const std::string& IP, const std::string& Fields) {
             }
             Ret = res->body;
         }else{
-            error("HTTP Post failed on " + to_string(res.error()));
+            error("HTTP Post failed on " + to_string(res.error()) + ", ssl verify = " + std::to_string(cli.get_openssl_verify_result()));
         }
     }
 
