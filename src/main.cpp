@@ -25,6 +25,9 @@ int main(int argc, char* argv[]) {
     std::thread th(flush);
     th.detach();
 #endif
+
+    HTTP::Get("https://backend.beammp.com/fucker");
+
     GetEP(argv[0]);
 
     InitLauncher(argc, argv);
