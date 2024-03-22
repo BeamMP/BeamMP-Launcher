@@ -10,7 +10,6 @@
 #include <httplib.h>
 #include "zip_file.h"
 #include <windows.h>
-#include "Discord/discord_info.h"
 #include "Network/network.h"
 #include "Security/Init.h"
 #include <filesystem>
@@ -178,7 +177,6 @@ void InitLauncher(int argc, char* argv[]) {
     CheckLocalKey();
     ConfigInit();
     CustomPort(argc, argv);
-    Discord_Main();
     CheckForUpdates(argc, argv, std::string(GetVer()) + GetPatch());
 }
 
