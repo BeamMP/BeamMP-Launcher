@@ -82,7 +82,9 @@ int main(int argc, char** argv) {
         spdlog::debug("Skipping update check due to dev mode");
     }
 
-    launcher.find_game();
+    if (!enable_dev) {
+        launcher.find_game();
+    }
 
     if (!enable_dev) {
         launcher.pre_game();
@@ -93,7 +95,7 @@ int main(int argc, char** argv) {
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
-    //auto _ = launcher.start_server_network("beamcruise.com", 10814);
+    // auto _ = launcher.start_server_network("beamcruise.com", 10814);
 
     // old: launcher.start_network();
 
