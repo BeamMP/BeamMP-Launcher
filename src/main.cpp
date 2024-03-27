@@ -84,11 +84,15 @@ int main(int argc, char** argv) {
 
     if (!enable_dev) {
         launcher.find_game();
+    } else {
+        spdlog::debug("Skipping game finding due to dev mode");
     }
 
     if (!enable_dev) {
         launcher.pre_game();
         launcher.start_game();
+    } else {
+        spdlog::debug("Not launching the game due to dev mode");
     }
 
     while (true) {
