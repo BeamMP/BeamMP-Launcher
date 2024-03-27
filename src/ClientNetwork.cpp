@@ -267,19 +267,21 @@ void ClientNetwork::handle_quick_join(bmp::ClientPacket& packet) {
 void ClientNetwork::handle_browsing(bmp::ClientPacket& packet) {
     switch (packet.purpose) {
     case bmp::ClientPurpose::ServerListRequest: {
-        auto list = load_server_list();
-        if (list.has_value()) {
-            client_tcp_write(bmp::ClientPacket {
-                .purpose = bmp::ClientPurpose::ServerListResponse,
-                .raw_data = list.value(),
-            });
-        } else {
-            spdlog::error("Failed to load server list: {}", list.error());
-            client_tcp_write(bmp::ClientPacket {
-                .purpose = bmp::ClientPurpose::Error,
-                .raw_data = json_to_vec({ "message", list.error() }),
-            });
-        }
+        post(m_io, [&, this] {
+            auto list = load_server_list();
+            if (list.has_value()) {
+                client_tcp_write(bmp::ClientPacket {
+                    .purpose = bmp::ClientPurpose::ServerListResponse,
+                    .raw_data = list.value(),
+                });
+            } else {
+                spdlog::error("Failed to load server list: {}", list.error());
+                client_tcp_write(bmp::ClientPacket {
+                    .purpose = bmp::ClientPurpose::Error,
+                    .raw_data = json_to_vec({ "message", list.error() }),
+                });
+            }
+        });
     } break;
     case bmp::ClientPurpose::Logout: {
         spdlog::error("Logout is not yet implemented");
