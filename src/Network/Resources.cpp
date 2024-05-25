@@ -107,13 +107,13 @@ void UpdateUl(bool D,const std::string& msg){
     else UlStatus = "UlLoading Resource " + msg;
 }
 
-void AsyncUpdate(uint64_t& Rcv,uint64_t Size,const std::string& Name){
+void AsyncUpdate(uint64_t& Rcv, bool& DownloadDone, uint64_t Size,const std::string& Name){
     do {
         double pr = double(Rcv) / double(Size) * 100;
         std::string Per = std::to_string(trunc(pr * 10) / 10);
         UpdateUl(true, Name + " (" + Per.substr(0, Per.find('.') + 2) + "%)");
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    }while(!Terminate && Rcv < Size);
+    }while(!Terminate && Rcv < Size && !DownloadDone);
 }
 
 char* TCPRcvRaw(SOCKET Sock,uint64_t& GRcv, uint64_t Size){
@@ -175,7 +175,9 @@ std::string MultiDownload(SOCKET MSock,SOCKET DSock, uint64_t Size, const std::s
 
     uint64_t GRcv = 0, MSize = Size/2, DSize = Size - MSize;
 
-    std::thread Au(AsyncUpdate,std::ref(GRcv), Size, Name);
+    bool DownloadDone = false;
+
+    std::thread Au(AsyncUpdate,std::ref(GRcv), std::ref(DownloadDone), Size, Name);
 
     std::packaged_task<char*()> task([&] { return TCPRcvRaw(MSock,GRcv,MSize); });
     std::future<char*> f1 = task.get_future();
@@ -196,6 +198,8 @@ std::string MultiDownload(SOCKET MSock,SOCKET DSock, uint64_t Size, const std::s
         MultiKill(MSock,DSock);
         return "";
     }
+
+    DownloadDone = true;
 
     if(Au.joinable())Au.join();
 
