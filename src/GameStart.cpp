@@ -15,6 +15,7 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <spawn.h>
 #endif
 
 #include <Security/Init.h>
@@ -88,19 +89,21 @@ void StartGame(std::string Dir){
     exit(2);
 }
 #elif defined(__linux__)
-void StartGame(std::string Dir){
+void StartGame(std::string Dir) {
     int status;
-    pid_t pid = fork();
-    if (pid >= 0){
-        if (pid == 0){
-            execl((Dir + "/BinLinux/BeamNG.drive.x64").c_str(), "", NULL);
-        } else if (pid > 0){
-            waitpid(pid, &status, 0);
-            error("Game Closed! launcher closing soon");
-        }
-    } else {
+    std::string filename = (Dir + "/BinLinux/BeamNG.drive.x64");
+    char *argv[] = {filename.data(), NULL};
+    pid_t pid;
+    int result = posix_spawn(&pid, filename.c_str(), NULL, NULL, argv, environ);
+
+    if (result != 0) {
         error("Failed to Launch the game! launcher closing soon");
+        return;
+    } else {
+        waitpid(pid, &status, 0);
+        error("Game Closed! launcher closing soon");
     }
+
     std::this_thread::sleep_for(std::chrono::seconds(5));
     exit(2);
 }
