@@ -15,7 +15,8 @@ extern int ping;
 
 extern bool ModWarningConfirmed;
 
-extern int LSocket,CSocket;
+#include <windows.h>
+extern SOCKET LSocket,CSocket;
 
 [[noreturn]] void CoreNetwork();
 extern int ProxyPort;
