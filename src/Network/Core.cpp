@@ -218,10 +218,12 @@ void localRes(){
     }
     ConfList = new std::set<std::string>;
 }
+
+SOCKET LSocket,CSocket;
+
 void CoreMain() {
     debug("Core Network on start!");
     WSADATA wsaData;
-    SOCKET LSocket,CSocket;
     struct addrinfo *res = nullptr;
     struct addrinfo hints{};
     int iRes = WSAStartup(514, &wsaData); //2.2
