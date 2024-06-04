@@ -224,6 +224,7 @@ void SyncResources(SOCKET Sock){
     if(Ret.empty())return;
 
     ModWarningConfirmed = false;
+    Terminate = false;
 
     std::string Data = "WMODS_FOUND";
     send(TheClientSocket, (Data + "\n").c_str(), int(Data.size())+1, 0);
