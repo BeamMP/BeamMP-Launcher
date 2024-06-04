@@ -21,7 +21,7 @@
 #include <future>
 #include <cmath>
 
-extern SOCKET LSocket,CSocket;
+extern SOCKET TheClientSocket;
 
 namespace fs = std::filesystem;
 std::string ListOfMods;
@@ -226,7 +226,7 @@ void SyncResources(SOCKET Sock){
     ModWarningConfirmed = false;
 
     std::string Data = "WMODS_FOUND";
-    send(CSocket, (Data + "\n").c_str(), int(Data.size())+1, 0);
+    send(TheClientSocket, (Data + "\n").c_str(), int(Data.size())+1, 0);
     
     while (!Terminate && !ModWarningConfirmed) {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));

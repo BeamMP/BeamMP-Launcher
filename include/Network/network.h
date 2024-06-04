@@ -15,7 +15,6 @@ extern int ping;
 
 extern bool ModWarningConfirmed;
 
-
 [[noreturn]] void CoreNetwork();
 extern int ProxyPort;
 extern int ClientID;

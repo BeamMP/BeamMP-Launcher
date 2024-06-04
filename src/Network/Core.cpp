@@ -219,11 +219,13 @@ void localRes(){
     ConfList = new std::set<std::string>;
 }
 
-SOCKET LSocket,CSocket;
+
+uint64_t TheClientSocket;
 
 void CoreMain() {
     debug("Core Network on start!");
     WSADATA wsaData;
+    SOCKET LSocket,CSocket;
     struct addrinfo *res = nullptr;
     struct addrinfo hints{};
     int iRes = WSAStartup(514, &wsaData); //2.2
@@ -268,6 +270,7 @@ void CoreMain() {
             error("(Core) accept failed with error: " + std::to_string(WSAGetLastError()));
             continue;
         }
+        TheClientSocket = CSocket;
         localRes();
         info("Game Connected!");
         GameHandler(CSocket);
