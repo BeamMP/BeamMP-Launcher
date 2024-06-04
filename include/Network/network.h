@@ -13,6 +13,8 @@ void NetReset();
 extern bool Dev;
 extern int ping;
 
+extern bool ModWarningConfirmed;
+
 [[noreturn]] void CoreNetwork();
 extern int ProxyPort;
 extern int ClientID;
@@ -45,4 +47,5 @@ void TCPSend(const std::string&Data,uint64_t Sock);
 void TCPClientMain(const std::string& IP,int Port);
 void UDPClientMain(const std::string& IP,int Port);
 void TCPGameServer(const std::string& IP, int Port);
+
 

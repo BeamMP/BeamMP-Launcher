@@ -58,6 +58,8 @@ bool IsAllowedLink(const std::string& Link) {
     return std::regex_search(Link,link_match, link_pattern) && link_match.position() == 0;
 }
 
+bool ModWarningConfirmed = false;
+
 void Parse(std::string Data,SOCKET CSocket){
     char Code = Data.at(0), SubCode = 0;
     if(Data.length() > 1)SubCode = Data.at(1);
@@ -87,6 +89,17 @@ void Parse(std::string Data,SOCKET CSocket){
             }
             Data.clear();
             break;
+        // response to "WMODS_FOUND" message, either Y (yes ok) or N (no)
+        case 'W': {
+            if (SubCode == 'Y') {
+                ModWarningConfirmed = true;
+            } else if (SubCode == 'N') {
+                ModWarningConfirmed = false;
+                NetReset();
+                Terminate = true;
+                TCPTerminate = true;
+            }
+        }
         case 'P':
             Data = Code + std::to_string(ProxyPort);
             break;

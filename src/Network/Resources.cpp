@@ -221,6 +221,21 @@ void SyncResources(SOCKET Sock){
     std::string Ret = Auth(Sock);
     if(Ret.empty())return;
 
+    ModWarningConfirmed = false;
+
+    GameSend("WMODS_FOUND");
+    
+    while (!Terminate && !ModWarningConfirmed) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+
+    if (!ModWarningConfirmed) {
+        UlStatus = "UlMods rejected!";
+        info("Mods rejected by user!");
+        // game has already cancelled by now
+        return;
+    }
+
     info("Checking Resources...");
     CheckForDir();
 
