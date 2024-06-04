@@ -151,7 +151,7 @@ void Parse(std::string Data,SOCKET CSocket){
                 if (!UserRole.empty()) {
                     Auth["role"] = UserRole;
                 }
-                Data = Auth.dump();
+                Data = "N" + Auth.dump();
             }else{
                 Data = "N" + Login(Data.substr(Data.find(':') + 1));
             }
