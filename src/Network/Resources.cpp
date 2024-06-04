@@ -223,7 +223,8 @@ void SyncResources(SOCKET Sock){
 
     ModWarningConfirmed = false;
 
-    GameSend("WMODS_FOUND");
+    std::string Data = "WMODS_FOUND";
+    send(CSocket, (Data + "\n").c_str(), int(Data.size())+1, 0)
     
     while (!Terminate && !ModWarningConfirmed) {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
