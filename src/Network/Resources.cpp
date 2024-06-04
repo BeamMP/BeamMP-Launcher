@@ -236,7 +236,6 @@ void SyncResources(SOCKET Sock){
         UlStatus = "UlMods rejected!";
         info("Mods rejected by user!");
         // game has already cancelled by now
-        NetReset();
         return;
     }
 

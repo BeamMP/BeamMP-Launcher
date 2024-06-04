@@ -95,6 +95,7 @@ void Parse(std::string Data,SOCKET CSocket){
                 ModWarningConfirmed = true;
             } else if (SubCode == 'N') {
                 ModWarningConfirmed = false;
+                NetReset();
                 Terminate = true;
                 TCPTerminate = true;
             }
