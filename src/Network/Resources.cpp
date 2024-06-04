@@ -21,6 +21,8 @@
 #include <future>
 #include <cmath>
 
+extern SOCKET LSocket,CSocket;
+
 namespace fs = std::filesystem;
 std::string ListOfMods;
 std::vector<std::string> Split(const std::string& String,const std::string& delimiter){
