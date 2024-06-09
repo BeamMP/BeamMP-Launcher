@@ -270,36 +270,6 @@ bool IDCheck(std::string Man, std::string steam){
     return a;
 }
 void LegitimacyCheck(){
-
-    //std::string K1 = R"(Software\Valve\Steam)";
-    //std::string K2 = R"(Software\Valve\Steam\Apps\284160)";
-
-    /*LONG dwRegOPenKey = OpenKey(HKEY_CURRENT_USER, K1.c_str(), &hKey);
-
-    if(dwRegOPenKey == ERROR_SUCCESS) {
-        Result = QueryKey(hKey, 1);
-        if(Result.empty())Exit(1);
-
-        if(fs::exists(Result)){
-            if(!Find("284160.json",Result))Exit(2);
-            if(FindHack(Result))SteamExit(1);
-        }else Exit(3);
-
-        T = Result;
-        Result.clear();
-        TraceBack++;
-    }else Exit(4);
-
-    K1.clear();
-    RegCloseKey(hKey);
-    dwRegOPenKey = OpenKey(HKEY_CURRENT_USER, K2.c_str(), &hKey);
-    if(dwRegOPenKey == ERROR_SUCCESS) {
-        Result = QueryKey(hKey, 2);
-        if(Result.empty())lowExit(1);
-        TraceBack++;
-    }else lowExit(2);
-    K2.clear();
-    RegCloseKey(hKey);*/
     #if defined(_WIN32)
     std::string Result;
     std::string K3 = R"(Software\BeamNG\BeamNG.drive)";
@@ -324,7 +294,7 @@ void LegitimacyCheck(){
     auto root = tyti::vdf::read(libraryFolders);
 
     for (auto folderInfo: root.childs){
-        if (std::filesystem::exists(folderInfo.second->attribs["path"] + "/steamapps/common/BeamNG.drive/")){
+        if (std::filesystem::exists(folderInfo.second->attribs["path"] + "/steamapps/common/BeamNG.drive/integrity.json")){
             GameDir = folderInfo.second->attribs["path"] + "/steamapps/common/BeamNG.drive/";
             break;
         }
