@@ -247,6 +247,7 @@ void TCPGameServer(const std::string& IP, int Port){
                 // if(Temp < 1)break;
                 Rcv += Temp;
             }while(Rcv < Size && !TCPTerminate);
+            debug("(Game) Got data from buffer: " +  std::string(Ret));
             if(Temp < 1 || TCPTerminate)break;
 
             ServerSend(Ret,false);
