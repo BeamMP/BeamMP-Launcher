@@ -245,7 +245,7 @@ void TCPGameServer(const std::string& IP, int Port){
             do{
                 Temp = recv(CSocket,&Ret[Rcv],Size-Rcv,0);
                 // if(Temp < 1)break;
-                debug("(Game) Temp: " + std::string(Temp));
+                debug("(Game) Temp: " + Temp);
                 Rcv += Temp;
             }while(Rcv < Size && !TCPTerminate);
             debug("(Game) Got data from buffer: " +  std::string(Ret));
