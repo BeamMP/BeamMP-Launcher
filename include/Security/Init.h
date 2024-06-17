@@ -8,7 +8,7 @@
 #pragma once
 #include <string>
 void PreGame(const std::string& GamePath);
-std::string CheckVer(const std::string &path);
+std::string CheckVer(const std::string& path);
 void InitGame(const std::string& Dir);
 std::string GetGameDir();
 void LegitimacyCheck();

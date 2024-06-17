@@ -6,11 +6,11 @@
 /// Created by Anonymous275 on 7/17/2020
 ///
 
-#include "Startup.h"
 #include "Logger.h"
+#include "Startup.h"
+#include <chrono>
 #include <fstream>
 #include <sstream>
-#include <chrono>
 #include <thread>
 
 std::string getDate() {
@@ -24,24 +24,25 @@ std::string getDate() {
     std::string Min = (M > 9 ? std::to_string(M) : "0" + std::to_string(M));
     std::string Hour = (H > 9 ? std::to_string(H) : "0" + std::to_string(H));
     date
-            << "["
-            << local_tm.tm_mday << "/"
-            << local_tm.tm_mon + 1 << "/"
-            << local_tm.tm_year + 1900 << " "
-            << Hour << ":"
-            << Min << ":"
-            << Secs
-            << "] ";
+        << "["
+        << local_tm.tm_mday << "/"
+        << local_tm.tm_mon + 1 << "/"
+        << local_tm.tm_year + 1900 << " "
+        << Hour << ":"
+        << Min << ":"
+        << Secs
+        << "] ";
     return date.str();
 }
-void InitLog(){
+void InitLog() {
     std::ofstream LFS;
     LFS.open(GetEP() + "Launcher.log");
-    if(!LFS.is_open()){
+    if (!LFS.is_open()) {
         error("logger file init failed!");
-    }else LFS.close();
+    } else
+        LFS.close();
 }
-void addToLog(const std::string& Line){
+void addToLog(const std::string& Line) {
     std::ofstream LFS;
     LFS.open(GetEP() + "Launcher.log", std::ios_base::app);
     LFS << Line.c_str();
@@ -53,12 +54,13 @@ void info(const std::string& toPrint) {
     addToLog(Print);
 }
 void debug(const std::string& toPrint) {
-    if(!Dev)return;
+    if (!Dev)
+        return;
     std::string Print = getDate() + "[DEBUG] " + toPrint + "\n";
     std::cout << Print;
     addToLog(Print);
 }
-void warn(const std::string& toPrint){
+void warn(const std::string& toPrint) {
     std::string Print = getDate() + "[WARN] " + toPrint + "\n";
     std::cout << Print;
     addToLog(Print);

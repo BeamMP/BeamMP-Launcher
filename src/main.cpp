@@ -5,16 +5,16 @@
 ///
 /// Created by Anonymous275 on 7/16/2020
 ///
+#include "Http.h"
+#include "Logger.h"
 #include "Network/network.hpp"
 #include "Security/Init.h"
 #include "Startup.h"
 #include <iostream>
-#include "Logger.h"
 #include <thread>
-#include "Http.h"
 
-[[noreturn]] void flush(){
-    while(true){
+[[noreturn]] void flush() {
+    while (true) {
         std::cout.flush();
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
 
     try {
         LegitimacyCheck();
-    } catch (std::exception &e) {
+    } catch (std::exception& e) {
         fatal("Main 1 : " + std::string(e.what()));
     }
 
@@ -41,5 +41,5 @@ int main(int argc, char* argv[]) {
     InitGame(GetGameDir());
     CoreNetwork();
 
-    ///TODO: make sure to use argv[0] for everything that should be in the same dir (mod down ect...)
+    /// TODO: make sure to use argv[0] for everything that should be in the same dir (mod down ect...)
 }

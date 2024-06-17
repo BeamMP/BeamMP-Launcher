@@ -11,7 +11,7 @@
 #define closesocket close
 #define SD_BOTH SHUT_RDWR
 // We dont need wsacleanup
-#define WSACleanup() 
+#define WSACleanup()
 #define SOCKET_ERROR -1
 
 #define ZeroMemory(mem, len) memset(mem, 0, len)
