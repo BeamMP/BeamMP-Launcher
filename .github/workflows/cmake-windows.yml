@@ -20,7 +20,7 @@ jobs:
         with:
             vcpkgArguments: 'discord-rpc zlib nlohmann-json openssl cpp-httplib[openssl]'
             vcpkgDirectory: '${{ runner.workspace }}/b/vcpkg'
-            vcpkgGitCommitId: '16ee2ecb31788c336ace8bb14c21801efb6836e4'
+            vcpkgGitCommitId: '40616a5e954f7be1077ef37db3fbddbd5dcd1ca6'
             vcpkgTriplet: 'x64-windows-static'
 
       - name: Create Build Environment
