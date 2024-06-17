@@ -8,17 +8,20 @@
 #include "Http.h"
 #include "Network/network.hpp"
 #include "Security/Init.h"
+#include <cstdlib>
 #include <regex>
 #if defined(_WIN32)
 #include <winsock2.h>
 #include <ws2tcpip.h>
-
 #elif defined(__linux__)
 #include <cstring>
 #include <errno.h>
 #include <netdb.h>
+#include <spawn.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
 #endif
 
 #include "Logger.h"
@@ -96,7 +99,27 @@ void Parse(std::string Data, SOCKET CSocket) {
         break;
     case 'O': // open default browser with URL
         if (IsAllowedLink(Data.substr(1))) {
+#if defined(__linux)
+            if (char* browser = getenv("BROWSER"); browser != nullptr && !std::string_view(browser).empty()) {
+                pid_t pid;
+                auto arg = Data.substr(1);
+                char* argv[] = { browser, arg.data() };
+                auto status = posix_spawn(&pid, browser, nullptr, nullptr, argv, environ);
+                if (status == 0) {
+                    debug("Browser PID: " + std::to_string(pid));
+                    // we don't wait for it to exit, because we just don't care.
+                    // typically, you'd waitpid() here.
+                } else {
+                    error("Failed to open the following link in the browser (error follows below): " + arg);
+                    error(std::string("posix_spawn: ") + strerror(status));
+                }
+            } else {
+                error("Failed to open the following link in the browser because the $BROWSER environment variable is not set: " + Data.substr(1));
+            }
+#elif defined(WIN32)
             ShellExecuteA(nullptr, "open", Data.substr(1).c_str(), nullptr, nullptr, SW_SHOW); /// TODO: Look at when working on linux port
+#endif
+
             info("Opening Link \"" + Data.substr(1) + "\"");
         }
         Data.clear();
