@@ -6,13 +6,26 @@
 /// Created by Anonymous275 on 7/19/2020
 ///
 
-#include <Security/Init.h>
+
+#if defined(_WIN32)
 #include <windows.h>
+#elif defined(__linux__)
+#include "vdf_parser.hpp"
+#include <pwd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <spawn.h>
+#endif
+
+#include <Security/Init.h>
+#include <filesystem>
 #include "Startup.h"
 #include "Logger.h"
 #include <thread>
 
 unsigned long GamePID = 0;
+#if defined(_WIN32)
 std::string QueryKey(HKEY hKey,int ID);
 std::string GetGamePath(){
     static std::string Path;
@@ -40,7 +53,21 @@ std::string GetGamePath(){
     Path += Ver + "\\";
     return Path;
 }
+#elif defined(__linux__)
+std::string GetGamePath(){
+    // Right now only steam is supported
+    struct passwd *pw = getpwuid(getuid());
+    std::string homeDir = pw->pw_dir;
+    
+    std::string Path = homeDir + "/.local/share/BeamNG.drive/";
+    std::string Ver = CheckVer(GetGameDir());
+    Ver = Ver.substr(0,Ver.find('.',Ver.find('.')+1));
+    Path += Ver + "/";
+    return Path;
+}
+#endif
 
+#if defined(_WIN32)
 void StartGame(std::string Dir){
     BOOL bSuccess = FALSE;
     PROCESS_INFORMATION pi;
@@ -61,6 +88,45 @@ void StartGame(std::string Dir){
     std::this_thread::sleep_for(std::chrono::seconds(5));
     exit(2);
 }
+#elif defined(__linux__)
+void StartGame(std::string Dir) {
+    int status;
+    std::string filename = (Dir + "/BinLinux/BeamNG.drive.x64");
+    char *argv[] = {filename.data(), NULL};
+    pid_t pid;
+    int result = posix_spawn(&pid, filename.c_str(), NULL, NULL, argv, environ);
+
+    if (result != 0) {
+        error("Failed to Launch the game! launcher closing soon");
+        return;
+    } else {
+        waitpid(pid, &status, 0);
+        error("Game Closed! launcher closing soon");
+    }
+
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+    exit(2);
+}
+#endif
+void StartGame(std::string Dir) {
+    int status;
+    std::string filename = (Dir + "/BinLinux/BeamNG.drive.x64");
+    char *argv[] = {filename.data(), NULL};
+    pid_t pid;
+    int result = posix_spawn(&pid, filename.c_str(), NULL, NULL, argv, environ);
+
+    if (result != 0) {
+        error("Failed to Launch the game! launcher closing soon");
+        return;
+    } else {
+        waitpid(pid, &status, 0);
+        error("Game Closed! launcher closing soon");
+    }
+
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+    exit(2);
+}
+#endif
 
 void InitGame(const std::string& Dir){
     if(!Dev){

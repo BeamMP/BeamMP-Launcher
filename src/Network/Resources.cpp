@@ -6,8 +6,19 @@
 /// Created by Anonymous275 on 4/11/2020
 ///
 
-#include "Network/network.h"
+#include "Network/network.hpp"
+
+#if defined(_WIN32)
 #include <ws2tcpip.h>
+#elif defined(__linux__)
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <cstring>
+#include <errno.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#endif
+
 #include <filesystem>
 #include "Startup.h"
 #include "Logger.h"
@@ -38,7 +49,12 @@ std::vector<std::string> Split(const std::string& String,const std::string& deli
 
 void CheckForDir(){
     if(!fs::exists("Resources")){
+        // Could we just use fs::create_directory instead?
+        #if defined(_WIN32)
         _wmkdir(L"Resources");
+        #elif defined(__linux__)
+        fs::create_directory(L"Resources");
+        #endif
     }
 }
 void WaitForConfirm(){
@@ -202,10 +218,10 @@ std::string MultiDownload(SOCKET MSock,SOCKET DSock, uint64_t Size, const std::s
 
     ///omg yes very ugly my god but i was in a rush will revisit
     std::string Ret(Size,0);
-    memcpy_s(&Ret[0],MSize,MData,MSize);
+    memcpy(&Ret[0],MData,MSize);
     delete[]MData;
 
-    memcpy_s(&Ret[MSize],DSize,DData,DSize);
+    memcpy(&Ret[MSize],DData,DSize);
     delete[]DData;
 
     return Ret;
@@ -268,9 +284,21 @@ void SyncResources(SOCKET Sock){
                         fs::create_directories(GetGamePath() + "mods/multiplayer");
                     }
                     auto name = GetGamePath() + "mods/multiplayer" + a.substr(a.find_last_of('/'));
+                    #if defined(__linux__)
+                    // Linux version of the game doesnt support uppercase letters in mod names
+                    for(char &c : name){
+                        c = ::tolower(c);
+                    }
+                    #endif
                     auto tmp_name = name + ".tmp";
                     fs::copy_file(a,tmp_name,fs::copy_options::overwrite_existing);
                     fs::rename(tmp_name, name);
+                    for(char &c : FName){
+                        c = ::tolower(c);
+                    }
+                    #endif
+
+                    fs::copy_file(a, GetGamePath() + "mods/multiplayer" + FName,
                 } catch (std::exception& e) {
                     error("Failed copy to the mods folder! " + std::string(e.what()));
                     Terminate = true;
@@ -310,6 +338,14 @@ void SyncResources(SOCKET Sock){
             if(!fs::exists(GetGamePath() + "mods/multiplayer")){
                 fs::create_directories(GetGamePath() + "mods/multiplayer");
             }
+
+            // Linux version of the game doesnt support uppercase letters in mod names
+            #if defined(__linux__)
+            for(char &c : FName){
+                c = ::tolower(c);
+            }
+            #endif
+
             fs::copy_file(a,GetGamePath() + "mods/multiplayer" + FName, fs::copy_options::overwrite_existing);
         }
         WaitForConfirm();

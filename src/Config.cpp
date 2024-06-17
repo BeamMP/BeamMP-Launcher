@@ -3,7 +3,7 @@
 ///
 
 #include <nlohmann/json.hpp>
-#include "Network/network.h"
+#include "Network/network.hpp"
 #include <filesystem>
 #include "Logger.h"
 #include <fstream>

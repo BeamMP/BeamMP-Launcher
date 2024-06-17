@@ -6,9 +6,20 @@
 /// Created by Anonymous275 on 5/8/2020
 ///
 #include "Zlib/Compressor.h"
-#include "Network/network.h"
+#include "Network/network.hpp"
 
+#if defined(_WIN32)
 #include <ws2tcpip.h>
+#elif defined(__linux__)
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <cstring>
+#include <errno.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include "linuxfixes.h"
+#endif
+
 #include "Logger.h"
 #include <string>
 #include <set>
@@ -44,7 +55,11 @@ void UDPParser(std::string Packet){
 }
 void UDPRcv(){
     sockaddr_in FromServer{};
+    #if defined(_WIN32)
     int clientLength = sizeof(FromServer);
+    #elif defined(__linux__)
+    socklen_t clientLength = sizeof(FromServer);
+    #endif
     ZeroMemory(&FromServer, clientLength);
     std::string Ret(10240,0);
     if(UDPSock == -1)return;
@@ -53,11 +68,14 @@ void UDPRcv(){
     UDPParser(Ret.substr(0,Rcv));
 }
 void UDPClientMain(const std::string& IP,int Port){
+    #ifdef _WIN32
     WSADATA data;
     if (WSAStartup(514, &data)){
         error("Can't start Winsock!");
         return;
     }
+    #endif
+    
     delete ToServer;
     ToServer = new sockaddr_in;
     ToServer->sin_family = AF_INET;

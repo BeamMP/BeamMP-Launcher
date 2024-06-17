@@ -12,7 +12,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 
-file(GLOB source_files "src/*.cpp" "src/*/*.cpp" "src/*/*.hpp" "include/*.h"  "include/*/*.h" "include/*/*/*.h")
+file(GLOB source_files "src/*.cpp" "src/*/*.cpp" "src/*/*.hpp" "include/*.h"  "include/*/*.h" "include/*/*/*.h" "include/*.hpp"  "include/*/*.hpp" "include/*/*/*.hpp")
 find_package(httplib CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 
@@ -24,6 +24,11 @@ if (WIN32)
     find_package(OpenSSL REQUIRED)
     target_link_libraries(${PROJECT_NAME} PRIVATE
             ZLIB::ZLIB OpenSSL::SSL OpenSSL::Crypto ws2_32 httplib::httplib nlohmann_json::nlohmann_json)
+elseif (LINUX)
+    find_package(ZLIB REQUIRED)
+    find_package(OpenSSL REQUIRED)
+    target_link_libraries(${PROJECT_NAME} PRIVATE 
+            ZLIB::ZLIB OpenSSL::SSL OpenSSL::Crypto)
 else(WIN32) #MINGW
     add_definitions("-D_WIN32_WINNT=0x0600")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os -s --static")

@@ -9,8 +9,13 @@
 #include <nlohmann/json.hpp>
 #include <httplib.h>
 #include "zip_file.h"
+#include <string>
+#if defined(_WIN32)
 #include <windows.h>
-#include "Network/network.h"
+#elif defined(__linux__)
+#include <unistd.h>
+#endif
+#include "Network/network.hpp"
 #include "Security/Init.h"
 #include <filesystem>
 #include "Startup.h"
@@ -53,10 +58,14 @@ bool VersionParser::operator==(const VersionParser& rhs) const noexcept {
     return std::is_eq(*this <=> rhs);
 }
 
-
 std::string GetEN(){
+#if defined(_WIN32)
     return "BeamMP-Launcher.exe";
+#elif defined(__linux__)
+    return "BeamMP-Launcher";
+#endif
 }
+
 std::string GetVer(){
     return "2.0";
 }
@@ -71,6 +80,7 @@ std::string GetEP(char*P){
     } ();
     return Ret;
 }
+#if defined(_WIN32)
 void ReLaunch(int argc,char*args[]){
     std::string Arg;
     for(int c = 2; c <= argc; c++){
@@ -94,8 +104,36 @@ void URelaunch(int argc,char* args[]){
     std::this_thread::sleep_for(std::chrono::seconds(1));
     exit(1);
 }
+#elif defined(__linux__)
+void ReLaunch(int argc,char*args[]){
+    std::string Arg;
+    for(int c = 2; c <= argc; c++){
+        Arg += " ";
+        Arg += args[c-1];
+    }
+    system("clear");
+    execl((GetEP() + GetEN()).c_str(), Arg.c_str(), NULL);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    exit(1);
+}
+void URelaunch(int argc,char* args[]){
+    std::string Arg;
+    for(int c = 2; c <= argc; c++){
+        Arg += " ";
+        Arg += args[c-1];
+    }
+    execl((GetEP() + GetEN()).c_str(), Arg.c_str(), NULL);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    exit(1);
+}
+#endif
+
 void CheckName(int argc,char* args[]){
+    #if defined(_WIN32)
     std::string DN = GetEN(),CDir = args[0],FN = CDir.substr(CDir.find_last_of('\\')+1);
+    #elif defined(__linux__)
+    std::string DN = GetEN(),CDir = args[0],FN = CDir.substr(CDir.find_last_of('/')+1);
+    #endif
     if(FN != DN){
         if(fs::exists(DN))remove(DN.c_str());
         if(fs::exists(DN))ReLaunch(argc,args);
@@ -113,6 +151,10 @@ void CheckForUpdates(int argc, char* args[], const std::string& CV) {
     std::string EP(GetEP() + GetEN()), Back(GetEP() + "BeamMP-Launcher.back");
 
     std::string FileHash = hashpp::get::getFileHash(hashpp::ALGORITHMS::SHA2_256, EP);
+        #if defined(_WIN32)
+        #elif defined(__linux__)
+        system("clear");
+        #endif
 
     if (FileHash != LatestHash && VersionParser(LatestVersion) > VersionParser(GetVer()+GetPatch())) {
         info("Launcher update found!");
@@ -142,6 +184,7 @@ void CustomPort(int argc, char* argv[]){
     }
 }
 
+#ifdef _WIN32
 void LinuxPatch(){
     HKEY hKey = nullptr;
     LONG result = RegOpenKeyEx(HKEY_CURRENT_USER, R"(Software\Wine)", 0, KEY_READ, &hKey);
@@ -167,7 +210,9 @@ void LinuxPatch(){
 
     info("Patched!");
 }
+#endif
 
+#if defined(_WIN32)
 void InitLauncher(int argc, char* argv[]) {
     system("cls");
     SetConsoleTitleA(("BeamMP Launcher v" + std::string(GetVer()) + GetPatch()).c_str());
@@ -179,6 +224,17 @@ void InitLauncher(int argc, char* argv[]) {
     CustomPort(argc, argv);
     CheckForUpdates(argc, argv, std::string(GetVer()) + GetPatch());
 }
+#elif defined(__linux__)
+void InitLauncher(int argc, char* argv[]) {
+    system("clear");
+    InitLog();
+    CheckName(argc, argv);
+    CheckLocalKey();
+    ConfigInit();
+    CustomPort(argc, argv);
+    CheckForUpdates(argc, argv, std::string(GetVer()) + GetPatch());
+}
+#endif
 
 size_t DirCount(const std::filesystem::path& path){
     return (size_t)std::distance(std::filesystem::directory_iterator{path}, std::filesystem::directory_iterator{});
@@ -249,8 +305,12 @@ void PreGame(const std::string& GamePath){
         }catch(std::exception&e){
             fatal(e.what());
         }
-
+        #if defined(_WIN32)
         std::string ZipPath(GetGamePath() + R"(mods\multiplayer\BeamMP.zip)");
+        #elif defined(__linux__)
+        // Linux version of the game cant handle mods with uppercase names
+        std::string ZipPath(GetGamePath() + R"(mods/multiplayer/beammp.zip)");
+        #endif
 
         std::string FileHash = hashpp::get::getFileHash(hashpp::ALGORITHMS::SHA2_256, ZipPath);
 
