@@ -165,6 +165,9 @@ void CheckForUpdates(int argc, char* args[], const std::string& CV) {
 
     if (FileHash != LatestHash && VersionParser(LatestVersion) > VersionParser(GetVer() + GetPatch())) {
         info("Launcher update found!");
+#if defined(__linux__)
+        error("Auto update is NOT implemented for the Linux version. Please update manually ASAP as updates contain security patches.");
+#else
         fs::remove(Back);
         fs::rename(EP, Back);
         info("Downloading Launcher update " + LatestHash);
@@ -174,6 +177,7 @@ void CheckForUpdates(int argc, char* args[], const std::string& CV) {
                 + PublicKey + "&branch=" + Branch,
             EP);
         URelaunch(argc, args);
+        #endif
     } else
         info("Launcher version is up to date");
     TraceBack++;
