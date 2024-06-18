@@ -1,4 +1,4 @@
-name: CMake Windows Build
+name: CMake Linux Build
 
 on: [push, pull_request, workflow_dispatch]
 
@@ -6,8 +6,8 @@ env:
   BUILD_TYPE: Release
 
 jobs:
-  windows-build:
-    runs-on: windows-latest
+  linux-build:
+    runs-on: ubuntu-latest
     
     steps:
       - uses: actions/checkout@v2
@@ -18,26 +18,25 @@ jobs:
         uses: lukka/run-vcpkg@v7
         id: runvcpkg
         with:
-            vcpkgArguments: 'discord-rpc zlib nlohmann-json openssl cpp-httplib[openssl]'
+            vcpkgArguments: 'zlib nlohmann-json openssl cpp-httplib[openssl]'
             vcpkgDirectory: '${{ runner.workspace }}/b/vcpkg'
             vcpkgGitCommitId: '40616a5e954f7be1077ef37db3fbddbd5dcd1ca6'
-            vcpkgTriplet: 'x64-windows-static'
 
       - name: Create Build Environment
-        run: cmake -E make_directory ${{github.workspace}}/build-windows
+        run: cmake -E make_directory ${{github.workspace}}/build-linux
 
       - name: Configure CMake
         shell: bash
-        working-directory: ${{github.workspace}}/build-windows
-        run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE='${{ runner.workspace }}/b/vcpkg/scripts/buildsystems/vcpkg.cmake' -DVCPKG_TARGET_TRIPLET=x64-windows-static
+        working-directory: ${{github.workspace}}/build-linux
+        run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE='${{ runner.workspace }}/b/vcpkg/scripts/buildsystems/vcpkg.cmake'
 
       - name: Build
-        working-directory: ${{github.workspace}}/build-windows
+        working-directory: ${{github.workspace}}/build-linux
         shell: bash
         run: cmake --build . --config $BUILD_TYPE
 
       - name: Archive artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: BeamMP-Launcher.exe
-          path: ${{github.workspace}}/build-windows/Release/BeamMP-Launcher.exe
+          name: BeamMP-Launcher
+          path: ${{github.workspace}}/build-linux/BeamMP-Launcher

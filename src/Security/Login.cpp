@@ -6,12 +6,11 @@
 /// Created by Anonymous275 on 11/26/2020
 ///
 
-#include <nlohmann/json.hpp>
 #include "Http.h"
-#include <filesystem>
 #include "Logger.h"
+#include <filesystem>
 #include <fstream>
-
+#include <nlohmann/json.hpp>
 
 namespace fs = std::filesystem;
 std::string PublicKey;
@@ -20,15 +19,16 @@ extern bool LoginAuth;
 extern std::string Username;
 extern std::string UserRole;
 
-void UpdateKey(const char* newKey){
-    if(newKey && std::isalnum(newKey[0])){
+void UpdateKey(const char* newKey) {
+    if (newKey && std::isalnum(newKey[0])) {
         PrivateKey = newKey;
         std::ofstream Key("key");
-        if(Key.is_open()){
+        if (Key.is_open()) {
             Key << newKey;
             Key.close();
-        }else fatal("Cannot write to disk!");
-    }else if(fs::exists("key")){
+        } else
+            fatal("Cannot write to disk!");
+    } else if (fs::exists("key")) {
         remove("key");
     }
 }
@@ -37,15 +37,15 @@ void UpdateKey(const char* newKey){
 /// "Guest":"Name"
 /// "pk":"private_key"
 
-std::string GetFail(const std::string& R){
+std::string GetFail(const std::string& R) {
     std::string DRet = R"({"success":false,"message":)";
-    DRet += "\""+R+"\"}";
+    DRet += "\"" + R + "\"}";
     error(R);
     return DRet;
 }
 
-std::string Login(const std::string& fields){
-    if(fields == "LO"){
+std::string Login(const std::string& fields) {
+    if (fields == "LO") {
         Username = "";
         UserRole = "";
         LoginAuth = false;
@@ -56,7 +56,7 @@ std::string Login(const std::string& fields){
     try {
         std::string Buffer = HTTP::Post("https://auth.beammp.com/userlogin", fields);
 
-        if(Buffer == "-1"){
+        if (Buffer == "-1") {
             return GetFail("Failed to communicate with the auth system!");
         }
 
@@ -66,7 +66,7 @@ std::string Login(const std::string& fields){
             error(Buffer);
             return GetFail("Invalid answer from authentication servers, please try again later!");
         }
-        if(d.contains("success") && d["success"].get<bool>()){
+        if (d.contains("success") && d["success"].get<bool>()) {
             LoginAuth = true;
             if (d.contains("username")) {
                 Username = d["username"].get<std::string>();
@@ -74,15 +74,16 @@ std::string Login(const std::string& fields){
             if (d.contains("role")) {
                 UserRole = d["role"].get<std::string>();
             }
-            if(d.contains("private_key")) {
+            if (d.contains("private_key")) {
                 UpdateKey(d["private_key"].get<std::string>().c_str());
             }
-            if(d.contains("public_key")){
+            if (d.contains("public_key")) {
                 PublicKey = d["public_key"].get<std::string>();
             }
             info("Authentication successful!");
-        }else info("Authentication failed!");
-        if(d.contains("message")){
+        } else
+            info("Authentication failed!");
+        if (d.contains("message")) {
             d.erase("private_key");
             d.erase("public_key");
             return d.dump();
@@ -93,20 +94,20 @@ std::string Login(const std::string& fields){
     }
 }
 
-void CheckLocalKey(){
-    if(fs::exists("key") && fs::file_size("key") < 100){
+void CheckLocalKey() {
+    if (fs::exists("key") && fs::file_size("key") < 100) {
         std::ifstream Key("key");
-        if(Key.is_open()) {
+        if (Key.is_open()) {
             auto Size = fs::file_size("key");
             std::string Buffer(Size, 0);
             Key.read(&Buffer[0], Size);
             Key.close();
 
             for (char& c : Buffer) {
-              if (!std::isalnum(c) && c != '-') {
-                UpdateKey(nullptr);
-                return;
-              }
+                if (!std::isalnum(c) && c != '-') {
+                    UpdateKey(nullptr);
+                    return;
+                }
             }
 
             Buffer = HTTP::Post("https://auth.beammp.com/userlogin", R"({"pk":")" + Buffer + "\"}");
@@ -118,7 +119,7 @@ void CheckLocalKey(){
                 info("Invalid answer from authentication servers.");
                 UpdateKey(nullptr);
             }
-            if(d["success"].get<bool>()){
+            if (d["success"].get<bool>()) {
                 LoginAuth = true;
                 UpdateKey(d["private_key"].get<std::string>().c_str());
                 PublicKey = d["public_key"].get<std::string>();
@@ -128,14 +129,15 @@ void CheckLocalKey(){
                 if (d.contains("role")) {
                     UserRole = d["role"].get<std::string>();
                 }
-                //info(Role);
-            }else{
+                // info(Role);
+            } else {
                 info("Auto-Authentication unsuccessful please re-login!");
                 UpdateKey(nullptr);
             }
-        }else{
+        } else {
             warn("Could not open saved key!");
             UpdateKey(nullptr);
         }
-    }else UpdateKey(nullptr);
+    } else
+        UpdateKey(nullptr);
 }

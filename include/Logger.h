@@ -6,8 +6,8 @@
 /// Created by Anonymous275 on 4/2/2020.
 ///
 #pragma once
-#include <string>
 #include <iostream>
+#include <string>
 void InitLog();
 void except(const std::string& toPrint);
 void fatal(const std::string& toPrint);

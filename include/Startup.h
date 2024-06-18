@@ -6,12 +6,12 @@
 /// Created by Anonymous275 on 7/18/2020
 ///
 #pragma once
-#include <string>
 #include <compare>
+#include <string>
 #include <vector>
 
 void InitLauncher(int argc, char* argv[]);
-std::string GetEP(char*P = nullptr);
+std::string GetEP(char* P = nullptr);
 std::string GetGamePath();
 std::string GetVer();
 std::string GetEN();

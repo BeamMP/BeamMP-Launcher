@@ -6,9 +6,16 @@
 /// Created by Anonymous275 on 7/18/2020
 ///
 
-
 #pragma once
 #include <string>
+
+#ifdef __linux__
+#include "linuxfixes.h"
+#include <bits/types/siginfo_t.h>
+#include <cstdint>
+#include <sys/ucontext.h>
+#endif
+
 void NetReset();
 extern bool Dev;
 extern int ping;
@@ -38,11 +45,10 @@ void GameSend(std::string Data);
 void SendLarge(std::string Data);
 std::string TCPRcv(uint64_t Sock);
 void SyncResources(uint64_t TCPSock);
-std::string GetAddr(const std::string&IP);
+std::string GetAddr(const std::string& IP);
 void ServerParser(const std::string& Data);
 std::string Login(const std::string& fields);
-void TCPSend(const std::string&Data,uint64_t Sock);
-void TCPClientMain(const std::string& IP,int Port);
-void UDPClientMain(const std::string& IP,int Port);
+void TCPSend(const std::string& Data, uint64_t Sock);
+void TCPClientMain(const std::string& IP, int Port);
+void UDPClientMain(const std::string& IP, int Port);
 void TCPGameServer(const std::string& IP, int Port);
-
