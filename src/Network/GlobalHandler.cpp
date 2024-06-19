@@ -55,13 +55,12 @@ bool CheckBytes(uint32_t Bytes) {
     return true;
 }
 
-void GameSend(std::string Data) {
+void GameSend(std::string_view Data) {
     static std::mutex Lock;
     std::scoped_lock Guard(Lock);
     if (TCPTerminate || !GConnected || CSocket == -1)
         return;
     int32_t Size, Temp, Sent;
-    Data += '\n';
     Size = int32_t(Data.size());
     Sent = 0;
 #ifdef DEBUG
@@ -77,6 +76,11 @@ void GameSend(std::string Data) {
             return;
         Sent += Temp;
     } while (Sent < Size);
+    // send separately to avoid an allocation for += "\n"
+    Temp = send(CSocket, "\n", 1, 0);
+    if (!CheckBytes(Temp)) {
+        return;
+    }
 }
 void ServerSend(std::string Data, bool Rel) {
     if (Terminate || Data.empty())
@@ -191,7 +195,7 @@ void AutoPing() {
     }
 }
 int ClientID = -1;
-void ParserAsync(const std::string& Data) {
+void ParserAsync(std::string_view Data) {
     if (Data.empty())
         return;
     char Code = Data.at(0), SubCode = 0;
@@ -214,7 +218,7 @@ void ParserAsync(const std::string& Data) {
     }
     GameSend(Data);
 }
-void ServerParser(const std::string& Data) {
+void ServerParser(std::string_view Data) {
     ParserAsync(Data);
 }
 void NetMain(const std::string& IP, int Port) {

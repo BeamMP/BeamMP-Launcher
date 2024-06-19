@@ -8,4 +8,4 @@
 #pragma once
 #include <string>
 std::string Comp(std::string Data);
-std::string DeComp(std::string Compressed);
+std::string DeComp(std::string_view Compressed);

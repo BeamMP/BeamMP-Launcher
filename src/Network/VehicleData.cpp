@@ -21,6 +21,7 @@
 #endif
 
 #include "Logger.h"
+#include <array>
 #include <set>
 #include <string>
 
@@ -48,7 +49,7 @@ void SendLarge(std::string Data) {
     TCPSend(Data, TCPSock);
 }
 
-void UDPParser(std::string Packet) {
+void UDPParser(std::string_view Packet) {
     if (Packet.substr(0, 4) == "ABG:") {
         Packet = DeComp(Packet.substr(4));
     }
@@ -62,13 +63,14 @@ void UDPRcv() {
     socklen_t clientLength = sizeof(FromServer);
 #endif
     ZeroMemory(&FromServer, clientLength);
-    std::string Ret(10240, 0);
+    std::array<char, 10240> Ret {};
+    Ret.fill(0);
     if (UDPSock == -1)
         return;
-    int32_t Rcv = recvfrom(UDPSock, &Ret[0], 10240, 0, (sockaddr*)&FromServer, &clientLength);
+    int32_t Rcv = recvfrom(UDPSock, Ret.data(), Ret.size(), 0, (sockaddr*)&FromServer, &clientLength);
     if (Rcv == SOCKET_ERROR)
         return;
-    UDPParser(Ret.substr(0, Rcv));
+    UDPParser(std::string_view(Ret.data(), Rcv));
 }
 void UDPClientMain(const std::string& IP, int Port) {
 #ifdef _WIN32

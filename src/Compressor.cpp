@@ -34,7 +34,7 @@ std::string Comp(std::string Data) {
     delete[] C;
     return Ret;
 }
-std::string DeComp(std::string Compressed) {
+std::string DeComp(std::string_view Compressed) {
     char* C = new char[Biggest];
     memset(C, 0, Biggest);
     z_stream infstream;
