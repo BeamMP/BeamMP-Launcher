@@ -63,13 +63,13 @@ void UDPRcv() {
     socklen_t clientLength = sizeof(FromServer);
 #endif
     ZeroMemory(&FromServer, clientLength);
-    std::array<char, 10240> Ret {};
-    Ret.fill(0);
+    static thread_local std::array<char, 10240> Ret {};
     if (UDPSock == -1)
         return;
-    int32_t Rcv = recvfrom(UDPSock, Ret.data(), Ret.size(), 0, (sockaddr*)&FromServer, &clientLength);
+    int32_t Rcv = recvfrom(UDPSock, Ret.data(), Ret.size() - 1, 0, (sockaddr*)&FromServer, &clientLength);
     if (Rcv == SOCKET_ERROR)
         return;
+    Ret[Rcv] = 0;
     UDPParser(std::string_view(Ret.data(), Rcv));
 }
 void UDPClientMain(const std::string& IP, int Port) {
