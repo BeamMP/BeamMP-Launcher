@@ -296,13 +296,14 @@ void SyncResources(SOCKET Sock) {
                     if (!fs::exists(GetGamePath() + "mods/multiplayer")) {
                         fs::create_directories(GetGamePath() + "mods/multiplayer");
                     }
-                    auto name = GetGamePath() + "mods/multiplayer" + a.substr(a.find_last_of('/'));
+                    auto modname = a.substr(a.find_last_of('/'));
 #if defined(__linux__)
                     // Linux version of the game doesnt support uppercase letters in mod names
-                    for (char& c : name) {
+                    for (char& c : modname) {
                         c = ::tolower(c);
                     }
 #endif
+                    auto name = GetGamePath() + "mods/multiplayer" + modname;
                     auto tmp_name = name + ".tmp";
                     fs::copy_file(a, tmp_name, fs::copy_options::overwrite_existing);
                     fs::rename(tmp_name, name);
