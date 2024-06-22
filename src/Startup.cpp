@@ -7,6 +7,7 @@
 ///
 
 #include "zip_file.h"
+#include <charconv>
 #include <httplib.h>
 #include <nlohmann/json.hpp>
 #include <string>
@@ -31,36 +32,44 @@ int ProxyPort = 0;
 
 namespace fs = std::filesystem;
 
-VersionParser::VersionParser(const std::string& from_string) {
-    std::string token;
-    std::istringstream tokenStream(from_string);
-    while (std::getline(tokenStream, token, '.')) {
-        data.emplace_back(std::stol(token));
-        split.emplace_back(token);
+struct Version {
+    uint8_t major;
+    uint8_t minor;
+    uint8_t patch;
+    Version(uint8_t major, uint8_t minor, uint8_t patch);
+    Version(const std::array<uint8_t, 3>& v);
+};
+
+std::array<uint8_t, 3> VersionStrToInts(const std::string& str) {
+    std::array<uint8_t, 3> Version;
+    std::stringstream ss(str);
+    for (uint8_t& i : Version) {
+        std::string Part;
+        std::getline(ss, Part, '.');
+        std::from_chars(&*Part.begin(), &*Part.begin() + Part.size(), i);
+    }
+    return Version;
+}
+
+bool IsOutdated(const Version& Current, const Version& Newest) {
+    if (Newest.major > Current.major) {
+        return true;
+    } else if (Newest.major == Current.major && Newest.minor > Current.minor) {
+        return true;
+    } else if (Newest.major == Current.major && Newest.minor == Current.minor && Newest.patch > Current.patch) {
+        return true;
+    } else {
+        return false;
     }
 }
 
-std::strong_ordering VersionParser::operator<=>(
-    const VersionParser& rhs) const noexcept {
-    size_t const fields = std::min(data.size(), rhs.data.size());
-    for (size_t i = 0; i != fields; ++i) {
-        if (data[i] == rhs.data[i])
-            continue;
-        else if (data[i] < rhs.data[i])
-            return std::strong_ordering::less;
-        else
-            return std::strong_ordering::greater;
-    }
-    if (data.size() == rhs.data.size())
-        return std::strong_ordering::equal;
-    else if (data.size() > rhs.data.size())
-        return std::strong_ordering::greater;
-    else
-        return std::strong_ordering::less;
-}
+Version::Version(uint8_t major, uint8_t minor, uint8_t patch)
+    : major(major)
+    , minor(minor)
+    , patch(patch) { }
 
-bool VersionParser::operator==(const VersionParser& rhs) const noexcept {
-    return std::is_eq(*this <=> rhs);
+Version::Version(const std::array<uint8_t, 3>& v)
+    : Version(v[0], v[1], v[2]) {
 }
 
 std::string GetEN() {
@@ -75,7 +84,7 @@ std::string GetVer() {
     return "2.0";
 }
 std::string GetPatch() {
-    return ".85";
+    return ".99";
 }
 
 std::string GetEP(char* P) {
@@ -163,7 +172,7 @@ void CheckForUpdates(int argc, char* args[], const std::string& CV) {
     system("clear");
 #endif
 
-    if (FileHash != LatestHash && VersionParser(LatestVersion) > VersionParser(GetVer() + GetPatch())) {
+    if (FileHash != LatestHash && IsOutdated(Version(VersionStrToInts(GetVer() + GetPatch())), Version(VersionStrToInts(LatestVersion))) && !Dev) {
         info("Launcher update found!");
 #if defined(__linux__)
         error("Auto update is NOT implemented for the Linux version. Please update manually ASAP as updates contain security patches.");
@@ -177,7 +186,7 @@ void CheckForUpdates(int argc, char* args[], const std::string& CV) {
                 + PublicKey + "&branch=" + Branch,
             EP);
         URelaunch(argc, args);
-        #endif
+#endif
     } else
         info("Launcher version is up to date");
     TraceBack++;

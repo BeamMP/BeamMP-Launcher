@@ -48,8 +48,8 @@ void ConfigInit() {
         if (cfg.is_open()) {
             cfg <<
                 R"({
-"Port": 4444,
-"Build": "Default"
+    "Port": 4444,
+    "Build": "Default"
 })";
             cfg.close();
         } else {
