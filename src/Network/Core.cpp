@@ -230,8 +230,7 @@ void GameHandler(SOCKET Client) {
         if (Temp < 1)
             break;
 
-        std::thread Respond(Parse, Ret, Client);
-        Respond.detach();
+        Parse(Ret, Client);
     } while (Temp > 0);
     if (Temp == 0) {
         debug("(Core) Connection closing");
