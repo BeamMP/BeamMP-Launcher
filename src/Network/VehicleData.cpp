@@ -14,7 +14,6 @@
 #include "linuxfixes.h"
 #include <arpa/inet.h>
 #include <cstring>
-#include <errno.h>
 #include <netdb.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -22,7 +21,6 @@
 
 #include "Logger.h"
 #include <array>
-#include <set>
 #include <string>
 
 SOCKET UDPSock = -1;
@@ -52,7 +50,7 @@ void SendLarge(std::string Data) {
 void UDPParser(std::string_view Packet) {
     if (Packet.substr(0, 4) == "ABG:") {
         auto substr = Packet.substr(4);
-        auto res = DeComp(std::span<char>(substr.data(), substr.size()));
+        auto res = DeComp(std::span<const char>(substr.data(), substr.size()));
         Packet = std::string(res.data(), res.size());
     }
     ServerParser(Packet);

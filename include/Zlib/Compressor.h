@@ -9,5 +9,5 @@
 #include <span>
 #include <vector>
 
-std::vector<char> Comp(std::span<char> input);
-std::vector<char> DeComp(std::span<char> input);
+std::vector<char> Comp(std::span<const char> input);
+std::vector<char> DeComp(std::span<const char> input);

@@ -15,14 +15,14 @@
 #include <cstring>
 #endif
 
-std::vector<char> Comp(std::span<char> input) {
+std::vector<char> Comp(std::span<const char> input) {
     auto max_size = compressBound(input.size());
     std::vector<char> output(max_size);
     uLongf output_size = output.size();
     int res = compress(
         reinterpret_cast<Bytef*>(output.data()),
         &output_size,
-        reinterpret_cast<Bytef*>(input.data()),
+        reinterpret_cast<const Bytef*>(input.data()),
         static_cast<uLongf>(input.size()));
     if (res != Z_OK) {
         error("zlib compress() failed: " + std::to_string(res));
@@ -33,7 +33,7 @@ std::vector<char> Comp(std::span<char> input) {
     return output;
 }
 
-std::vector<char> DeComp(std::span<char> input) {
+std::vector<char> DeComp(std::span<const char> input) {
     std::vector<char> output_buffer(std::min<size_t>(input.size() * 5, 15 * 1024 * 1024));
 
     uLongf output_size = output_buffer.size();
