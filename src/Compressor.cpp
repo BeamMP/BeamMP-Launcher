@@ -6,52 +6,57 @@
 /// Created by Anonymous275 on 7/15/2020
 ///
 
-#include <iostream>
+#include "Logger.h"
+#include <span>
+#include <vector>
+#include <zconf.h>
 #include <zlib.h>
 #ifdef __linux__
 #include <cstring>
 #endif
 
-#define Biggest 30000
-std::string Comp(std::string Data) {
-    char* C = new char[Biggest];
-    memset(C, 0, Biggest);
-    z_stream defstream;
-    defstream.zalloc = Z_NULL;
-    defstream.zfree = Z_NULL;
-    defstream.opaque = Z_NULL;
-    defstream.avail_in = (uInt)Data.length();
-    defstream.next_in = (Bytef*)&Data[0];
-    defstream.avail_out = Biggest;
-    defstream.next_out = reinterpret_cast<Bytef*>(C);
-    deflateInit(&defstream, Z_BEST_COMPRESSION);
-    deflate(&defstream, Z_SYNC_FLUSH);
-    deflate(&defstream, Z_FINISH);
-    deflateEnd(&defstream);
-    int TO = defstream.total_out;
-    std::string Ret(TO, 0);
-    memcpy(&Ret[0], C, TO);
-    delete[] C;
-    return Ret;
+std::vector<char> Comp(std::span<char> input) {
+    auto max_size = compressBound(input.size());
+    std::vector<char> output(max_size);
+    uLongf output_size = output.size();
+    int res = compress(
+        reinterpret_cast<Bytef*>(output.data()),
+        &output_size,
+        reinterpret_cast<Bytef*>(input.data()),
+        static_cast<uLongf>(input.size()));
+    if (res != Z_OK) {
+        error("zlib compress() failed: " + std::to_string(res));
+        throw std::runtime_error("zlib compress() failed");
+    }
+    debug("zlib compressed " + std::to_string(input.size()) + " B to " + std::to_string(output_size) + " B");
+    output.resize(output_size);
+    return output;
 }
-std::string DeComp(std::string Compressed) {
-    char* C = new char[Biggest];
-    memset(C, 0, Biggest);
-    z_stream infstream;
-    infstream.zalloc = Z_NULL;
-    infstream.zfree = Z_NULL;
-    infstream.opaque = Z_NULL;
-    infstream.avail_in = Biggest;
-    infstream.next_in = (Bytef*)(&Compressed[0]);
-    infstream.avail_out = Biggest;
-    infstream.next_out = (Bytef*)(C);
-    inflateInit(&infstream);
-    inflate(&infstream, Z_SYNC_FLUSH);
-    inflate(&infstream, Z_FINISH);
-    inflateEnd(&infstream);
-    int TO = infstream.total_out;
-    std::string Ret(TO, 0);
-    memcpy(&Ret[0], C, TO);
-    delete[] C;
-    return Ret;
+
+std::vector<char> DeComp(std::span<char> input) {
+    std::vector<char> output_buffer(std::min<size_t>(input.size() * 5, 15 * 1024 * 1024));
+
+    uLongf output_size = output_buffer.size();
+
+    while (true) {
+        int res = uncompress(
+            reinterpret_cast<Bytef*>(output_buffer.data()),
+            &output_size,
+            reinterpret_cast<const Bytef*>(input.data()),
+            static_cast<uLongf>(input.size()));
+        if (res == Z_BUF_ERROR) {
+            if (output_buffer.size() > 30 * 1024 * 1024) {
+                throw std::runtime_error("decompressed packet size of 30 MB exceeded");
+            }
+            debug("zlib uncompress() failed, trying with 2x buffer size of " + std::to_string(output_buffer.size() * 2));
+            output_buffer.resize(output_buffer.size() * 2);
+            output_size = output_buffer.size();
+        } else if (res != Z_OK) {
+            error("zlib uncompress() failed: " + std::to_string(res));
+            throw std::runtime_error("zlib uncompress() failed");
+        } else if (res == Z_OK) {
+            break;
+        }
+    }    output_buffer.resize(output_size);
+    return output_buffer;
 }

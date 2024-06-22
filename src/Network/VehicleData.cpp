@@ -31,8 +31,8 @@ void UDPSend(std::string Data) {
     if (ClientID == -1 || UDPSock == -1)
         return;
     if (Data.length() > 400) {
-        std::string CMP(Comp(Data));
-        Data = "ABG:" + CMP;
+        auto res = Comp(std::span<char>(Data.data(), Data.size()));
+        Data = "ABG:" + std::string(res.data(), res.size());
     }
     std::string Packet = char(ClientID + 1) + std::string(":") + Data;
     int sendOk = sendto(UDPSock, Packet.c_str(), int(Packet.size()), 0, (sockaddr*)ToServer, sizeof(*ToServer));
@@ -42,15 +42,17 @@ void UDPSend(std::string Data) {
 
 void SendLarge(std::string Data) {
     if (Data.length() > 400) {
-        std::string CMP(Comp(Data));
-        Data = "ABG:" + CMP;
+        auto res = Comp(std::span<char>(Data.data(), Data.size()));
+        Data = "ABG:" + std::string(res.data(), res.size());
     }
     TCPSend(Data, TCPSock);
 }
 
 void UDPParser(std::string Packet) {
     if (Packet.substr(0, 4) == "ABG:") {
-        Packet = DeComp(Packet.substr(4));
+        auto substr = Packet.substr(4);
+        auto res = DeComp(std::span<char>(substr.data(), substr.size()));
+        Packet = std::string(res.data(), res.size());
     }
     ServerParser(Packet);
 }

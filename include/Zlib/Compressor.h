@@ -6,6 +6,8 @@
 /// Created by Anonymous275 on 7/24/2020
 ///
 #pragma once
-#include <string>
-std::string Comp(std::string Data);
-std::string DeComp(std::string Compressed);
+#include <span>
+#include <vector>
+
+std::vector<char> Comp(std::span<char> input);
+std::vector<char> DeComp(std::span<char> input);

@@ -112,7 +112,9 @@ std::string TCPRcv(SOCKET Sock) {
     std::string Ret(Data.data(), Header);
 
     if (Ret.substr(0, 4) == "ABG:") {
-        Ret = DeComp(Ret.substr(4));
+        auto substr = Ret.substr(4);
+        auto res = DeComp(std::span<char>(substr.data(), substr.size()));
+        Ret = std::string(res.data(), res.size());
     }
 
 #ifdef DEBUG

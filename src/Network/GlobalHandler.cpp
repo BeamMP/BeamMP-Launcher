@@ -6,6 +6,7 @@
 /// Created by Anonymous275 on 7/25/2020
 ///
 #include "Network/network.hpp"
+#include <zlib.h>
 #if defined(_WIN32)
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -92,6 +93,8 @@ void ServerSend(std::string Data, bool Rel) {
     if (C == 'O' || C == 'T')
         Ack = true;
     if (C == 'N' || C == 'W' || C == 'Y' || C == 'V' || C == 'E' || C == 'C')
+        Rel = true;
+    if (compressBound(Data.size()) > 1024)
         Rel = true;
     if (Ack || Rel) {
         if (Ack || DLen > 1000)
