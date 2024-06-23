@@ -51,9 +51,11 @@ void UDPParser(std::string_view Packet) {
     if (Packet.substr(0, 4) == "ABG:") {
         auto substr = Packet.substr(4);
         auto res = DeComp(std::span<const char>(substr.data(), substr.size()));
-        Packet = std::string(res.data(), res.size());
+        std::string DeCompPacket = std::string(res.data(), res.size());
+        ServerParser(DeCompPacket);
+    } else {
+        ServerParser(Packet);
     }
-    ServerParser(Packet);
 }
 void UDPRcv() {
     sockaddr_in FromServer {};
