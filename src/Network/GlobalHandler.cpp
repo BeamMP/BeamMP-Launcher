@@ -63,6 +63,8 @@ void GameSend(std::string_view Data) {
         return;
     int32_t Size, Temp, Sent;
     Size = int32_t(Data.size());
+    auto SizeStr = std::to_string(Size) + ">";
+    send(CSocket, SizeStr.c_str(), SizeStr.size(), 0);
     Sent = 0;
 #ifdef DEBUG
     if (Size > 1000) {
@@ -78,10 +80,10 @@ void GameSend(std::string_view Data) {
         Sent += Temp;
     } while (Sent < Size);
     // send separately to avoid an allocation for += "\n"
-    Temp = send(CSocket, "\n", 1, 0);
+    /*Temp = send(CSocket, "\n", 1, 0);
     if (!CheckBytes(Temp)) {
         return;
-    }
+    }*/
 }
 void ServerSend(std::string Data, bool Rel) {
     if (Terminate || Data.empty())
