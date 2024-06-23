@@ -190,9 +190,11 @@ void Parse(std::string Data, SOCKET CSocket) {
         break;
     }
     if (!Data.empty() && CSocket != -1) {
-        Data = std::to_string(Data.size()) + ">" + Data;
-        debug("Sending '" + Data + "'");
-        int res = send(CSocket, Data.c_str(), int(Data.size()), 0);
+        uint32_t DataSize = Data.size();
+        std::vector<char> ToSend(sizeof(DataSize) + Data.size());
+        std::copy_n(reinterpret_cast<char*>(&DataSize), sizeof(DataSize), ToSend.begin());
+        std::copy_n(Data.data(), Data.size(), ToSend.begin() + sizeof(DataSize));
+        int res = send(CSocket, ToSend.data(), int(ToSend.size()), 0);
         if (res < 0) {
             debug("(Core) send failed with error: " + std::to_string(WSAGetLastError()));
         }

@@ -6,6 +6,8 @@
 /// Created by Anonymous275 on 7/25/2020
 ///
 #include "Network/network.hpp"
+#include <algorithm>
+#include <vector>
 #include <zlib.h>
 #if defined(_WIN32)
 #include <winsock2.h>
@@ -56,15 +58,17 @@ bool CheckBytes(uint32_t Bytes) {
     return true;
 }
 
-void GameSend(std::string_view Data) {
+void GameSend(std::string_view RawData) {
     static std::mutex Lock;
     std::scoped_lock Guard(Lock);
     if (TCPTerminate || !GConnected || CSocket == -1)
         return;
     int32_t Size, Temp, Sent;
-    Size = int32_t(Data.size());
-    auto SizeStr = std::to_string(Size) + ">";
-    send(CSocket, SizeStr.c_str(), SizeStr.size(), 0);
+    uint32_t DataSize = RawData.size();
+    std::vector<char> Data(sizeof(DataSize) + RawData.size());
+    std::copy_n(reinterpret_cast<char*>(&DataSize), sizeof(DataSize), Data.begin());
+    std::copy_n(RawData.data(), RawData.size(), Data.begin() + sizeof(DataSize));
+    Size = Data.size();
     Sent = 0;
 #ifdef DEBUG
     if (Size > 1000) {
