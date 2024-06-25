@@ -5,8 +5,11 @@
 ///
 /// Created by Anonymous275 on 7/25/2020
 ///
+#include "Helpers.h"
 #include "Network/network.hpp"
+#include "NetworkHelpers.h"
 #include <algorithm>
+#include <span>
 #include <vector>
 #include <zlib.h>
 #if defined(_WIN32)
@@ -89,15 +92,13 @@ void GameSend(std::string_view RawData) {
         return;
     }*/
 }
-void ServerSend(std::string Data, bool Rel) {
+
+void ServerSend(const std::vector<char>& Data, bool Rel) {
     if (Terminate || Data.empty())
         return;
-    if (Data.find("Zp") != std::string::npos && Data.size() > 500) {
-        abort();
-    }
     char C = 0;
     bool Ack = false;
-    int DLen = int(Data.length());
+    int DLen = int(Data.size());
     if (DLen > 3)
         C = Data.at(0);
     if (C == 'O' || C == 'T')
@@ -113,14 +114,6 @@ void ServerSend(std::string Data, bool Rel) {
             TCPSend(Data, TCPSock);
     } else
         UDPSend(Data);
-
-    if (DLen > 1000) {
-        debug("(Launcher->Server) Bytes sent: " + std::to_string(Data.length()) + " : "
-            + Data.substr(0, 10)
-            + Data.substr(Data.length() - 10));
-    } else if (C == 'Z') {
-        // debug("(Game->Launcher) : " + Data);
-    }
 }
 
 void NetReset() {
@@ -178,6 +171,11 @@ SOCKET SetupListener() {
         WSACleanup();
         return -1;
     }
+#if defined (__linux__)
+    int opt = 1;
+    if (setsockopt(GSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
+        error("setsockopt(SO_REUSEADDR) failed");
+#endif
     iRes = bind(GSocket, result->ai_addr, (int)result->ai_addrlen);
     if (iRes == SOCKET_ERROR) {
         error("(Proxy) bind failed with error: " + std::to_string(WSAGetLastError()));
@@ -198,7 +196,7 @@ SOCKET SetupListener() {
 }
 void AutoPing() {
     while (!Terminate) {
-        ServerSend("p", false);
+        ServerSend(strtovec("p"), false);
         PingStart = std::chrono::high_resolution_clock::now();
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
@@ -266,42 +264,18 @@ void TCPGameServer(const std::string& IP, int Port) {
             t1.detach();
             CServer = false;
         }
-        int32_t Size, Temp, Rcv;
-        char Header[10] = { 0 };
+        std::vector<char> data {};
 
         // Read byte by byte until '>' is rcved then get the size and read based on it
         do {
-            Rcv = 0;
-
-            do {
-                Temp = recv(CSocket, &Header[Rcv], 1, 0);
-                if (Temp < 1 || TCPTerminate)
-                    break;
-            } while (Header[Rcv++] != '>');
-            if (Temp < 1 || TCPTerminate)
-                break;
-            if (std::from_chars(Header, &Header[Rcv], Size).ptr[0] != '>') {
-                debug("(Game) Invalid lua Header -> " + std::string(Header, Rcv));
+            try {
+                ReceiveFromGame(CSocket, data);
+                ServerSend(data, false);
+            } catch (const std::exception& e) {
+                error(std::string("Error while receiving from game: ") + e.what());
                 break;
             }
-            std::string Ret(Size, 0);
-            Rcv = 0;
-            do {
-                Temp = recv(CSocket, &Ret[Rcv], Size - Rcv, 0);
-                if (Temp < 1)
-                    break;
-                Rcv += Temp;
-            } while (Rcv < Size && !TCPTerminate);
-            if (Temp < 1 || TCPTerminate)
-                break;
-
-            ServerSend(Ret, false);
-
-        } while (Temp > 0 && !TCPTerminate);
-        if (Temp == 0)
-            debug("(Proxy) Connection closing");
-        else
-            debug("(Proxy) recv failed error : " + std::to_string(WSAGetLastError()));
+        } while (!TCPTerminate);
     }
     TCPTerminate = true;
     GConnected = false;

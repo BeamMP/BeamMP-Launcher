@@ -7,6 +7,7 @@
 ///
 #include "Http.h"
 #include "Network/network.hpp"
+#include "NetworkHelpers.h"
 #include "Security/Init.h"
 #include <cstdlib>
 #include <regex>
@@ -72,37 +73,38 @@ bool IsAllowedLink(const std::string& Link) {
     return std::regex_search(Link, link_match, link_pattern) && link_match.position() == 0;
 }
 
-void Parse(std::string Data, SOCKET CSocket) {
-    char Code = Data.at(0), SubCode = 0;
-    if (Data.length() > 1)
-        SubCode = Data.at(1);
+void Parse(std::span<char> InData, SOCKET CSocket) {
+    std::string OutData;
+    char Code = InData[0], SubCode = 0;
+    if (InData.size() > 1)
+        SubCode = InData[1];
     switch (Code) {
     case 'A':
-        Data = Data.substr(0, 1);
+        OutData = "A";
         break;
     case 'B':
         NetReset();
         Terminate = true;
         TCPTerminate = true;
-        Data = Code + HTTP::Get("https://backend.beammp.com/servers-info");
+        OutData = Code + HTTP::Get("https://backend.beammp.com/servers-info");
         break;
     case 'C':
         ListOfMods.clear();
-        StartSync(Data);
+        StartSync(std::string(InData.data(), InData.size()));
         while (ListOfMods.empty() && !Terminate) {
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
         if (ListOfMods == "-")
-            Data = "L";
+            OutData = "L";
         else
-            Data = "L" + ListOfMods;
+            OutData = "L" + ListOfMods;
         break;
     case 'O': // open default browser with URL
-        if (IsAllowedLink(Data.substr(1))) {
+        if (IsAllowedLink(bytespan_to_string(InData.subspan(1)))) {
 #if defined(__linux)
             if (char* browser = getenv("BROWSER"); browser != nullptr && !std::string_view(browser).empty()) {
                 pid_t pid;
-                auto arg = Data.substr(1);
+                auto arg = bytespan_to_string(InData.subspan(1));
                 char* argv[] = { browser, arg.data() };
                 auto status = posix_spawn(&pid, browser, nullptr, nullptr, argv, environ);
                 if (status == 0) {
@@ -114,27 +116,27 @@ void Parse(std::string Data, SOCKET CSocket) {
                     error(std::string("posix_spawn: ") + strerror(status));
                 }
             } else {
-                error("Failed to open the following link in the browser because the $BROWSER environment variable is not set: " + Data.substr(1));
+                error("Failed to open the following link in the browser because the $BROWSER environment variable is not set: " + bytespan_to_string(InData.subspan(1)));
             }
 #elif defined(WIN32)
-            ShellExecuteA(nullptr, "open", Data.substr(1).c_str(), nullptr, nullptr, SW_SHOW); /// TODO: Look at when working on linux port
+            ShellExecuteA(nullptr, "open", InData.subspan(1).data(), nullptr, nullptr, SW_SHOW); /// TODO: Look at when working on linux port
 #endif
 
-            info("Opening Link \"" + Data.substr(1) + "\"");
+            info("Opening Link \"" + bytespan_to_string(InData.subspan(1)) + "\"");
         }
-        Data.clear();
+        OutData.clear();
         break;
     case 'P':
-        Data = Code + std::to_string(ProxyPort);
+        OutData = Code + std::to_string(ProxyPort);
         break;
     case 'U':
         if (SubCode == 'l')
-            Data = UlStatus;
+            OutData = UlStatus;
         if (SubCode == 'p') {
             if (ping > 800) {
-                Data = "Up-2";
+                OutData = "Up-2";
             } else
-                Data = "Up" + std::to_string(ping);
+                OutData = "Up" + std::to_string(ping);
         }
         if (!SubCode) {
             std::string Ping;
@@ -142,11 +144,11 @@ void Parse(std::string Data, SOCKET CSocket) {
                 Ping = "-2";
             else
                 Ping = std::to_string(ping);
-            Data = std::string(UlStatus) + "\n" + "Up" + Ping;
+            OutData = std::string(UlStatus) + "\n" + "Up" + Ping;
         }
         break;
     case 'M':
-        Data = MStatus;
+        OutData = MStatus;
         break;
     case 'Q':
         if (SubCode == 'S') {
@@ -157,17 +159,19 @@ void Parse(std::string Data, SOCKET CSocket) {
         }
         if (SubCode == 'G')
             exit(2);
-        Data.clear();
+        OutData.clear();
         break;
     case 'R': // will send mod name
-        if (ConfList->find(Data) == ConfList->end()) {
-            ConfList->insert(Data);
+    {
+        auto str = bytespan_to_string(InData);
+        if (ConfList->find(str) == ConfList->end()) {
+            ConfList->insert(str);
             ModLoaded = true;
         }
-        Data.clear();
-        break;
+        OutData.clear();
+    } break;
     case 'Z':
-        Data = "Z" + GetVer();
+        OutData = "Z" + GetVer();
         break;
     case 'N':
         if (SubCode == 'c') {
@@ -180,20 +184,21 @@ void Parse(std::string Data, SOCKET CSocket) {
             if (!UserRole.empty()) {
                 Auth["role"] = UserRole;
             }
-            Data = "N" + Auth.dump();
+            OutData = "N" + Auth.dump();
         } else {
-            Data = "N" + Login(Data.substr(Data.find(':') + 1));
+            auto indata_str = bytespan_to_string(InData);
+            OutData = "N" + Login(indata_str.substr(indata_str.find(':') + 1));
         }
         break;
     default:
-        Data.clear();
+        OutData.clear();
         break;
     }
-    if (!Data.empty() && CSocket != -1) {
-        uint32_t DataSize = Data.size();
-        std::vector<char> ToSend(sizeof(DataSize) + Data.size());
+    if (!OutData.empty() && CSocket != -1) {
+        uint32_t DataSize = OutData.size();
+        std::vector<char> ToSend(sizeof(DataSize) + OutData.size());
         std::copy_n(reinterpret_cast<char*>(&DataSize), sizeof(DataSize), ToSend.begin());
-        std::copy_n(Data.data(), Data.size(), ToSend.begin() + sizeof(DataSize));
+        std::copy_n(OutData.data(), OutData.size(), ToSend.begin() + sizeof(DataSize));
         int res = send(CSocket, ToSend.data(), int(ToSend.size()), 0);
         if (res < 0) {
             debug("(Core) send failed with error: " + std::to_string(WSAGetLastError()));
@@ -201,46 +206,16 @@ void Parse(std::string Data, SOCKET CSocket) {
     }
 }
 void GameHandler(SOCKET Client) {
-
-    int32_t Size, Temp, Rcv;
-    char Header[10] = { 0 };
+    std::vector<char> data {};
     do {
-        Rcv = 0;
-        do {
-            Temp = recv(Client, &Header[Rcv], 1, 0);
-            if (Temp < 1)
-                break;
-            if (!isdigit(Header[Rcv]) && Header[Rcv] != '>') {
-                error("(Core) Invalid lua communication");
-                KillSocket(Client);
-                return;
-            }
-        } while (Header[Rcv++] != '>');
-        if (Temp < 1)
-            break;
-        if (std::from_chars(Header, &Header[Rcv], Size).ptr[0] != '>') {
-            debug("(Core) Invalid lua Header -> " + std::string(Header, Rcv));
+        try {
+            ReceiveFromGame(Client, data);
+            Parse(data, Client);
+        } catch (const std::exception& e) {
+            error(std::string("Error while receiving from game: ") + e.what());
             break;
         }
-        std::string Ret(Size, 0);
-        Rcv = 0;
-
-        do {
-            Temp = recv(Client, &Ret[Rcv], Size - Rcv, 0);
-            if (Temp < 1)
-                break;
-            Rcv += Temp;
-        } while (Rcv < Size);
-        if (Temp < 1)
-            break;
-
-        Parse(Ret, Client);
-    } while (Temp > 0);
-    if (Temp == 0) {
-        debug("(Core) Connection closing");
-    } else {
-        debug("(Core) recv failed with error: " + std::to_string(WSAGetLastError()));
-    }
+    } while (true);
     NetReset();
     KillSocket(Client);
 }
@@ -286,6 +261,11 @@ void CoreMain() {
         WSACleanup();
         return;
     }
+#if defined (__linux__)
+    int opt = 1;
+    if (setsockopt(LSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
+        error("setsockopt(SO_REUSEADDR) failed");
+#endif
     iRes = bind(LSocket, res->ai_addr, int(res->ai_addrlen));
     if (iRes == SOCKET_ERROR) {
         error("(Core) bind failed with error: " + std::to_string(WSAGetLastError()));

@@ -7,12 +7,15 @@
 ///
 
 #pragma once
+#include "Helpers.h"
+#include <span>
 #include <string>
 
 #ifdef __linux__
 #include "linuxfixes.h"
 #include <bits/types/siginfo_t.h>
 #include <cstdint>
+#include <vector>
 #include <sys/ucontext.h>
 #endif
 
@@ -39,16 +42,16 @@ extern std::string PrivateKey;
 extern std::string ListOfMods;
 int KillSocket(uint64_t Dead);
 void UUl(const std::string& R);
-void UDPSend(std::string Data);
+void UDPSend(const std::vector<char>& Data);
 bool CheckBytes(int32_t Bytes);
 void GameSend(std::string_view Data);
-void SendLarge(std::string Data);
+void SendLarge(const std::vector<char>& Data);
 std::string TCPRcv(uint64_t Sock);
 void SyncResources(uint64_t TCPSock);
 std::string GetAddr(const std::string& IP);
 void ServerParser(std::string_view Data);
 std::string Login(const std::string& fields);
-void TCPSend(const std::string& Data, uint64_t Sock);
+void TCPSend(const std::vector<char>& Data, uint64_t Sock);
 void TCPClientMain(const std::string& IP, int Port);
 void UDPClientMain(const std::string& IP, int Port);
 void TCPGameServer(const std::string& IP, int Port);

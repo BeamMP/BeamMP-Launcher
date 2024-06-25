@@ -26,12 +26,15 @@
 SOCKET UDPSock = -1;
 sockaddr_in* ToServer = nullptr;
 
-void UDPSend(std::string Data) {
+void UDPSend(const std::vector<char>& RawData) {
     if (ClientID == -1 || UDPSock == -1)
         return;
-    if (Data.length() > 400) {
-        auto res = Comp(std::span<char>(Data.data(), Data.size()));
+    std::string Data;
+    if (Data.size() > 400) {
+        auto res = Comp(RawData);
         Data = "ABG:" + std::string(res.data(), res.size());
+    } else {
+        Data = std::string(RawData.data(), RawData.size());
     }
     std::string Packet = char(ClientID + 1) + std::string(":") + Data;
     int sendOk = sendto(UDPSock, Packet.c_str(), int(Packet.size()), 0, (sockaddr*)ToServer, sizeof(*ToServer));
@@ -39,12 +42,14 @@ void UDPSend(std::string Data) {
         error("Error Code : " + std::to_string(WSAGetLastError()));
 }
 
-void SendLarge(std::string Data) {
-    if (Data.length() > 400) {
-        auto res = Comp(std::span<char>(Data.data(), Data.size()));
-        Data = "ABG:" + std::string(res.data(), res.size());
+void SendLarge(const std::vector<char>& Data) {
+    if (Data.size() > 400) {
+        auto res = Comp(Data);
+        res.insert(res.begin(), {'A', 'B', 'G', ':'});
+        TCPSend(res, TCPSock);
+    } else {
+        TCPSend(Data, TCPSock);
     }
-    TCPSend(Data, TCPSock);
 }
 
 void UDPParser(std::string_view Packet) {
@@ -90,8 +95,8 @@ void UDPClientMain(const std::string& IP, int Port) {
     inet_pton(AF_INET, IP.c_str(), &ToServer->sin_addr);
     UDPSock = socket(AF_INET, SOCK_DGRAM, 0);
     GameSend("P" + std::to_string(ClientID));
-    TCPSend("H", TCPSock);
-    UDPSend("p");
+    TCPSend(strtovec("H"), TCPSock);
+    UDPSend(strtovec("p"));
     while (!Terminate)
         UDPRcv();
     KillSocket(UDPSock);
