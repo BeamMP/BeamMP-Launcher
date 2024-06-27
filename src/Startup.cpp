@@ -27,7 +27,7 @@
 #include <thread>
 
 extern int TraceBack;
-bool Dev = false;
+bool Dev = true;
 int ProxyPort = 0;
 
 namespace fs = std::filesystem;
@@ -81,10 +81,10 @@ std::string GetEN() {
 }
 
 std::string GetVer() {
-    return "2.0";
+    return "2.1";
 }
 std::string GetPatch() {
-    return ".99";
+    return ".0";
 }
 
 std::string GetEP(char* P) {
