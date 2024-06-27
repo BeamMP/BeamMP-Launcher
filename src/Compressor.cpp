@@ -19,11 +19,12 @@ std::vector<char> Comp(std::span<const char> input) {
     auto max_size = compressBound(input.size());
     std::vector<char> output(max_size);
     uLongf output_size = output.size();
-    int res = compress(
+    int res = compress2(
         reinterpret_cast<Bytef*>(output.data()),
         &output_size,
         reinterpret_cast<const Bytef*>(input.data()),
-        static_cast<uLongf>(input.size()));
+        static_cast<uLongf>(input.size()),
+        3);
     if (res != Z_OK) {
         error("zlib compress() failed: " + std::to_string(res));
         throw std::runtime_error("zlib compress() failed");
