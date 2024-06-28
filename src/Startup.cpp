@@ -333,6 +333,8 @@ void PreGame(const std::string& GamePath) {
 
     CheckMP(GetGamePath() + "mods/multiplayer");
 
+    info("Game user path: '" + GetGamePath() + "'");
+
     if (!Dev) {
         std::string LatestHash = HTTP::Get("https://backend.beammp.com/sha/mod?branch=" + Branch + "&pk=" + PublicKey);
         transform(LatestHash.begin(), LatestHash.end(), LatestHash.begin(), ::tolower);
