@@ -27,7 +27,7 @@
 #include <thread>
 
 extern int TraceBack;
-bool Dev = true;
+bool Dev = false;
 int ProxyPort = 0;
 
 namespace fs = std::filesystem;
