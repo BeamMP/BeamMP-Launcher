@@ -172,7 +172,7 @@ void CheckForUpdates(int argc, char* args[], const std::string& CV) {
     system("clear");
 #endif
 
-    if (FileHash != LatestHash && IsOutdated(Version(VersionStrToInts(GetVer() + GetPatch())), Version(VersionStrToInts(LatestVersion))) && !Dev) {
+    if (FileHash != LatestHash && IsOutdated(Version(VersionStrToInts(GetVer() + GetPatch())), Version(VersionStrToInts(LatestVersion)))) {
         info("Launcher update found!");
 #if defined(__linux__)
         error("Auto update is NOT implemented for the Linux version. Please update manually ASAP as updates contain security patches.");
@@ -203,6 +203,13 @@ void CustomPort(int argc, char* argv[]) {
         }
         if (argc > 2)
             Dev = true;
+    }
+    for (int i = 1; i < argc; ++i) {
+        if (std::string_view(argv[i]) == "--dev") {
+            Dev = true;
+        } else if (std::string_view(argv[i]) == "--no-dev") {
+            Dev = false;
+        }
     }
 }
 
@@ -255,7 +262,15 @@ void InitLauncher(int argc, char* argv[]) {
     CheckLocalKey();
     ConfigInit();
     CustomPort(argc, argv);
-    CheckForUpdates(argc, argv, std::string(GetVer()) + GetPatch());
+    bool update = true;
+    for (int i = 1; i < argc; ++i) {
+        if (std::string_view(argv[i]) == "--no-update") {
+            update = false;
+        }
+    }
+    if (update) {
+        CheckForUpdates(argc, argv, std::string(GetVer()) + GetPatch());
+    }
 }
 #endif
 
