@@ -122,6 +122,11 @@ void StartGame(std::string Dir) {
         error("Game Closed! launcher closing soon");
     }
 
+    status = posix_spawn_file_actions_destroy(&file_actions);
+    if (status != 0) {
+        warn(std::string("posix_spawn_file_actions_destroy failed: ") + std::strerror(errno));
+    }
+
     std::this_thread::sleep_for(std::chrono::seconds(5));
     exit(2);
 }
