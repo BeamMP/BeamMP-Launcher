@@ -68,9 +68,28 @@ void StartSync(const std::string& Data) {
 }
 
 bool IsAllowedLink(const std::string& Link) {
-    std::regex link_pattern(R"(https:\/\/(?:\w+)?(?:\.)?(?:beammp\.com|discord\.gg))");
-    std::smatch link_match;
-    return std::regex_search(Link, link_match, link_pattern) && link_match.position() == 0;
+    std::vector<std::string> allowed_links = {
+        R"(patreon\.com\/beammp$)",
+        R"(discord\.gg\/beammp$)",
+        R"(forum\.beammp\.com$)",
+        R"(beammp\.com$)",
+        R"(patreon\.com\/beammp\/$)",
+        R"(discord\.gg\/beammp\/$)",
+        R"(forum\.beammp\.com\/$)",
+        R"(beammp\.com\/$)",
+        R"(docs\.beammp\.com$)",
+        R"(wiki\.beammp\.com$)",
+        R"(docs\.beammp\.com\/$)",
+        R"(wiki\.beammp\.com\/$)",
+        R"(docs\.beammp\.com\/.*$)",
+        R"(wiki\.beammp\.com\/.*$)",
+    };
+    for (const auto& allowed_link : allowed_links) {
+        if (std::regex_match(Link, std::regex(std::string(R"(^http(s)?:\/\/)") + allowed_link))) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void Parse(std::span<char> InData, SOCKET CSocket) {
@@ -261,7 +280,7 @@ void CoreMain() {
         WSACleanup();
         return;
     }
-#if defined (__linux__)
+#if defined(__linux__)
     int opt = 1;
     if (setsockopt(LSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
         error("setsockopt(SO_REUSEADDR) failed");
