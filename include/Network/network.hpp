@@ -8,6 +8,8 @@
 
 #pragma once
 #include "Helpers.h"
+#include "asio/io_context.hpp"
+#include "asio/ip/address.hpp"
 #include <span>
 #include <string>
 
@@ -15,9 +17,13 @@
 #include "linuxfixes.h"
 #include <bits/types/siginfo_t.h>
 #include <cstdint>
-#include <vector>
 #include <sys/ucontext.h>
+#include <vector>
 #endif
+
+#include <asio.hpp>
+
+extern asio::io_context io;
 
 void NetReset();
 extern bool Dev;
@@ -30,8 +36,8 @@ extern int LastPort;
 extern bool ModLoaded;
 extern bool Terminate;
 extern int DEFAULT_PORT;
-extern uint64_t UDPSock;
-extern uint64_t TCPSock;
+extern std::shared_ptr<asio::ip::udp::socket> UDPSock;
+extern std::shared_ptr<asio::ip::tcp::socket> TCPSock;
 extern std::string Branch;
 extern bool TCPTerminate;
 extern std::string LastIP;
@@ -40,18 +46,21 @@ extern std::string UlStatus;
 extern std::string PublicKey;
 extern std::string PrivateKey;
 extern std::string ListOfMods;
-int KillSocket(uint64_t Dead);
+void KillSocket(std::shared_ptr<asio::ip::tcp::socket>& Dead);
+void KillSocket(std::shared_ptr<asio::ip::udp::socket>& Dead);
+void KillSocket(asio::ip::tcp::socket& Dead);
+void KillSocket(asio::ip::udp::socket& Dead);
 void UUl(const std::string& R);
 void UDPSend(const std::vector<char>& Data);
 bool CheckBytes(int32_t Bytes);
 void GameSend(std::string_view Data);
 void SendLarge(const std::vector<char>& Data);
-std::string TCPRcv(uint64_t Sock);
-void SyncResources(uint64_t TCPSock);
+std::string TCPRcv(asio::ip::tcp::socket& Sock);
+void SyncResources(asio::ip::tcp::socket& TCPSock);
 std::string GetAddr(const std::string& IP);
 void ServerParser(std::string_view Data);
 std::string Login(const std::string& fields);
-void TCPSend(const std::vector<char>& Data, uint64_t Sock);
-void TCPClientMain(const std::string& IP, int Port);
-void UDPClientMain(const std::string& IP, int Port);
-void TCPGameServer(const std::string& IP, int Port);
+void TCPSend(const std::vector<char>& Data, asio::ip::tcp::socket& Sock);
+void TCPClientMain(asio::ip::tcp::socket&& Socket);
+void UDPClientMain(asio::ip::address addr, uint16_t port);
+void TCPGameServer(asio::ip::tcp::socket&& Socket);

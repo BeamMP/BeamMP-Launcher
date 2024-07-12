@@ -7,6 +7,7 @@
 ///
 
 #include "Network/network.hpp"
+#include "fmt/core.h"
 
 #if defined(_WIN32)
 #include <ws2tcpip.h>
@@ -27,6 +28,7 @@
 #include <filesystem>
 #include <fstream>
 #include <future>
+#include <asio.hpp>
 #include <iostream>
 #include <string>
 #include <thread>
@@ -72,7 +74,7 @@ void Abord() {
     info("Terminated!");
 }
 
-std::string Auth(SOCKET Sock) {
+std::string Auth(asio::ip::tcp::socket& Sock) {
     TCPSend(strtovec("VC" + GetVer()), Sock);
 
     auto Res = TCPRcv(Sock);
@@ -137,22 +139,18 @@ void AsyncUpdate(uint64_t& Rcv, uint64_t Size, const std::string& Name) {
     } while (!Terminate && Rcv < Size);
 }
 
-char* TCPRcvRaw(SOCKET Sock, uint64_t& GRcv, uint64_t Size) {
-    if (Sock == -1) {
-        Terminate = true;
-        UUl("Invalid Socket");
-        return nullptr;
-    }
+char* TCPRcvRaw(asio::ip::tcp::socket& Sock, uint64_t& GRcv, uint64_t Size) {
     char* File = new char[Size];
     uint64_t Rcv = 0;
+    asio::error_code ec;
     do {
         int Len = int(Size - Rcv);
         if (Len > 1000000)
             Len = 1000000;
-        int32_t Temp = recv(Sock, &File[Rcv], Len, MSG_WAITALL);
-        if (Temp < 1) {
-            info(std::to_string(Temp));
-            UUl("Socket Closed Code 1");
+        int32_t Temp = asio::read(Sock, asio::buffer(&File[Rcv], Len), ec);
+        if (ec) {
+            ::error(fmt::format("Failed to receive data from server: {}", ec.message()));
+            UUl("Failed to receive data from server, connection closed (Code 1)");
             KillSocket(Sock);
             Terminate = true;
             delete[] File;
@@ -163,29 +161,23 @@ char* TCPRcvRaw(SOCKET Sock, uint64_t& GRcv, uint64_t Size) {
     } while (Rcv < Size && !Terminate);
     return File;
 }
-void MultiKill(SOCKET Sock, SOCKET Sock1) {
+void MultiKill(asio::ip::tcp::socket& Sock, asio::ip::tcp::socket& Sock1) {
     KillSocket(Sock1);
     KillSocket(Sock);
     Terminate = true;
 }
-SOCKET InitDSock() {
-    SOCKET DSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    SOCKADDR_IN ServerAddr;
-    if (DSock < 1) {
+std::shared_ptr<asio::ip::tcp::socket> InitDSock(asio::ip::tcp::endpoint ep) {
+    auto DSock = std::make_shared<asio::ip::tcp::socket>(io);
+    asio::error_code ec;
+    DSock->connect(ep, ec);
+    if (ec) {
         KillSocket(DSock);
         Terminate = true;
-        return 0;
-    }
-    ServerAddr.sin_family = AF_INET;
-    ServerAddr.sin_port = htons(LastPort);
-    inet_pton(AF_INET, LastIP.c_str(), &ServerAddr.sin_addr);
-    if (connect(DSock, (SOCKADDR*)&ServerAddr, sizeof(ServerAddr)) != 0) {
-        KillSocket(DSock);
-        Terminate = true;
-        return 0;
+        return nullptr;
     }
     char Code[2] = { 'D', char(ClientID) };
-    if (send(DSock, Code, 2, 0) != 2) {
+    asio::write(*DSock, asio::buffer(Code, 2), ec);
+    if (ec) {
         KillSocket(DSock);
         Terminate = true;
         return 0;
@@ -193,7 +185,7 @@ SOCKET InitDSock() {
     return DSock;
 }
 
-std::string MultiDownload(SOCKET MSock, SOCKET DSock, uint64_t Size, const std::string& Name) {
+std::string MultiDownload(asio::ip::tcp::socket& MSock, asio::ip::tcp::socket& DSock, uint64_t Size, const std::string& Name) {
 
     uint64_t GRcv = 0, MSize = Size / 2, DSize = Size - MSize;
 
@@ -239,7 +231,7 @@ void InvalidResource(const std::string& File) {
     Terminate = true;
 }
 
-void SyncResources(SOCKET Sock) {
+void SyncResources(asio::ip::tcp::socket& Sock) {
     std::string Ret = Auth(Sock);
     if (Ret.empty())
         return;
@@ -278,7 +270,7 @@ void SyncResources(SOCKET Sock) {
     }
     if (!FNames.empty())
         info("Syncing...");
-    SOCKET DSock = InitDSock();
+    auto DSock = InitDSock(Sock.remote_endpoint());
     for (auto FN = FNames.begin(), FS = FSizes.begin(); FN != FNames.end() && !Terminate; ++FN, ++FS) {
         auto pos = FN->find_last_of('/');
         if (pos != std::string::npos) {
@@ -331,7 +323,7 @@ void SyncResources(SOCKET Sock) {
 
             std::string Name = std::to_string(Pos) + "/" + std::to_string(Amount) + ": " + FName;
 
-            Data = MultiDownload(Sock, DSock, std::stoull(*FS), Name);
+            Data = MultiDownload(Sock, *DSock, std::stoull(*FS), Name);
 
             if (Terminate)
                 break;

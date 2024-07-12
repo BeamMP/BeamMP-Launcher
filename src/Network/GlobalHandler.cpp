@@ -8,6 +8,7 @@
 #include "Helpers.h"
 #include "Network/network.hpp"
 #include "NetworkHelpers.h"
+#include "asio/socket_base.hpp"
 #include <algorithm>
 #include <span>
 #include <vector>
@@ -27,6 +28,7 @@
 
 #include "Logger.h"
 #include <charconv>
+#include <fmt/format.h>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -34,20 +36,31 @@
 std::chrono::time_point<std::chrono::high_resolution_clock> PingStart, PingEnd;
 bool GConnected = false;
 bool CServer = true;
-SOCKET CSocket = -1;
-SOCKET GSocket = -1;
+std::shared_ptr<asio::ip::tcp::socket> CSocket = nullptr;
+std::shared_ptr<asio::ip::tcp::socket> GSocket = nullptr;
 
-int KillSocket(uint64_t Dead) {
-    if (Dead == (SOCKET)-1) {
-        debug("Kill socket got -1 returning...");
-        return 0;
-    }
-    shutdown(Dead, SD_BOTH);
-    int a = closesocket(Dead);
-    if (a != 0) {
-        warn("Failed to close socket!");
-    }
-    return a;
+void KillSocket(std::shared_ptr<asio::ip::tcp::socket>& Dead) {
+    if (!Dead)
+        return;
+    asio::error_code ec;
+    Dead->shutdown(asio::socket_base::shutdown_both, ec);
+}
+
+void KillSocket(std::shared_ptr<asio::ip::udp::socket>& Dead) {
+    if (!Dead)
+        return;
+    asio::error_code ec;
+    Dead->shutdown(asio::socket_base::shutdown_both, ec);
+}
+
+void KillSocket(asio::ip::tcp::socket& Dead) {
+    asio::error_code ec;
+    Dead.shutdown(asio::socket_base::shutdown_both, ec);
+}
+
+void KillSocket(asio::ip::udp::socket& Dead) {
+    asio::error_code ec;
+    Dead.shutdown(asio::socket_base::shutdown_both, ec);
 }
 
 bool CheckBytes(uint32_t Bytes) {
@@ -64,7 +77,7 @@ bool CheckBytes(uint32_t Bytes) {
 void GameSend(std::string_view RawData) {
     static std::mutex Lock;
     std::scoped_lock Guard(Lock);
-    if (TCPTerminate || !GConnected || CSocket == -1)
+    if (TCPTerminate || !GConnected || CSocket == nullptr)
         return;
     int32_t Size, Temp, Sent;
     uint32_t DataSize = RawData.size();
@@ -73,24 +86,14 @@ void GameSend(std::string_view RawData) {
     std::copy_n(RawData.data(), RawData.size(), Data.begin() + sizeof(DataSize));
     Size = Data.size();
     Sent = 0;
-#ifdef DEBUG
-    if (Size > 1000) {
-        debug("Launcher -> game (" + std::to_string(Size) + ")");
+
+    asio::error_code ec;
+    asio::write(*CSocket, asio::buffer(Data), ec);
+    if (ec) {
+        debug(fmt::format("(TCP CB) recv failed with error: {}", ec.message()));
+        KillSocket(TCPSock);
+        Terminate = true;
     }
-#endif
-    do {
-        if (Sent > -1) {
-            Temp = send(CSocket, &Data[Sent], Size - Sent, 0);
-        }
-        if (!CheckBytes(Temp))
-            return;
-        Sent += Temp;
-    } while (Sent < Size);
-    // send separately to avoid an allocation for += "\n"
-    /*Temp = send(CSocket, "\n", 1, 0);
-    if (!CheckBytes(Temp)) {
-        return;
-    }*/
 }
 
 void ServerSend(const std::vector<char>& Data, bool Rel) {
@@ -110,8 +113,8 @@ void ServerSend(const std::vector<char>& Data, bool Rel) {
     if (Ack || Rel) {
         if (Ack || DLen > 1000)
             SendLarge(Data);
-        else
-            TCPSend(Data, TCPSock);
+        else if (TCPSock)
+            TCPSend(Data, *TCPSock);
     } else
         UDPSend(Data);
 }
@@ -122,78 +125,20 @@ void NetReset() {
     Terminate = false;
     UlStatus = "Ulstart";
     MStatus = " ";
-    if (UDPSock != (SOCKET)(-1)) {
-        debug("Terminating UDP Socket : " + std::to_string(TCPSock));
-        KillSocket(UDPSock);
+    if (UDPSock != nullptr) {
+        KillSocket(*UDPSock);
     }
-    UDPSock = -1;
-    if (TCPSock != (SOCKET)(-1)) {
-        debug("Terminating TCP Socket : " + std::to_string(TCPSock));
-        KillSocket(TCPSock);
+    UDPSock = nullptr;
+    if (TCPSock != nullptr) {
+        KillSocket(*TCPSock);
     }
-    TCPSock = -1;
-    if (GSocket != (SOCKET)(-1)) {
-        debug("Terminating GTCP Socket : " + std::to_string(GSocket));
-        KillSocket(GSocket);
+    TCPSock = nullptr;
+    if (GSocket != nullptr) {
+        KillSocket(*GSocket);
     }
-    GSocket = -1;
+    GSocket = nullptr;
 }
 
-SOCKET SetupListener() {
-    if (GSocket != -1)
-        return GSocket;
-    struct addrinfo* result = nullptr;
-    struct addrinfo hints { };
-    int iRes;
-#ifdef _WIN32
-    WSADATA wsaData;
-    iRes = WSAStartup(514, &wsaData); // 2.2
-    if (iRes != 0) {
-        error("(Proxy) WSAStartup failed with error: " + std::to_string(iRes));
-        return -1;
-    }
-#endif
-
-    ZeroMemory(&hints, sizeof(hints));
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = IPPROTO_TCP;
-    hints.ai_flags = AI_PASSIVE;
-    iRes = getaddrinfo(nullptr, std::to_string(DEFAULT_PORT + 1).c_str(), &hints, &result);
-    if (iRes != 0) {
-        error("(Proxy) info failed with error: " + std::to_string(iRes));
-        WSACleanup();
-    }
-    GSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
-    if (GSocket == -1) {
-        error("(Proxy) socket failed with error: " + std::to_string(WSAGetLastError()));
-        freeaddrinfo(result);
-        WSACleanup();
-        return -1;
-    }
-#if defined (__linux__)
-    int opt = 1;
-    if (setsockopt(GSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
-        error("setsockopt(SO_REUSEADDR) failed");
-#endif
-    iRes = bind(GSocket, result->ai_addr, (int)result->ai_addrlen);
-    if (iRes == SOCKET_ERROR) {
-        error("(Proxy) bind failed with error: " + std::to_string(WSAGetLastError()));
-        freeaddrinfo(result);
-        KillSocket(GSocket);
-        WSACleanup();
-        return -1;
-    }
-    freeaddrinfo(result);
-    iRes = listen(GSocket, SOMAXCONN);
-    if (iRes == SOCKET_ERROR) {
-        error("(Proxy) listen failed with error: " + std::to_string(WSAGetLastError()));
-        KillSocket(GSocket);
-        WSACleanup();
-        return -1;
-    }
-    return GSocket;
-}
 void AutoPing() {
     while (!Terminate) {
         ServerSend(strtovec("p"), false);
@@ -228,17 +173,47 @@ void ParserAsync(std::string_view Data) {
 void ServerParser(std::string_view Data) {
     ParserAsync(Data);
 }
-void NetMain(const std::string& IP, int Port) {
+void NetMain(asio::ip::address addr, uint16_t port) {
     std::thread Ping(AutoPing);
     Ping.detach();
-    UDPClientMain(IP, Port);
+    UDPClientMain(addr, port);
     CServer = true;
     Terminate = true;
     info("Connection Terminated!");
 }
-void TCPGameServer(const std::string& IP, int Port) {
-    GSocket = SetupListener();
-    while (!TCPTerminate && GSocket != -1) {
+void TCPGameServer(asio::ip::tcp::socket&& Socket) {
+    asio::ip::tcp::endpoint listen_ep(asio::ip::address::from_string("0.0.0.0"), static_cast<uint16_t>(DEFAULT_PORT + 1));
+    asio::ip::tcp::socket listener(io);
+    asio::error_code ec;
+    listener.open(listen_ep.protocol(), ec);
+    if (ec) {
+        ::error(fmt::format("Failed to open game socket: {}", ec.message()));
+        return;
+    }
+    asio::ip::tcp::socket::linger linger_opt {};
+    linger_opt.enabled(false);
+    listener.set_option(linger_opt, ec);
+    if (ec) {
+        ::error(fmt::format("Failed to set up listening game socket to not linger / reuse address. "
+                            "This may cause the game socket to refuse to bind(). Error: {}",
+            ec.message()));
+    }
+    asio::ip::tcp::socket::reuse_address reuse_opt { true };
+    listener.set_option(reuse_opt, ec);
+    if (ec) {
+        ::error(fmt::format("Failed to set up listening core socket to not linger / reuse address. "
+                            "This may cause the core socket to refuse to bind(). Error: {}",
+            ec.message()));
+        return;
+    }
+    auto acceptor = asio::ip::tcp::acceptor(io, listen_ep);
+    acceptor.listen(asio::ip::tcp::socket::max_listen_connections, ec);
+    if (ec) {
+        debug(fmt::format("Proxy accept failed: {}", ec.message()));
+        TCPTerminate = true; // skip the loop
+    }
+    debug(fmt::format("Game server listening on {}:{}", acceptor.local_endpoint().address().to_string(), acceptor.local_endpoint().port()));
+    while (!TCPTerminate && acceptor.is_open()) {
         debug("MAIN LOOP OF GAME SERVER");
         GConnected = false;
         if (!CServer) {
@@ -249,38 +224,35 @@ void TCPGameServer(const std::string& IP, int Port) {
             break;
         }
         if (CServer) {
-            std::thread Client(TCPClientMain, IP, Port);
+            std::thread Client(TCPClientMain, std::move(Socket));
             Client.detach();
         }
-        CSocket = accept(GSocket, nullptr, nullptr);
-        if (CSocket == -1) {
-            debug("(Proxy) accept failed with error: " + std::to_string(WSAGetLastError()));
-            break;
-        }
+
+        CSocket = std::make_shared<asio::ip::tcp::socket>(acceptor.accept());
         debug("(Proxy) Game Connected!");
         GConnected = true;
         if (CServer) {
-            std::thread t1(NetMain, IP, Port);
+            std::thread t1(NetMain, CSocket->remote_endpoint().address(), CSocket->remote_endpoint().port());
             t1.detach();
             CServer = false;
         }
         std::vector<char> data {};
 
         // Read byte by byte until '>' is rcved then get the size and read based on it
-        do {
+        while (!TCPTerminate && !CSocket) {
             try {
-                ReceiveFromGame(CSocket, data);
+                ReceiveFromGame(*CSocket, data);
                 ServerSend(data, false);
             } catch (const std::exception& e) {
                 error(std::string("Error while receiving from game: ") + e.what());
                 break;
             }
-        } while (!TCPTerminate);
+        }
     }
     TCPTerminate = true;
     GConnected = false;
     Terminate = true;
-    if (CSocket != SOCKET_ERROR)
+    if (CSocket != nullptr)
         KillSocket(CSocket);
     debug("END OF GAME SERVER");
 }

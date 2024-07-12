@@ -7,6 +7,8 @@
 ///
 #include "Network/network.hpp"
 #include "Zlib/Compressor.h"
+#include "asio/ip/address.hpp"
+#include "fmt/format.h"
 
 #if defined(_WIN32)
 #include <ws2tcpip.h>
@@ -23,11 +25,10 @@
 #include <array>
 #include <string>
 
-SOCKET UDPSock = -1;
-sockaddr_in* ToServer = nullptr;
+std::shared_ptr<asio::ip::udp::socket> UDPSock = nullptr;
 
 void UDPSend(const std::vector<char>& RawData) {
-    if (ClientID == -1 || UDPSock == -1)
+    if (ClientID == -1 || UDPSock == nullptr)
         return;
     std::string Data;
     if (Data.size() > 400) {
@@ -37,7 +38,7 @@ void UDPSend(const std::vector<char>& RawData) {
         Data = std::string(RawData.data(), RawData.size());
     }
     std::string Packet = char(ClientID + 1) + std::string(":") + Data;
-    int sendOk = sendto(UDPSock, Packet.c_str(), int(Packet.size()), 0, (sockaddr*)ToServer, sizeof(*ToServer));
+    int sendOk = UDPSock->send(asio::buffer(Packet));
     if (sendOk == SOCKET_ERROR)
         error("Error Code : " + std::to_string(WSAGetLastError()));
 }
@@ -45,10 +46,18 @@ void UDPSend(const std::vector<char>& RawData) {
 void SendLarge(const std::vector<char>& Data) {
     if (Data.size() > 400) {
         auto res = Comp(Data);
-        res.insert(res.begin(), {'A', 'B', 'G', ':'});
-        TCPSend(res, TCPSock);
+        res.insert(res.begin(), { 'A', 'B', 'G', ':' });
+        if (!TCPSock) {
+            ::debug("TCPSock is null");
+            return;
+        }
+        TCPSend(res, *TCPSock);
     } else {
-        TCPSend(Data, TCPSock);
+        if (!TCPSock) {
+            ::debug("TCPSock is null");
+            return;
+        }
+        TCPSend(Data, *TCPSock);
     }
 }
 
@@ -63,39 +72,28 @@ void UDPParser(std::string_view Packet) {
     }
 }
 void UDPRcv() {
-    sockaddr_in FromServer {};
-#if defined(_WIN32)
-    int clientLength = sizeof(FromServer);
-#elif defined(__linux__)
-    socklen_t clientLength = sizeof(FromServer);
-#endif
-    ZeroMemory(&FromServer, clientLength);
     static thread_local std::array<char, 10240> Ret {};
-    if (UDPSock == -1)
+    if (UDPSock == nullptr) {
+        ::debug("UDPSock is null");
         return;
-    int32_t Rcv = recvfrom(UDPSock, Ret.data(), Ret.size() - 1, 0, (sockaddr*)&FromServer, &clientLength);
-    if (Rcv == SOCKET_ERROR)
+    }
+    asio::error_code ec;
+    int32_t Rcv = UDPSock->receive(asio::buffer(Ret.data(), Ret.size() - 1), 0, ec);
+    if (ec)
         return;
     Ret[Rcv] = 0;
     UDPParser(std::string_view(Ret.data(), Rcv));
 }
-void UDPClientMain(const std::string& IP, int Port) {
-#ifdef _WIN32
-    WSADATA data;
-    if (WSAStartup(514, &data)) {
-        error("Can't start Winsock!");
-        return;
+void UDPClientMain(asio::ip::address addr, uint16_t port) {
+    UDPSock = std::make_shared<asio::ip::udp::socket>(io);
+    asio::error_code ec;
+    UDPSock->connect(asio::ip::udp::endpoint(addr, port), ec);
+    if (ec) {
+        ::error(fmt::format("Failed to connect UDP to server: {}", ec.message()));
+        Terminate = true;
     }
-#endif
-
-    delete ToServer;
-    ToServer = new sockaddr_in;
-    ToServer->sin_family = AF_INET;
-    ToServer->sin_port = htons(Port);
-    inet_pton(AF_INET, IP.c_str(), &ToServer->sin_addr);
-    UDPSock = socket(AF_INET, SOCK_DGRAM, 0);
     GameSend("P" + std::to_string(ClientID));
-    TCPSend(strtovec("H"), TCPSock);
+    TCPSend(strtovec("H"), *TCPSock);
     UDPSend(strtovec("p"));
     while (!Terminate)
         UDPRcv();

@@ -1,11 +1,6 @@
 #pragma once
 
-#if defined(__linux__)
-#include "linuxfixes.h"
-#else
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#endif
+#include <asio.hpp>
 #include <vector>
 
-void ReceiveFromGame(SOCKET socket, std::vector<char>& out_data);
+void ReceiveFromGame(asio::ip::tcp::socket& socket, std::vector<char>& out_data);

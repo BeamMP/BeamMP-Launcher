@@ -7,6 +7,7 @@
 ///
 
 #include "Logger.h"
+#include "fmt/format.h"
 #include <Zlib/Compressor.h>
 #include <chrono>
 #include <iostream>
@@ -27,7 +28,7 @@
 
 int LastPort;
 std::string LastIP;
-SOCKET TCPSock = -1;
+std::shared_ptr<asio::ip::tcp::socket> TCPSock = nullptr;
 
 bool CheckBytes(int32_t Bytes) {
     if (Bytes == 0) {
@@ -46,8 +47,8 @@ void UUl(const std::string& R) {
     UlStatus = "UlDisconnected: " + R;
 }
 
-void TCPSend(const std::vector<char>& Data, uint64_t Sock) {
-    if (Sock == -1) {
+void TCPSend(const std::vector<char>& Data, asio::ip::tcp::socket& Sock) {
+    if (!Sock.is_open()) {
         Terminate = true;
         UUl("Invalid Socket");
         return;
@@ -61,53 +62,33 @@ void TCPSend(const std::vector<char>& Data, uint64_t Sock) {
     // Do not use Size before this point for anything but the header
     Sent = 0;
     Size += 4;
-    do {
-        if (size_t(Sent) >= Send.size()) {
-            error("string OOB in " + std::string(__func__));
-            UUl("TCP Send OOB");
-            return;
-        }
-        Temp = send(Sock, &Send[Sent], Size - Sent, 0);
-        if (!CheckBytes(Temp)) {
-            UUl("Socket Closed Code 2");
-            return;
-        }
-        Sent += Temp;
-    } while (Sent < Size);
+    asio::error_code ec;
+    asio::write(Sock, asio::buffer(Send), ec);
+    if (ec) {
+        UUl(fmt::format("Failed to send data: {}", ec.message()));
+    }
 }
 
-std::string TCPRcv(SOCKET Sock) {
-    if (Sock == -1) {
+std::string TCPRcv(asio::ip::tcp::socket& Sock) {
+    if (!Sock.is_open()) {
         Terminate = true;
         UUl("Invalid Socket");
         return "";
     }
     int32_t Header, BytesRcv = 0, Temp;
     std::vector<char> Data(sizeof(Header));
-    do {
-        Temp = recv(Sock, &Data[BytesRcv], 4 - BytesRcv, 0);
-        if (!CheckBytes(Temp)) {
-            UUl("Socket Closed Code 3");
-            return "";
-        }
-        BytesRcv += Temp;
-    } while (BytesRcv < 4);
+    asio::error_code ec;
+    asio::read(Sock, asio::buffer(Data), ec);
+    if (ec) {
+        UUl(fmt::format("Failed to receive header: {}", ec.message()));
+    }
     memcpy(&Header, &Data[0], sizeof(Header));
 
-    if (!CheckBytes(BytesRcv)) {
-        UUl("Socket Closed Code 4");
-        return "";
-    }
     Data.resize(Header);
-    BytesRcv = 0;
-    do {
-        Temp = recv(Sock, &Data[BytesRcv], Header - BytesRcv, 0);
-        if (!CheckBytes(Temp)) {
-            UUl("Socket Closed Code 5");
-            return "";
-        }
-        BytesRcv += Temp;
-    } while (BytesRcv < Header);
+    asio::read(Sock, asio::buffer(Data), ec);
+    if (ec) {
+        UUl(fmt::format("Failed to receive data: {}", ec.message()));
+    }
 
     std::string Ret(Data.data(), Header);
 
@@ -125,50 +106,24 @@ std::string TCPRcv(SOCKET Sock) {
     return Ret;
 }
 
-void TCPClientMain(const std::string& IP, int Port) {
-    LastIP = IP;
-    LastPort = Port;
+void TCPClientMain(asio::ip::tcp::socket&& socket) {
+    if (!TCPSock) {
+        return;
+    }
+    LastIP = socket.remote_endpoint().address().to_string();
+    LastPort = socket.remote_endpoint().port();
     SOCKADDR_IN ServerAddr;
     int RetCode;
-#ifdef _WIN32
-    WSADATA wsaData;
-    WSAStartup(514, &wsaData); // 2.2
-#endif
-    TCPSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    TCPSock = std::make_shared<asio::ip::tcp::socket>(std::move(socket));
 
-    if (TCPSock == -1) {
-        printf("Client: socket failed! Error code: %d\n", WSAGetLastError());
-        WSACleanup();
-        return;
-    }
-
-    ServerAddr.sin_family = AF_INET;
-    ServerAddr.sin_port = htons(Port);
-    inet_pton(AF_INET, IP.c_str(), &ServerAddr.sin_addr);
-    RetCode = connect(TCPSock, (SOCKADDR*)&ServerAddr, sizeof(ServerAddr));
-    if (RetCode != 0) {
-        UlStatus = "UlConnection Failed!";
-        error("Client: connect failed! Error code: " + std::to_string(WSAGetLastError()));
-        KillSocket(TCPSock);
-        WSACleanup();
-        Terminate = true;
-        return;
-    }
     info("Connected!");
 
     char Code = 'C';
-    send(TCPSock, &Code, 1, 0);
-    SyncResources(TCPSock);
-    while (!Terminate) {
-        ServerParser(TCPRcv(TCPSock));
+    asio::write(*TCPSock, asio::buffer(&Code, 1));
+    SyncResources(*TCPSock);
+    while (!Terminate && TCPSock) {
+        ServerParser(TCPRcv(*TCPSock));
     }
     GameSend("T");
-    ////Game Send Terminate
-    if (KillSocket(TCPSock) != 0)
-        debug("(TCP) Cannot close socket. Error code: " + std::to_string(WSAGetLastError()));
-
-#ifdef _WIN32
-    if (WSACleanup() != 0)
-        debug("(TCP) Client: WSACleanup() failed!...");
-#endif
+    KillSocket(TCPSock);
 }

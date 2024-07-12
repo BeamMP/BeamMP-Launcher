@@ -9,17 +9,15 @@
 #include "Network/network.hpp"
 #include "NetworkHelpers.h"
 #include "Security/Init.h"
+#include <asio/io_context.hpp>
 #include <cstdlib>
+#include <optional>
 #include <regex>
-#if defined(_WIN32)
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#elif defined(__linux__)
+#if defined(__linux__)
 #include <cstring>
 #include <errno.h>
 #include <netdb.h>
 #include <spawn.h>
-#include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -28,6 +26,7 @@
 #include "Logger.h"
 #include "Startup.h"
 #include <charconv>
+#include <fmt/format.h>
 #include <nlohmann/json.hpp>
 #include <set>
 #include <thread>
@@ -45,26 +44,58 @@ std::string MStatus;
 bool ModLoaded;
 int ping = -1;
 
-void StartSync(const std::string& Data) {
-    std::string IP = GetAddr(Data.substr(1, Data.find(':') - 1));
-    if (IP.find('.') == -1) {
-        if (IP == "DNS")
-            UlStatus = "UlConnection Failed! (DNS Lookup Failed)";
-        else
-            UlStatus = "UlConnection Failed! (WSA failed to start)";
-        ListOfMods = "-";
-        Terminate = true;
-        return;
+asio::io_context io {};
+
+static asio::ip::tcp::socket ResolveAndConnect(const std::string& host_port_string) {
+
+    using namespace asio;
+    ip::tcp::resolver resolver(io);
+    asio::error_code ec;
+    auto port = host_port_string.substr(host_port_string.find_last_of(':') + 1);
+    auto host = host_port_string.substr(0, host_port_string.find_last_of(':'));
+    auto resolved = resolver.resolve(host, port, ec);
+    if (ec) {
+        ::error(fmt::format("Failed to resolve '[{}]:{}': {}", host, port, ec.message()));
+        throw std::runtime_error(fmt::format("Failed to resolve '{}': {}", host_port_string, ec.message()));
     }
-    CheckLocalKey();
+    bool connected = false;
+
     UlStatus = "UlLoading...";
-    TCPTerminate = false;
-    Terminate = false;
-    ConfList->clear();
-    ping = -1;
-    std::thread GS(TCPGameServer, IP, std::stoi(Data.substr(Data.find(':') + 1)));
-    GS.detach();
-    info("Connecting to server");
+    
+    for (const auto& addr : resolved) {
+        try {
+            info(fmt::format("Resolved and connected to '[{}]:{}'",
+                addr.endpoint().address().to_string(),
+                addr.endpoint().port()));
+            ip::tcp::socket socket(io);
+            socket.connect(addr);
+            // done, connected fine
+            return socket;
+        } catch (...) {
+            // ignore
+        }
+    }
+    throw std::runtime_error(fmt::format("Failed to connect to '{}'; connection refused", host_port_string));
+}
+
+void StartSync(const std::string& Data) {
+    try {
+        auto Socket = ResolveAndConnect(Data.substr(1));
+        ListOfMods = "-";
+        CheckLocalKey();
+        TCPTerminate = false;
+        Terminate = false;
+        ConfList->clear();
+        ping = -1;
+        std::thread GS(TCPGameServer, std::move(Socket));
+        GS.detach();
+        info("Connecting to server");
+    } catch (const std::exception& e) {
+        UlStatus = "UlConnection Failed!";
+        error(fmt::format("Client: connect failed! Error: {}", e.what()));
+        WSACleanup();
+        Terminate = true;
+    }
 }
 
 bool IsAllowedLink(const std::string& Link) {
@@ -92,7 +123,7 @@ bool IsAllowedLink(const std::string& Link) {
     return false;
 }
 
-void Parse(std::span<char> InData, SOCKET CSocket) {
+void Parse(std::span<char> InData, asio::ip::tcp::socket& CSocket) {
     std::string OutData;
     char Code = InData[0], SubCode = 0;
     if (InData.size() > 1)
@@ -213,18 +244,19 @@ void Parse(std::span<char> InData, SOCKET CSocket) {
         OutData.clear();
         break;
     }
-    if (!OutData.empty() && CSocket != -1) {
+    if (!OutData.empty() && CSocket.is_open()) {
         uint32_t DataSize = OutData.size();
         std::vector<char> ToSend(sizeof(DataSize) + OutData.size());
         std::copy_n(reinterpret_cast<char*>(&DataSize), sizeof(DataSize), ToSend.begin());
         std::copy_n(OutData.data(), OutData.size(), ToSend.begin() + sizeof(DataSize));
-        int res = send(CSocket, ToSend.data(), int(ToSend.size()), 0);
-        if (res < 0) {
-            debug("(Core) send failed with error: " + std::to_string(WSAGetLastError()));
+        asio::error_code ec;
+        asio::write(CSocket, asio::buffer(ToSend), ec);
+        if (ec) {
+            debug(fmt::format("(Core) send failed with error: {}", ec.message()));
         }
     }
 }
-void GameHandler(SOCKET Client) {
+void GameHandler(asio::ip::tcp::socket& Client) {
     std::vector<char> data {};
     do {
         try {
@@ -250,68 +282,52 @@ void localRes() {
 }
 void CoreMain() {
     debug("Core Network on start!");
-    SOCKET LSocket, CSocket;
-    struct addrinfo* res = nullptr;
-    struct addrinfo hints { };
-    int iRes;
-#ifdef _WIN32
-    WSADATA wsaData;
-    iRes = WSAStartup(514, &wsaData); // 2.2
-    if (iRes)
-        debug("WSAStartup failed with error: " + std::to_string(iRes));
-#endif
 
-    ZeroMemory(&hints, sizeof(hints));
+    asio::ip::tcp::endpoint listen_ep(asio::ip::address::from_string("0.0.0.0"), static_cast<uint16_t>(DEFAULT_PORT));
+    asio::ip::tcp::socket LSocket(io);
+    asio::error_code ec;
+    LSocket.open(listen_ep.protocol(), ec);
+    if (ec) {
+        ::error(fmt::format("Failed to open core socket: {}", ec.message()));
+        return;
+    }
+    asio::ip::tcp::socket::linger linger_opt {};
+    linger_opt.enabled(false);
+    LSocket.set_option(linger_opt, ec);
+    if (ec) {
+        ::error(fmt::format("Failed to set up listening core socket to not linger / reuse address. "
+                            "This may cause the core socket to refuse to bind(). Error: {}",
+            ec.message()));
+        return;
+    }
+    asio::ip::tcp::socket::reuse_address reuse_opt { true };
+    LSocket.set_option(reuse_opt, ec);
+    if (ec) {
+        ::error(fmt::format("Failed to set up listening core socket to not linger / reuse address. "
+                            "This may cause the core socket to refuse to bind(). Error: {}",
+            ec.message()));
+        return;
+    }
 
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = IPPROTO_TCP;
-    hints.ai_flags = AI_PASSIVE;
-    iRes = getaddrinfo(nullptr, std::to_string(DEFAULT_PORT).c_str(), &hints, &res);
-    if (iRes) {
-        debug("(Core) addr info failed with error: " + std::to_string(iRes));
-        WSACleanup();
+    auto acceptor = asio::ip::tcp::acceptor(io, listen_ep);
+    acceptor.listen(asio::ip::tcp::socket::max_listen_connections, ec);
+    if (ec) {
+        ::error(fmt::format("listen() failed, which is needed for the launcher to operate. Error: {}",
+            ec.message()));
         return;
     }
-    LSocket = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-    if (LSocket == -1) {
-        debug("(Core) socket failed with error: " + std::to_string(WSAGetLastError()));
-        freeaddrinfo(res);
-        WSACleanup();
-        return;
-    }
-#if defined(__linux__)
-    int opt = 1;
-    if (setsockopt(LSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
-        error("setsockopt(SO_REUSEADDR) failed");
-#endif
-    iRes = bind(LSocket, res->ai_addr, int(res->ai_addrlen));
-    if (iRes == SOCKET_ERROR) {
-        error("(Core) bind failed with error: " + std::to_string(WSAGetLastError()));
-        freeaddrinfo(res);
-        KillSocket(LSocket);
-        WSACleanup();
-        return;
-    }
-    iRes = listen(LSocket, SOMAXCONN);
-    if (iRes == SOCKET_ERROR) {
-        debug("(Core) listen failed with error: " + std::to_string(WSAGetLastError()));
-        freeaddrinfo(res);
-        KillSocket(LSocket);
-        WSACleanup();
-        return;
-    }
+
     do {
-        CSocket = accept(LSocket, nullptr, nullptr);
-        if (CSocket == -1) {
-            error("(Core) accept failed with error: " + std::to_string(WSAGetLastError()));
+        auto CSocket = acceptor.accept(ec);
+        if (ec) {
+            error(fmt::format("(Core) accept failed with error: {}", ec.message()));
             continue;
         }
         localRes();
         info("Game Connected!");
         GameHandler(CSocket);
         warn("Game Reconnecting...");
-    } while (CSocket);
+    } while (LSocket.is_open());
     KillSocket(LSocket);
     WSACleanup();
 }

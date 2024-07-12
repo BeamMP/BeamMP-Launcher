@@ -3,6 +3,8 @@
     "cpp-httplib",
     "nlohmann-json",
     "zlib",
-    "openssl"
+    "openssl",
+    "asio",
+    "fmt"
   ]
 }
