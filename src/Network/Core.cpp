@@ -39,6 +39,7 @@ bool Terminate = false;
 bool LoginAuth = false;
 std::string Username = "";
 std::string UserRole = "";
+int UserID = -1;
 std::string UlStatus;
 std::string MStatus;
 bool ModLoaded;
@@ -179,6 +180,9 @@ void Parse(std::string Data, SOCKET CSocket) {
             }
             if (!UserRole.empty()) {
                 Auth["role"] = UserRole;
+            }
+            if (UserID != -1) {
+                Auth["id"] = UserID;
             }
             Data = "N" + Auth.dump();
         } else {
