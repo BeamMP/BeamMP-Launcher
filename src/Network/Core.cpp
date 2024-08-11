@@ -72,7 +72,6 @@ void StartSync(const std::string& Data) {
             UlStatus = "UlConnection Failed! (DNS Lookup Failed)";
         else
             UlStatus = "UlConnection Failed! (WSA failed to start)";
-        ListOfMods = "-";
         Terminate = true;
         return;
     }
@@ -117,7 +116,6 @@ void Parse(std::string Data, SOCKET CSocket) {
         Data = Code + HTTP::Get("https://backend.beammp.com/servers-info");
         break;
     case 'C':
-        ListOfMods.clear();
         StartSync(Data);
         break;
     case 'O': // open default browser with URL

@@ -32,7 +32,6 @@
 #include <Utils.h>
 
 namespace fs = std::filesystem;
-std::string ListOfMods;
 
 void CheckForDir() {
     if (!fs::exists("Resources")) {

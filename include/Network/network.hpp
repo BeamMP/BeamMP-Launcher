@@ -36,7 +36,6 @@ extern std::string MStatus;
 extern std::string UlStatus;
 extern std::string PublicKey;
 extern std::string PrivateKey;
-extern std::string ListOfMods;
 int KillSocket(uint64_t Dead);
 void UUl(const std::string& R);
 void UDPSend(std::string Data);
