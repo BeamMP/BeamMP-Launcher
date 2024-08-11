@@ -117,6 +117,7 @@ void Parse(std::string Data, SOCKET CSocket) {
         break;
     case 'C':
         StartSync(Data);
+        Data.clear();
         break;
     case 'O': // open default browser with URL
         if (IsAllowedLink(Data.substr(1))) {
