@@ -98,7 +98,7 @@ std::string Auth(SOCKET Sock) {
 
     if (Res.empty() || Res == "-") {
         info("Didn't Receive any mods...");
-        ListOfMods = "-";
+        CoreSend("L");
         TCPSend("Done", Sock);
         info("Done!");
         return "";
@@ -229,6 +229,9 @@ void SyncResources(SOCKET Sock) {
     if (Ret.empty())
         return;
 
+    if (!SecurityWarning())
+		return;
+
     info("Checking Resources...");
     CheckForDir();
 
@@ -246,9 +249,9 @@ void SyncResources(SOCKET Sock) {
         }
     }
     if (t.empty())
-        ListOfMods = "-";
+        CoreSend("L");
     else
-        ListOfMods = t;
+        CoreSend("L" + t);
     t.clear();
     for (auto FN = FNames.begin(), FS = FSizes.begin(); FN != FNames.end() && !Terminate; ++FN, ++FS) {
         auto pos = FN->find_last_of('/');

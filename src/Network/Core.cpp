@@ -44,6 +44,26 @@ std::string UlStatus;
 std::string MStatus;
 bool ModLoaded;
 int ping = -1;
+SOCKET CoreSocket = -1;
+signed char confirmed = -1;
+
+bool SecurityWarning() {
+    confirmed = -1;
+    CoreSend("WMODS_FOUND");
+
+    while (confirmed == -1)
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+    if (confirmed == 1)
+        return true;
+
+    NetReset();
+    Terminate = true;
+    TCPTerminate = true;
+    ping = -1;
+
+    return false;
+}
 
 void StartSync(const std::string& Data) {
     std::string IP = GetAddr(Data.substr(1, Data.find(':') - 1));
@@ -65,6 +85,15 @@ void StartSync(const std::string& Data) {
     std::thread GS(TCPGameServer, IP, std::stoi(Data.substr(Data.find(':') + 1)));
     GS.detach();
     info("Connecting to server");
+}
+
+void CoreSend(std::string data) {
+    if (CoreSocket != -1) {
+        int res = send(CoreSocket, (data + "\n").c_str(), int(data.size()) + 1, 0);
+        if (res < 0) {
+            debug("(Core) send failed with error: " + std::to_string(WSAGetLastError()));
+        }
+    }
 }
 
 bool IsAllowedLink(const std::string& Link) {
@@ -90,13 +119,6 @@ void Parse(std::string Data, SOCKET CSocket) {
     case 'C':
         ListOfMods.clear();
         StartSync(Data);
-        while (ListOfMods.empty() && !Terminate) {
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-        }
-        if (ListOfMods == "-")
-            Data = "L";
-        else
-            Data = "L" + ListOfMods;
         break;
     case 'O': // open default browser with URL
         if (IsAllowedLink(Data.substr(1))) {
@@ -189,6 +211,15 @@ void Parse(std::string Data, SOCKET CSocket) {
             Data = "N" + Login(Data.substr(Data.find(':') + 1));
         }
         break;
+    case 'W':
+        if (SubCode == 'Y') {
+            confirmed = 1;
+        } else if (SubCode == 'N') {
+            confirmed = 0;
+        }
+
+        Data.clear();
+        break;
     default:
         Data.clear();
         break;
@@ -201,7 +232,7 @@ void Parse(std::string Data, SOCKET CSocket) {
     }
 }
 void GameHandler(SOCKET Client) {
-
+    CoreSocket = Client;
     int32_t Size, Temp, Rcv;
     char Header[10] = { 0 };
     do {

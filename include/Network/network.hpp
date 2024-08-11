@@ -52,3 +52,5 @@ void TCPSend(const std::string& Data, uint64_t Sock);
 void TCPClientMain(const std::string& IP, int Port);
 void UDPClientMain(const std::string& IP, int Port);
 void TCPGameServer(const std::string& IP, int Port);
+bool SecurityWarning();
+void CoreSend(std::string data);
