@@ -73,7 +73,7 @@ void Abord() {
 }
 
 std::string Auth(SOCKET Sock) {
-    TCPSend("VC" + GetVer(), Sock);
+    TCPSend(strtovec("VC" + GetVer()), Sock);
 
     auto Res = TCPRcv(Sock);
 
@@ -82,7 +82,7 @@ std::string Auth(SOCKET Sock) {
         return "";
     }
 
-    TCPSend(PublicKey, Sock);
+    TCPSend(strtovec(PublicKey), Sock);
     if (Terminate)
         return "";
 
@@ -100,7 +100,7 @@ std::string Auth(SOCKET Sock) {
         UUl("Authentication failed!");
         return "";
     }
-    TCPSend("SR", Sock);
+    TCPSend(strtovec("SR"), Sock);
     if (Terminate)
         return "";
 
@@ -114,7 +114,7 @@ std::string Auth(SOCKET Sock) {
     if (Res.empty() || Res == "-") {
         info("Didn't Receive any mods...");
         ListOfMods = "-";
-        TCPSend("Done", Sock);
+        TCPSend(strtovec("Done"), Sock);
         info("Done!");
         return "";
     }
@@ -320,7 +320,7 @@ void SyncResources(SOCKET Sock) {
         CheckForDir();
         std::string FName = a.substr(a.find_last_of('/'));
         do {
-            TCPSend("f" + *FN, Sock);
+            TCPSend(strtovec("f" + *FN), Sock);
 
             std::string Data = TCPRcv(Sock);
             if (Data == "CO" || Terminate) {
@@ -362,7 +362,7 @@ void SyncResources(SOCKET Sock) {
     }
     KillSocket(DSock);
     if (!Terminate) {
-        TCPSend("Done", Sock);
+        TCPSend(strtovec("Done"), Sock);
         info("Done!");
     } else {
         UlStatus = "Ulstart";

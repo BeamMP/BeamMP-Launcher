@@ -10,6 +10,8 @@
 #include <windows.h>
 #elif defined(__linux__)
 #include "vdf_parser.hpp"
+#include <cerrno>
+#include <cstring>
 #include <pwd.h>
 #include <spawn.h>
 #include <sys/types.h>
@@ -51,7 +53,6 @@ std::string GetGamePath() {
     std::string Ver = CheckVer(GetGameDir());
     Ver = Ver.substr(0, Ver.find('.', Ver.find('.') + 1));
     Path += Ver + "\\";
-    info("Game user path: '" + Path + "'");
     return Path;
 }
 #elif defined(__linux__)
@@ -64,7 +65,6 @@ std::string GetGamePath() {
     std::string Ver = CheckVer(GetGameDir());
     Ver = Ver.substr(0, Ver.find('.', Ver.find('.') + 1));
     Path += Ver + "/";
-    info("Game user path: '" + Path + "'");
     return Path;
 }
 #endif
@@ -92,11 +92,27 @@ void StartGame(std::string Dir) {
 }
 #elif defined(__linux__)
 void StartGame(std::string Dir) {
-    int status;
     std::string filename = (Dir + "/BinLinux/BeamNG.drive.x64");
     char* argv[] = { filename.data(), NULL };
     pid_t pid;
-    int result = posix_spawn(&pid, filename.c_str(), NULL, NULL, argv, environ);
+
+    posix_spawn_file_actions_t file_actions;
+    auto status = posix_spawn_file_actions_init(&file_actions);
+    // disable stdout
+    if (status != 0) {
+        error(std::string("posix_spawn_file_actions_init failed: ") + std::strerror(errno));
+    }
+    status = posix_spawn_file_actions_addclose(&file_actions, STDOUT_FILENO);
+    if (status != 0) {
+        error(std::string("posix_spawn_file_actions_addclose for STDOUT failed: ") + std::strerror(errno));
+    }
+    status = posix_spawn_file_actions_addclose(&file_actions, STDERR_FILENO);
+    if (status != 0) {
+        error(std::string("posix_spawn_file_actions_addclose for STDERR failed: ") + std::strerror(errno));
+    }
+
+    // launch the game
+    int result = posix_spawn(&pid, filename.c_str(), &file_actions, NULL, argv, environ);
 
     if (result != 0) {
         error("Failed to Launch the game! launcher closing soon");
@@ -104,6 +120,11 @@ void StartGame(std::string Dir) {
     } else {
         waitpid(pid, &status, 0);
         error("Game Closed! launcher closing soon");
+    }
+
+    status = posix_spawn_file_actions_destroy(&file_actions);
+    if (status != 0) {
+        warn(std::string("posix_spawn_file_actions_destroy failed: ") + std::strerror(errno));
     }
 
     std::this_thread::sleep_for(std::chrono::seconds(5));

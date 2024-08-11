@@ -46,7 +46,7 @@ void UUl(const std::string& R) {
     UlStatus = "UlDisconnected: " + R;
 }
 
-void TCPSend(const std::string& Data, uint64_t Sock) {
+void TCPSend(const std::vector<char>& Data, uint64_t Sock) {
     if (Sock == -1) {
         Terminate = true;
         UUl("Invalid Socket");
@@ -57,7 +57,7 @@ void TCPSend(const std::string& Data, uint64_t Sock) {
     std::string Send(4, 0);
     Size = int32_t(Data.size());
     memcpy(&Send[0], &Size, sizeof(Size));
-    Send += Data;
+    Send += std::string(Data.data(), Data.size());
     // Do not use Size before this point for anything but the header
     Sent = 0;
     Size += 4;
@@ -113,7 +113,7 @@ std::string TCPRcv(SOCKET Sock) {
 
     if (Ret.substr(0, 4) == "ABG:") {
         auto substr = Ret.substr(4);
-        auto res = DeComp(std::span<char>(substr.data(), substr.size()));
+        auto res = DeComp(strtovec(substr));
         Ret = std::string(res.data(), res.size());
     }
 
