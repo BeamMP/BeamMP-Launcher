@@ -31,6 +31,7 @@ bool GConnected = false;
 bool CServer = true;
 SOCKET CSocket = -1;
 SOCKET GSocket = -1;
+int ClientID = -1;
 
 int KillSocket(uint64_t Dead) {
     if (Dead == (SOCKET)-1) {
@@ -154,7 +155,6 @@ SOCKET SetupListener() {
         return -1;
     }
 #endif
-
     ZeroMemory(&hints, sizeof(hints));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
@@ -190,6 +190,7 @@ SOCKET SetupListener() {
     }
     return GSocket;
 }
+
 void AutoPing() {
     while (!Terminate) {
         ServerSend("p", false);
@@ -197,8 +198,9 @@ void AutoPing() {
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 }
-int ClientID = -1;
+
 void ParserAsync(std::string_view Data) {
+
     if (Data.empty())
         return;
     char Code = Data.at(0), SubCode = 0;
@@ -221,9 +223,11 @@ void ParserAsync(std::string_view Data) {
     }
     GameSend(Data);
 }
+
 void ServerParser(std::string_view Data) {
     ParserAsync(Data);
 }
+
 void NetMain(const std::string& IP, int Port) {
     std::thread Ping(AutoPing);
     Ping.detach();
@@ -232,8 +236,10 @@ void NetMain(const std::string& IP, int Port) {
     Terminate = true;
     info("Connection Terminated!");
 }
+
 void TCPGameServer(const std::string& IP, int Port) {
     GSocket = SetupListener();
+
     while (!TCPTerminate && GSocket != -1) {
         debug("MAIN LOOP OF GAME SERVER");
         GConnected = false;
