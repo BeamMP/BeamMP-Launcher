@@ -53,7 +53,7 @@ std::string resolveHost(const std::string& hostStr) {
         return resolved;
     }
 
-    //Loop all add result, and return it by prefeence ipv6
+    //Loop all and return it by prefeence ipv6
     for (struct addrinfo* ptr = addresses; ptr != nullptr; ptr = ptr->ai_next) {
         char ipstr[INET6_ADDRSTRLEN] = { 0 };
 
