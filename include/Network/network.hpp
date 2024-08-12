@@ -45,7 +45,7 @@ void GameSend(std::string_view Data);
 void SendLarge(std::string Data);
 std::string TCPRcv(uint64_t Sock);
 void SyncResources(uint64_t TCPSock);
-std::string GetAddr(const std::string& IP);
+std::string resolveHost(const std::string& IP);
 void ServerParser(std::string_view Data);
 std::string Login(const std::string& fields);
 void TCPSend(const std::string& Data, uint64_t Sock);
