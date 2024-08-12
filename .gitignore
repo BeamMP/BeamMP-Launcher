@@ -12,3 +12,6 @@ Resources/
 bin/
 compile_commands.json
 key
+out/
+.vs/
+cmake/
