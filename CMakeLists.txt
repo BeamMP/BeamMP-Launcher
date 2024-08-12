@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.10)
 
+include(cmake/Vcpkg.cmake)
+
 project(Launcher)
+
+include(cmake/StandardSettings.cmake)
+include(cmake/StaticAnalyzers.cmake)
+include(cmake/Git.cmake)
 
 if (WIN32)
     message(STATUS "MSVC -> forcing use of statically-linked runtime.")
