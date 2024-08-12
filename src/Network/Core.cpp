@@ -45,25 +45,36 @@ bool ModLoaded;
 int ping = -1;
 
 void StartSync(const std::string& Data) {
-    std::string IP = GetAddr(Data.substr(1, Data.find(':') - 1));
-    if (IP.find('.') == -1) {
-        if (IP == "DNS")
-            UlStatus = "UlConnection Failed! (DNS Lookup Failed)";
-        else
-            UlStatus = "UlConnection Failed! (WSA failed to start)";
-        ListOfMods = "-";
-        Terminate = true;
-        return;
+
+    const std::regex ipv4v6Pattern(R"(((^\h*((([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]).){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]))\h*(|/([0-9]|[1-2][0-9]|3[0-2]))$)|(^\h*((([0-9a-f]{1,4}:){7}([0-9a-f]{1,4}|:))|(([0-9a-f]{1,4}:){6}(:[0-9a-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9a-f]{1,4}:){5}(((:[0-9a-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9a-f]{1,4}:){4}(((:[0-9a-f]{1,4}){1,3})|((:[0-9a-f]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9a-f]{1,4}:){3}(((:[0-9a-f]{1,4}){1,4})|((:[0-9a-f]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9a-f]{1,4}:){2}(((:[0-9a-f]{1,4}){1,5})|((:[0-9a-f]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9a-f]{1,4}:){1}(((:[0-9a-f]{1,4}){1,6})|((:[0-9a-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9a-f]{1,4}){1,7})|((:[0-9a-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?\h*(|/([0-9]|[0-9][0-9]|1[0-1][0-9]|12[0-8]))$)))");
+
+    std::string host = Data.substr(1, Data.rfind(':') - 1);
+    uint16_t port = std::stoi(Data.substr(Data.rfind(':') + 1));
+
+     std::string IP;
+
+    if (std::regex_match(host, ipv4v6Pattern))
+         IP = host;
+    else {
+
+         IP = resolveHost(host);
+         if (IP.length() == 0) {
+                 UlStatus = "UlConnection Failed! (DNS Lookup Failed)";
+             ListOfMods = "-";
+             Terminate = true;
+             return;
+         }
     }
+
     CheckLocalKey();
     UlStatus = "UlLoading...";
     TCPTerminate = false;
     Terminate = false;
     ConfList->clear();
     ping = -1;
-    std::thread GS(TCPGameServer, IP, std::stoi(Data.substr(Data.find(':') + 1)));
-    GS.detach();
     info("Connecting to server");
+    std::thread GS(TCPGameServer, IP, port);
+    GS.detach();
 }
 
 bool IsAllowedLink(const std::string& Link) {
@@ -87,6 +98,7 @@ void Parse(std::string Data, SOCKET CSocket) {
         Data = Code + HTTP::Get("https://backend.beammp.com/servers-info");
         break;
     case 'C':
+        //TODO StartSync Here
         ListOfMods.clear();
         StartSync(Data);
         while (ListOfMods.empty() && !Terminate) {
@@ -170,6 +182,7 @@ void Parse(std::string Data, SOCKET CSocket) {
         Data = "Z" + GetVer();
         break;
     case 'N':
+
         if (SubCode == 'c') {
             nlohmann::json Auth = {
                 { "Auth", LoginAuth ? 1 : 0 },
@@ -197,6 +210,7 @@ void Parse(std::string Data, SOCKET CSocket) {
     }
 }
 void GameHandler(SOCKET Client) {
+
 
     int32_t Size, Temp, Rcv;
     char Header[10] = { 0 };
@@ -265,49 +279,51 @@ void CoreMain() {
 
     ZeroMemory(&hints, sizeof(hints));
 
+    //IPv4 socket waiting handling LUA communications
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
-    hints.ai_flags = AI_PASSIVE;
+
+    //Fill for loopback ipv4
     iRes = getaddrinfo(nullptr, std::to_string(DEFAULT_PORT).c_str(), &hints, &res);
     if (iRes) {
         debug("(Core) addr info failed with error: " + std::to_string(iRes));
         WSACleanup();
         return;
     }
+    //Create socket
     LSocket = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
     if (LSocket == -1) {
         debug("(Core) socket failed with error: " + std::to_string(WSAGetLastError()));
-        freeaddrinfo(res);
         WSACleanup();
         return;
     }
     iRes = bind(LSocket, res->ai_addr, int(res->ai_addrlen));
     if (iRes == SOCKET_ERROR) {
         error("(Core) bind failed with error: " + std::to_string(WSAGetLastError()));
-        freeaddrinfo(res);
         KillSocket(LSocket);
         WSACleanup();
         return;
     }
+    freeaddrinfo(res);
     iRes = listen(LSocket, SOMAXCONN);
     if (iRes == SOCKET_ERROR) {
         debug("(Core) listen failed with error: " + std::to_string(WSAGetLastError()));
-        freeaddrinfo(res);
         KillSocket(LSocket);
         WSACleanup();
         return;
     }
     do {
+        //Waiting LUA Connexion
         CSocket = accept(LSocket, nullptr, nullptr);
         if (CSocket == -1) {
             error("(Core) accept failed with error: " + std::to_string(WSAGetLastError()));
             continue;
         }
         localRes();
-        info("Game Connected!");
+        info("Game Connected to LUA interface!");
         GameHandler(CSocket);
-        warn("Game Reconnecting...");
+        warn("Game reconnecting to LUA interface...");
     } while (CSocket);
     KillSocket(LSocket);
     WSACleanup();
