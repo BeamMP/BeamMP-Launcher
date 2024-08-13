@@ -15,6 +15,7 @@
 #include "linuxfixes.h"
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <cstring>
 #endif
 
 #include "Logger.h"
