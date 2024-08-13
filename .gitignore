@@ -14,5 +14,4 @@ compile_commands.json
 key
 out/
 .vs/
-cmake/
 CMakeSettings.json
