@@ -34,6 +34,7 @@
 
 namespace fs = std::filesystem;
 std::string ListOfMods;
+
 std::vector<std::string> Split(const std::string& String, const std::string& delimiter) {
     std::vector<std::string> Val;
     size_t pos;
@@ -72,6 +73,9 @@ void Abord() {
     info("Terminated!");
 }
 
+/**
+ * Auth the client, and return a list of mods needed as string, or empty string otherwise
+ */
 std::string Auth(SOCKET Sock) {
     TCPSend("VC" + GetVer(), Sock);
 
@@ -116,7 +120,7 @@ std::string Auth(SOCKET Sock) {
         ListOfMods = "-";
         TCPSend("Done", Sock);
         info("Done!");
-        return "";
+        return ""; //return empty
     }
     return Res;
 }
@@ -168,22 +172,42 @@ void MultiKill(SOCKET Sock, SOCKET Sock1) {
     KillSocket(Sock);
     Terminate = true;
 }
+/**
+ * Init the download socket.
+ */
 SOCKET InitDSock() {
-    SOCKET DSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    SOCKADDR_IN ServerAddr;
+    int AF = (LastIP.find(':') != std::string::npos) ? AF_INET6 : AF_INET;
+
+    SOCKET DSock = socket(AF, SOCK_STREAM, IPPROTO_TCP);
+
     if (DSock < 1) {
         KillSocket(DSock);
         Terminate = true;
         return 0;
     }
-    ServerAddr.sin_family = AF_INET;
-    ServerAddr.sin_port = htons(LastPort);
-    inet_pton(AF_INET, LastIP.c_str(), &ServerAddr.sin_addr);
-    if (connect(DSock, (SOCKADDR*)&ServerAddr, sizeof(ServerAddr)) != 0) {
+
+    sockaddr_storage serverAddr;
+    memset(&serverAddr, 0, sizeof(sockaddr_storage));
+
+    if (AF == AF_INET) {
+        sockaddr_in* addr4 = (sockaddr_in*)&serverAddr;
+        addr4->sin_family = AF_INET;
+        addr4->sin_port = htons(LastPort);
+        inet_pton(AF_INET, LastIP.c_str(), &addr4->sin_addr);
+    } else if (AF == AF_INET6) {
+        sockaddr_in6* addr6 = (sockaddr_in6*)&serverAddr;
+        addr6->sin6_family = AF_INET6;
+        addr6->sin6_port = htons(LastPort);
+        inet_pton(AF_INET6, LastIP.c_str(), &addr6->sin6_addr);
+    }
+
+    //Connect to the server
+    if (connect(DSock, (SOCKADDR*)&serverAddr, sizeof(sockaddr_storage)) != 0) {
         KillSocket(DSock);
         Terminate = true;
         return 0;
     }
+
     char Code[2] = { 'D', char(ClientID) };
     if (send(DSock, Code, 2, 0) != 2) {
         KillSocket(DSock);
@@ -239,7 +263,7 @@ void InvalidResource(const std::string& File) {
     Terminate = true;
 }
 
-void SyncResources(SOCKET Sock) {
+void SyncResources(uint64_t Sock) {
     std::string Ret = Auth(Sock);
     if (Ret.empty())
         return;
