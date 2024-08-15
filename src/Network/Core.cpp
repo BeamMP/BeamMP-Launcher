@@ -51,7 +51,7 @@ bool SecurityWarning() {
     confirmed = -1;
     CoreSend("WMODS_FOUND");
 
-    while (confirmed == -1)
+    while (confirmed == -1 || Terminate == false)
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
     if (confirmed == 1)
@@ -73,6 +73,7 @@ void StartSync(const std::string& Data) {
         else
             UlStatus = "UlConnection Failed! (WSA failed to start)";
         Terminate = true;
+        CoreSend("L");
         return;
     }
     CheckLocalKey();

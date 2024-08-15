@@ -63,16 +63,20 @@ std::string Auth(SOCKET Sock) {
 
     if (Res.empty() || Res[0] == 'E' || Res[0] == 'K') {
         Abord();
+        CoreSend("L");
         return "";
     }
 
     TCPSend(PublicKey, Sock);
-    if (Terminate)
+    if (Terminate) {
+        CoreSend("L");
         return "";
+    }
 
     Res = TCPRcv(Sock);
     if (Res.empty() || Res[0] != 'P') {
         Abord();
+        CoreSend("L");
         return "";
     }
 
@@ -81,17 +85,21 @@ std::string Auth(SOCKET Sock) {
         ClientID = std::stoi(Res);
     } else {
         Abord();
+        CoreSend("L");
         UUl("Authentication failed!");
         return "";
     }
     TCPSend("SR", Sock);
-    if (Terminate)
+    if (Terminate) {
+        CoreSend("L");
         return "";
+    }
 
     Res = TCPRcv(Sock);
 
     if (Res[0] == 'E' || Res[0] == 'K') {
         Abord();
+        CoreSend("L");
         return "";
     }
 

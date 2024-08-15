@@ -152,6 +152,7 @@ void TCPClientMain(const std::string& IP, int Port) {
         KillSocket(TCPSock);
         WSACleanup();
         Terminate = true;
+        CoreSend("L");
         return;
     }
     info("Connected!");
