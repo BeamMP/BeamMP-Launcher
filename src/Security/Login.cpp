@@ -18,6 +18,7 @@ std::string PrivateKey;
 extern bool LoginAuth;
 extern std::string Username;
 extern std::string UserRole;
+extern int UserID;
 
 void UpdateKey(const char* newKey) {
     if (newKey && std::isalnum(newKey[0])) {
@@ -48,6 +49,7 @@ std::string Login(const std::string& fields) {
     if (fields == "LO") {
         Username = "";
         UserRole = "";
+        UserID = -1;
         LoginAuth = false;
         UpdateKey(nullptr);
         return "";
@@ -73,6 +75,9 @@ std::string Login(const std::string& fields) {
             }
             if (d.contains("role")) {
                 UserRole = d["role"].get<std::string>();
+            }
+            if (d.contains("id")) {
+                UserID = d["id"].get<int>();
             }
             if (d.contains("private_key")) {
                 UpdateKey(d["private_key"].get<std::string>().c_str());
@@ -128,6 +133,9 @@ void CheckLocalKey() {
                 }
                 if (d.contains("role")) {
                     UserRole = d["role"].get<std::string>();
+                }
+                if (d.contains("id")) {
+                    UserID = d["id"].get<int>();
                 }
                 // info(Role);
             } else {
