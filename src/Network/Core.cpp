@@ -94,7 +94,6 @@ void Parse(std::string Data, SOCKET CSocket) {
         Data = Code + HTTP::Get("https://backend.beammp.com/servers-info");
         break;
     case 'C':
-        //TODO StartSync Here
         ListOfMods.clear();
         StartSync(Data);
         while (ListOfMods.empty() && !Terminate) {
