@@ -290,17 +290,18 @@ void CoreMain() {
     LSocket = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
     if (LSocket == -1) {
         debug("(Core) socket failed with error: " + std::to_string(WSAGetLastError()));
+        freeaddrinfo(res);
         WSACleanup();
         return;
     }
     iRes = bind(LSocket, res->ai_addr, int(res->ai_addrlen));
+    freeaddrinfo(res);
     if (iRes == SOCKET_ERROR) {
         error("(Core) bind failed with error: " + std::to_string(WSAGetLastError()));
         KillSocket(LSocket);
         WSACleanup();
         return;
     }
-    freeaddrinfo(res);
     iRes = listen(LSocket, SOMAXCONN);
     if (iRes == SOCKET_ERROR) {
         debug("(Core) listen failed with error: " + std::to_string(WSAGetLastError()));
