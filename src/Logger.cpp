@@ -95,7 +95,7 @@ void neterror(const std::string& toPrint) {
     Print += " WSA error: " + std::to_string(WSAGetLastError()) + "\n";
 #else
     int errorCode = errno;
-    Print += " System Error Code: " + std::to_string(errorCode) + " - " + std::strerror(errorCode) + "\n";
+    Print += " System Error Code: " + std::to_string(errorCode) + "\n";
 #endif
     std::cout << Print;
     addToLog(Print);
