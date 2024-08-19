@@ -8,12 +8,23 @@
 
 #pragma once
 #include <string>
+#include <utility>
 
-#ifdef __linux__
+#if defined(_WIN32)
+#include <ws2tcpip.h>
+#elif defined(__linux__)
+#include <arpa/inet.h>
+#include <cstring>
+#include <errno.h>
+#include <netdb.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 #include "linuxfixes.h"
 #include <bits/types/siginfo_t.h>
 #include <cstdint>
 #include <sys/ucontext.h>
+
+#define INVALID_SOCKET -1
 #endif
 
 void NetReset();
@@ -21,6 +32,8 @@ extern bool Dev;
 extern int ping;
 
 [[noreturn]] void CoreNetwork();
+extern SOCKET LSocket;
+extern bool shuttingdown;
 extern int ProxyPort;
 extern int ClientID;
 extern int LastPort;
@@ -45,10 +58,18 @@ void GameSend(std::string_view Data);
 void SendLarge(std::string Data);
 std::string TCPRcv(uint64_t Sock);
 void SyncResources(uint64_t TCPSock);
-std::string GetAddr(const std::string& IP);
+std::string resolveHost(const std::string& IP);
 void ServerParser(std::string_view Data);
 std::string Login(const std::string& fields);
 void TCPSend(const std::string& Data, uint64_t Sock);
 void TCPClientMain(const std::string& IP, int Port);
 void UDPClientMain(const std::string& IP, int Port);
 void TCPGameServer(const std::string& IP, int Port);
+/**
+ * Init a socket on the IP and port provided, and fill an sockaddr_storage.
+ * @param ip : IP of the distant host
+ * @param port : Port of the distant host
+ * @param sockType : Type of the socket asked: SOCK_DGRAM or SOCK_STREAM
+ * @param pStoreAddrInfo : A **valid** pointer to handle sockaddr informations used by the socket
+ */
+SOCKET initSocket(std::string ip, int port, int sockType, sockaddr_storage* pStoreAddrInfo);

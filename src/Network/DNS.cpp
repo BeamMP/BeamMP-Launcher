@@ -10,34 +10,54 @@
 
 #if defined(_WIN32)
 #include <winsock2.h>
+#include <ws2tcpip.h>
 #elif defined(__linux__)
 #include "linuxfixes.h"
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <cstring>
 #endif
 
 #include "Logger.h"
 
-std::string GetAddr(const std::string& IP) {
-    if (IP.find_first_not_of("0123456789.") == -1)
-        return IP;
-    hostent* host;
-#ifdef _WIN32
-    WSADATA wsaData;
-    if (WSAStartup(514, &wsaData) != 0) {
-        error("WSA Startup Failed!");
-        WSACleanup();
-        return "";
-    }
-#endif
+/**
+ * Resolve IPs of host, prefered IPv6, and return IPv4 otherwise.
+ */
+std::string resolveHost(const std::string& hostStr) {
+    struct addrinfo* addresses = nullptr;
+    struct addrinfo hints {};
+    memset(&hints, 0, sizeof(hints));
 
-    host = gethostbyname(IP.c_str());
-    if (!host) {
-        error("DNS lookup failed! on " + IP);
-        WSACleanup();
-        return "DNS";
+    std::string resolved = "";
+
+    // UNSPEC to resolve both ip stack (IPv4 & IPv6)
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
+
+    if (getaddrinfo(hostStr.c_str(), nullptr, &hints, &addresses) != 0)
+    {
+        neterror("(DNS) getaddrinfo failed.");
+        return resolved;
     }
-    std::string Ret = inet_ntoa(*((struct in_addr*)host->h_addr));
-    WSACleanup();
-    return Ret;
+
+    //Loop all and return it by prefeence ipv6
+    for (struct addrinfo* ptr = addresses; ptr != nullptr; ptr = ptr->ai_next) {
+        char ipstr[INET6_ADDRSTRLEN] = { 0 };
+
+        if (ptr->ai_family == AF_INET6) {
+            struct sockaddr_in6* ipv6 = (struct sockaddr_in6*)ptr->ai_addr;
+            inet_ntop(AF_INET6, &(ipv6->sin6_addr), ipstr, sizeof(ipstr));
+            resolved = ipstr;
+            break; //Break if IPv6 finded
+        }
+        else if (ptr->ai_family == AF_INET) {
+            struct sockaddr_in* ipv4 = (struct sockaddr_in*)ptr->ai_addr;
+            inet_ntop(AF_INET, &(ipv4->sin_addr), ipstr, sizeof(ipstr));
+            resolved = ipstr;
+        }
+    }
+
+    freeaddrinfo(addresses);
+    return resolved;
 }

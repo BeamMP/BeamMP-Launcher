@@ -12,17 +12,6 @@
 #include <iostream>
 #include <vector>
 
-#if defined(_WIN32)
-#include <ws2tcpip.h>
-#elif defined(__linux__)
-#include <arpa/inet.h>
-#include <cstring>
-#include <errno.h>
-#include <netdb.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#endif
-
 #include "Network/network.hpp"
 
 int LastPort;
@@ -42,6 +31,7 @@ bool CheckBytes(int32_t Bytes) {
     }
     return true;
 }
+
 void UUl(const std::string& R) {
     UlStatus = "UlDisconnected: " + R;
 }
@@ -128,29 +118,23 @@ std::string TCPRcv(SOCKET Sock) {
 void TCPClientMain(const std::string& IP, int Port) {
     LastIP = IP;
     LastPort = Port;
-    SOCKADDR_IN ServerAddr;
-    int RetCode;
-#ifdef _WIN32
-    WSADATA wsaData;
-    WSAStartup(514, &wsaData); // 2.2
-#endif
-    TCPSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-    if (TCPSock == -1) {
-        printf("Client: socket failed! Error code: %d\n", WSAGetLastError());
-        WSACleanup();
+    sockaddr_storage server {};
+
+    TCPSock = initSocket(IP, Port, SOCK_STREAM, &server);
+
+    if (TCPSock == INVALID_SOCKET) {
+        UlStatus = "UlConnection Failed!";
+        Terminate = true;
         return;
     }
 
-    ServerAddr.sin_family = AF_INET;
-    ServerAddr.sin_port = htons(Port);
-    inet_pton(AF_INET, IP.c_str(), &ServerAddr.sin_addr);
-    RetCode = connect(TCPSock, (SOCKADDR*)&ServerAddr, sizeof(ServerAddr));
-    if (RetCode != 0) {
+    //Try to connect to the distant server, using the socket created
+    if (connect(TCPSock, (struct sockaddr*)&server, sizeof(sockaddr_storage)))
+    {
         UlStatus = "UlConnection Failed!";
-        error("Client: connect failed! Error code: " + std::to_string(WSAGetLastError()));
+        neterror("Client: connect to server failed!");
         KillSocket(TCPSock);
-        WSACleanup();
         Terminate = true;
         return;
     }
@@ -165,10 +149,42 @@ void TCPClientMain(const std::string& IP, int Port) {
     GameSend("T");
     ////Game Send Terminate
     if (KillSocket(TCPSock) != 0)
-        debug("(TCP) Cannot close socket. Error code: " + std::to_string(WSAGetLastError()));
+        neterror("(TCP) Cannot close socket.");
+}
 
-#ifdef _WIN32
-    if (WSACleanup() != 0)
-        debug("(TCP) Client: WSACleanup() failed!...");
-#endif
+SOCKET initSocket(std::string ip, int port, int sockType, sockaddr_storage* storeAddrInfo) {
+    int AF = (ip.find(':') != std::string::npos) ? AF_INET6 : AF_INET;
+
+    // Create the socket
+    SOCKET sock = socket(AF, sockType, (sockType == SOCK_STREAM) ? IPPROTO_TCP : IPPROTO_UDP);
+
+    if (sock == -1) {
+        neterror("Client: socket creation failed!");
+        return INVALID_SOCKET;
+    }
+
+    if (AF == AF_INET) {
+        // IPv4
+        struct sockaddr_in* saddr = (sockaddr_in*) storeAddrInfo;
+        saddr->sin_family = AF_INET;
+        saddr->sin_port = htons(port);
+        if (inet_pton(AF_INET, ip.c_str(), &(saddr->sin_addr)) != 1) {
+            neterror("Client: inet_pton failed!");
+            KillSocket(sock);
+            return INVALID_SOCKET;
+        }
+
+    } else {
+        // IPv6
+        struct sockaddr_in6 *saddr = (sockaddr_in6*) storeAddrInfo;
+        saddr->sin6_family = AF_INET6;
+        saddr->sin6_port = htons(port);
+        if(inet_pton(AF_INET6, ip.c_str(), &(saddr->sin6_addr)) != 1) {
+            neterror("Client: inet_pton failed!");
+            KillSocket(sock);
+            return INVALID_SOCKET;
+        }
+    }
+
+    return sock;
 }

@@ -34,6 +34,7 @@
 
 namespace fs = std::filesystem;
 std::string ListOfMods;
+
 std::vector<std::string> Split(const std::string& String, const std::string& delimiter) {
     std::vector<std::string> Val;
     size_t pos;
@@ -72,6 +73,9 @@ void Abord() {
     info("Terminated!");
 }
 
+/**
+ * Auth the client, and return a list of mods needed as string, or empty string otherwise
+ */
 std::string Auth(SOCKET Sock) {
     TCPSend("VC" + GetVer(), Sock);
 
@@ -116,7 +120,7 @@ std::string Auth(SOCKET Sock) {
         ListOfMods = "-";
         TCPSend("Done", Sock);
         info("Done!");
-        return "";
+        return ""; //return empty
     }
     return Res;
 }
@@ -168,22 +172,30 @@ void MultiKill(SOCKET Sock, SOCKET Sock1) {
     KillSocket(Sock);
     Terminate = true;
 }
+/**
+ * Init the download socket.
+ */
 SOCKET InitDSock() {
-    SOCKET DSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    SOCKADDR_IN ServerAddr;
-    if (DSock < 1) {
+
+    struct sockaddr_storage serverDownload { };
+
+    SOCKET DSock = initSocket(LastIP, LastPort, SOCK_STREAM, &serverDownload);
+
+    if (DSock == INVALID_SOCKET) {
+        UlStatus = "UlConnection Failed!";
+        neterror("Client: Download socket creation failed.");
+        Terminate = true;
+        return INVALID_SOCKET;
+    }
+    // Try to connect to the distant server, using the socket created
+    if (connect(DSock, (struct sockaddr*)&serverDownload, sizeof(sockaddr_storage))) {
+        UlStatus = "UlConnection Failed!";
+        neterror("Client: Connection to download mods failed!.");
         KillSocket(DSock);
         Terminate = true;
-        return 0;
+        return INVALID_SOCKET;
     }
-    ServerAddr.sin_family = AF_INET;
-    ServerAddr.sin_port = htons(LastPort);
-    inet_pton(AF_INET, LastIP.c_str(), &ServerAddr.sin_addr);
-    if (connect(DSock, (SOCKADDR*)&ServerAddr, sizeof(ServerAddr)) != 0) {
-        KillSocket(DSock);
-        Terminate = true;
-        return 0;
-    }
+
     char Code[2] = { 'D', char(ClientID) };
     if (send(DSock, Code, 2, 0) != 2) {
         KillSocket(DSock);
@@ -239,7 +251,7 @@ void InvalidResource(const std::string& File) {
     Terminate = true;
 }
 
-void SyncResources(SOCKET Sock) {
+void SyncResources(uint64_t Sock) {
     std::string Ret = Auth(Sock);
     if (Ret.empty())
         return;

@@ -6,6 +6,8 @@
 /// Created by Anonymous275 on 7/19/2020
 ///
 
+#include "Network/network.hpp"
+
 #if defined(_WIN32)
 #include <windows.h>
 #elif defined(__linux__)
@@ -83,12 +85,14 @@ void StartGame(std::string Dir) {
         info("Game Launched!");
         GamePID = pi.dwProcessId;
         WaitForSingleObject(pi.hProcess, INFINITE);
-        error("Game Closed! launcher closing soon");
+        warn("Game Closed! launcher closing soon");
     } else {
         error("Failed to Launch the game! launcher closing soon");
     }
-    std::this_thread::sleep_for(std::chrono::seconds(5));
-    exit(2);
+
+    shuttingdown = true;
+    if (LSocket != INVALID_SOCKET)
+        KillSocket(LSocket);
 }
 #elif defined(__linux__)
 void StartGame(std::string Dir) {
@@ -105,9 +109,9 @@ void StartGame(std::string Dir) {
         waitpid(pid, &status, 0);
         error("Game Closed! launcher closing soon");
     }
-
-    std::this_thread::sleep_for(std::chrono::seconds(5));
-    exit(2);
+    shuttingdown = true;
+    if (LSocket != INVALID_SOCKET)
+        KillSocket(LSocket);
 }
 #endif
 

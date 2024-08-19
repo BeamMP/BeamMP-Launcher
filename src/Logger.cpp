@@ -13,6 +13,11 @@
 #include <sstream>
 #include <thread>
 
+#ifdef WIN32
+#include <WinSock2.h>
+#endif // WIN32
+
+
 std::string getDate() {
     time_t tt = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     tm local_tm = *localtime(&tt);
@@ -79,6 +84,19 @@ void fatal(const std::string& toPrint) {
 }
 void except(const std::string& toPrint) {
     std::string Print = getDate() + "[EXCEP] " + toPrint + "\n";
+    std::cout << Print;
+    addToLog(Print);
+}
+
+void neterror(const std::string& toPrint) {
+    std::string Print = getDate() + "[NET_ERROR] " + toPrint;
+#ifdef WIN32
+    int errorCode = WSAGetLastError();
+    Print += " WSA error: " + std::to_string(WSAGetLastError()) + "\n";
+#else
+    int errorCode = errno;
+    Print += " System Error Code: " + std::to_string(errorCode) + "\n";
+#endif
     std::cout << Print;
     addToLog(Print);
 }

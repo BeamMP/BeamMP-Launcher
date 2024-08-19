@@ -29,17 +29,18 @@
 std::chrono::time_point<std::chrono::high_resolution_clock> PingStart, PingEnd;
 bool GConnected = false;
 bool CServer = true;
-SOCKET CSocket = -1;
-SOCKET GSocket = -1;
+SOCKET CSocket = INVALID_SOCKET;
+SOCKET GSocket = INVALID_SOCKET;
+int ClientID = -1;
 
 int KillSocket(uint64_t Dead) {
-    if (Dead == (SOCKET)-1) {
-        debug("Kill socket got -1 returning...");
+    if (Dead == INVALID_SOCKET) {
+        debug("Kill invalid socket got, returning...");
         return 0;
     }
     shutdown(Dead, SD_BOTH);
     int a = closesocket(Dead);
-    if (a != 0) {
+    if (a != 0 && !shuttingdown) {
         warn("Failed to close socket!");
     }
     return a;
@@ -118,78 +119,30 @@ void ServerSend(std::string Data, bool Rel) {
 }
 
 void NetReset() {
+    debug("Network reset called");
     TCPTerminate = false;
     GConnected = false;
     Terminate = false;
     UlStatus = "Ulstart";
     MStatus = " ";
-    if (UDPSock != (SOCKET)(-1)) {
+
+    if (UDPSock != INVALID_SOCKET) {
         debug("Terminating UDP Socket : " + std::to_string(TCPSock));
         KillSocket(UDPSock);
     }
     UDPSock = -1;
-    if (TCPSock != (SOCKET)(-1)) {
+    if (TCPSock != INVALID_SOCKET) {
         debug("Terminating TCP Socket : " + std::to_string(TCPSock));
         KillSocket(TCPSock);
     }
     TCPSock = -1;
-    if (GSocket != (SOCKET)(-1)) {
+    if (GSocket != INVALID_SOCKET) {
         debug("Terminating GTCP Socket : " + std::to_string(GSocket));
         KillSocket(GSocket);
     }
     GSocket = -1;
 }
 
-SOCKET SetupListener() {
-    if (GSocket != -1)
-        return GSocket;
-    struct addrinfo* result = nullptr;
-    struct addrinfo hints { };
-    int iRes;
-#ifdef _WIN32
-    WSADATA wsaData;
-    iRes = WSAStartup(514, &wsaData); // 2.2
-    if (iRes != 0) {
-        error("(Proxy) WSAStartup failed with error: " + std::to_string(iRes));
-        return -1;
-    }
-#endif
-
-    ZeroMemory(&hints, sizeof(hints));
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = IPPROTO_TCP;
-    hints.ai_flags = AI_PASSIVE;
-    iRes = getaddrinfo(nullptr, std::to_string(DEFAULT_PORT + 1).c_str(), &hints, &result);
-    if (iRes != 0) {
-        error("(Proxy) info failed with error: " + std::to_string(iRes));
-        WSACleanup();
-    }
-    GSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
-    if (GSocket == -1) {
-        error("(Proxy) socket failed with error: " + std::to_string(WSAGetLastError()));
-        freeaddrinfo(result);
-        WSACleanup();
-        return -1;
-    }
-    iRes = bind(GSocket, result->ai_addr, (int)result->ai_addrlen);
-    if (iRes == SOCKET_ERROR) {
-        error("(Proxy) bind failed with error: " + std::to_string(WSAGetLastError()));
-        freeaddrinfo(result);
-        KillSocket(GSocket);
-        WSACleanup();
-        return -1;
-    }
-    freeaddrinfo(result);
-    iRes = listen(GSocket, SOMAXCONN);
-    if (iRes == SOCKET_ERROR) {
-        error("(Proxy) listen failed with error: " + std::to_string(WSAGetLastError()));
-        KillSocket(GSocket);
-        WSACleanup();
-        return -1;
-    }
-    return GSocket;
-}
 void AutoPing() {
     while (!Terminate) {
         ServerSend("p", false);
@@ -197,8 +150,9 @@ void AutoPing() {
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 }
-int ClientID = -1;
+
 void ParserAsync(std::string_view Data) {
+
     if (Data.empty())
         return;
     char Code = Data.at(0), SubCode = 0;
@@ -221,9 +175,11 @@ void ParserAsync(std::string_view Data) {
     }
     GameSend(Data);
 }
+
 void ServerParser(std::string_view Data) {
     ParserAsync(Data);
 }
+
 void NetMain(const std::string& IP, int Port) {
     std::thread Ping(AutoPing);
     Ping.detach();
@@ -232,9 +188,32 @@ void NetMain(const std::string& IP, int Port) {
     Terminate = true;
     info("Connection Terminated!");
 }
+
 void TCPGameServer(const std::string& IP, int Port) {
-    GSocket = SetupListener();
-    while (!TCPTerminate && GSocket != -1) {
+
+    struct sockaddr_storage loopBackTcp { };
+
+    GSocket = initSocket("127.0.0.1", DEFAULT_PORT + 1, SOCK_STREAM, &loopBackTcp); 
+
+    if (GSocket == INVALID_SOCKET) {
+        return;
+    }
+
+    int iRes = bind(GSocket, (sockaddr*)&loopBackTcp, sizeof(sockaddr_storage));
+    if (iRes == SOCKET_ERROR) {
+        neterror("(Proxy) LoopBack TCP bind failed!");
+        KillSocket(GSocket);
+        return;
+    }
+
+    iRes = listen(GSocket, SOMAXCONN);
+    if (iRes == SOCKET_ERROR) {
+        neterror("(Proxy) LoopBack TCP listen failed!");
+        KillSocket(GSocket);
+        return;
+    }
+
+    while (!TCPTerminate && GSocket != INVALID_SOCKET) {
         debug("MAIN LOOP OF GAME SERVER");
         GConnected = false;
         if (!CServer) {
@@ -248,6 +227,7 @@ void TCPGameServer(const std::string& IP, int Port) {
             std::thread Client(TCPClientMain, IP, Port);
             Client.detach();
         }
+
         CSocket = accept(GSocket, nullptr, nullptr);
         if (CSocket == -1) {
             debug("(Proxy) accept failed with error: " + std::to_string(WSAGetLastError()));

@@ -1,3 +1,6 @@
 [submodule "evpp"]
 	path = evpp
 	url = https://github.com/BeamMP/evpp.git
+[submodule "vcpkg"]
+	path = vcpkg
+	url = https://github.com/microsoft/vcpkg.git

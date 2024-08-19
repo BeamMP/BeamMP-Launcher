@@ -5,8 +5,9 @@
 ///
 /// Created by Anonymous275 on 7/20/2020
 ///
-#include "Http.h"
+
 #include "Network/network.hpp"
+#include "Http.h"
 #include "Security/Init.h"
 #include <cstdlib>
 #include <regex>
@@ -44,27 +45,34 @@ std::string UlStatus;
 std::string MStatus;
 bool ModLoaded;
 int ping = -1;
+bool shuttingdown = false;
+SOCKET LSocket = INVALID_SOCKET;
 
 void StartSync(const std::string& Data) {
-    std::string IP = GetAddr(Data.substr(1, Data.find(':') - 1));
-    if (IP.find('.') == -1) {
-        if (IP == "DNS")
-            UlStatus = "UlConnection Failed! (DNS Lookup Failed)";
-        else
-            UlStatus = "UlConnection Failed! (WSA failed to start)";
+
+    std::string host = Data.substr(1, Data.rfind(':') - 1);
+    uint16_t port = std::stoi(Data.substr(Data.rfind(':') + 1));
+
+    std::string IP;
+
+    IP = resolveHost(host);
+
+    if (IP.length() == 0) {
+        UlStatus = "UlConnection Failed! (DNS Lookup Failed)";
         ListOfMods = "-";
         Terminate = true;
         return;
     }
+
     CheckLocalKey();
     UlStatus = "UlLoading...";
     TCPTerminate = false;
     Terminate = false;
     ConfList->clear();
     ping = -1;
-    std::thread GS(TCPGameServer, IP, std::stoi(Data.substr(Data.find(':') + 1)));
-    GS.detach();
     info("Connecting to server");
+    std::thread GS(TCPGameServer, IP, port);
+    GS.detach();
 }
 
 bool IsAllowedLink(const std::string& Link) {
@@ -171,6 +179,7 @@ void Parse(std::string Data, SOCKET CSocket) {
         Data = "Z" + GetVer();
         break;
     case 'N':
+
         if (SubCode == 'c') {
             nlohmann::json Auth = {
                 { "Auth", LoginAuth ? 1 : 0 },
@@ -184,7 +193,7 @@ void Parse(std::string Data, SOCKET CSocket) {
             if (UserID != -1) {
                 Auth["id"] = UserID;
             }
-            Data = "N" + Auth.dump();
+                Data = "N" + Auth.dump();
         } else {
             Data = "N" + Login(Data.substr(Data.find(':') + 1));
         }
@@ -201,6 +210,7 @@ void Parse(std::string Data, SOCKET CSocket) {
     }
 }
 void GameHandler(SOCKET Client) {
+
 
     int32_t Size, Temp, Rcv;
     char Header[10] = { 0 };
@@ -256,65 +266,50 @@ void localRes() {
 }
 void CoreMain() {
     debug("Core Network on start!");
-    SOCKET LSocket, CSocket;
-    struct addrinfo* res = nullptr;
-    struct addrinfo hints { };
-    int iRes;
-#ifdef _WIN32
-    WSADATA wsaData;
-    iRes = WSAStartup(514, &wsaData); // 2.2
-    if (iRes)
-        debug("WSAStartup failed with error: " + std::to_string(iRes));
-#endif
 
-    ZeroMemory(&hints, sizeof(hints));
+    SOCKET CSocket;
 
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = IPPROTO_TCP;
-    hints.ai_flags = AI_PASSIVE;
-    iRes = getaddrinfo(nullptr, std::to_string(DEFAULT_PORT).c_str(), &hints, &res);
-    if (iRes) {
-        debug("(Core) addr info failed with error: " + std::to_string(iRes));
-        WSACleanup();
+    struct sockaddr_storage loopBackLUA { };
+
+    LSocket = initSocket("0.0.0.0", DEFAULT_PORT, SOCK_STREAM, &loopBackLUA);
+
+    if (LSocket == INVALID_SOCKET) {
+        neterror("(Core) Client LUA Loopback socket creation failed!");
         return;
     }
-    LSocket = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-    if (LSocket == -1) {
-        debug("(Core) socket failed with error: " + std::to_string(WSAGetLastError()));
-        freeaddrinfo(res);
-        WSACleanup();
-        return;
-    }
-    iRes = bind(LSocket, res->ai_addr, int(res->ai_addrlen));
+
+    int iRes = bind(LSocket, (sockaddr*)&loopBackLUA, sizeof(sockaddr_storage));
+
     if (iRes == SOCKET_ERROR) {
-        error("(Core) bind failed with error: " + std::to_string(WSAGetLastError()));
-        freeaddrinfo(res);
+        neterror("(Core) Client LUA Loopback socket binding failed!");
         KillSocket(LSocket);
-        WSACleanup();
+        shuttingdown = true;
+        warn("Maybe your game is already launched!");
         return;
     }
     iRes = listen(LSocket, SOMAXCONN);
     if (iRes == SOCKET_ERROR) {
-        debug("(Core) listen failed with error: " + std::to_string(WSAGetLastError()));
-        freeaddrinfo(res);
+        debug("(Core) Client LUA Loopback socket listen failed!");
         KillSocket(LSocket);
-        WSACleanup();
         return;
     }
+    //MAIN LOOP
     do {
+        //Waiting LUA Connexion
         CSocket = accept(LSocket, nullptr, nullptr);
         if (CSocket == -1) {
-            error("(Core) accept failed with error: " + std::to_string(WSAGetLastError()));
+            if (shuttingdown)
+                break;
+            neterror("(Core) Client LUA Loopback socket accept failed!");
             continue;
         }
         localRes();
-        info("Game Connected!");
+        info("Game Connected to LUA interface!");
         GameHandler(CSocket);
-        warn("Game Reconnecting...");
-    } while (CSocket);
+        warn("Game reconnecting to LUA interface...");
+    } while (LSocket != INVALID_SOCKET);
+
     KillSocket(LSocket);
-    WSACleanup();
 }
 
 #if defined(_WIN32)
@@ -328,22 +323,28 @@ int Handle(EXCEPTION_POINTERS* ep) {
 #endif
 
 [[noreturn]] void CoreNetwork() {
-    while (true) {
-#if not defined(__MINGW32__)
-        __try {
+
+#ifdef WIN32
+    WSADATA wsaData;
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+        fatal("(CoreNetwork) Can't start Winsock!");
+    }
 #endif
 
+    while (!shuttingdown) {
+        try {
             CoreMain();
-
-#if not defined(__MINGW32__) and not defined(__linux__)
-        } __except (Handle(GetExceptionInformation())) { }
-#elif not defined(__MINGW32__) and defined(__linux__)
-    }
-    catch (...) {
-        except("(Core) Code : " + std::string(strerror(errno)));
-    }
+        } catch (const std::exception& e) {
+            except("(Core) Fatal Execption: " + std::string(e.what()));
+#ifdef WIN32
+            WSACleanup();
 #endif
-
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        } catch (...) {
+            except("(Core) Code : " + std::string(strerror(errno)));
+        }
     }
+
+#ifdef _WIN32
+    WSACleanup();
+#endif
 }

@@ -24,7 +24,7 @@
 #include <string>
 
 SOCKET UDPSock = -1;
-sockaddr_in* ToServer = nullptr;
+sockaddr_storage ToServer {};
 
 void UDPSend(std::string Data) {
     if (ClientID == -1 || UDPSock == -1)
@@ -34,7 +34,7 @@ void UDPSend(std::string Data) {
         Data = "ABG:" + std::string(res.data(), res.size());
     }
     std::string Packet = char(ClientID + 1) + std::string(":") + Data;
-    int sendOk = sendto(UDPSock, Packet.c_str(), int(Packet.size()), 0, (sockaddr*)ToServer, sizeof(*ToServer));
+    int sendOk = sendto(UDPSock, Packet.c_str(), int(Packet.size()), 0, (sockaddr*)&ToServer, sizeof(sockaddr_storage));
     if (sendOk == SOCKET_ERROR)
         error("Error Code : " + std::to_string(WSAGetLastError()));
 }
@@ -57,43 +57,39 @@ void UDPParser(std::string_view Packet) {
         ServerParser(Packet);
     }
 }
+
 void UDPRcv() {
-    sockaddr_in FromServer {};
-#if defined(_WIN32)
-    int clientLength = sizeof(FromServer);
-#elif defined(__linux__)
-    socklen_t clientLength = sizeof(FromServer);
-#endif
-    ZeroMemory(&FromServer, clientLength);
+    sockaddr_storage FromServer {};
+    socklen_t addrLen = sizeof(FromServer);
     static thread_local std::array<char, 10240> Ret {};
     if (UDPSock == -1)
         return;
-    int32_t Rcv = recvfrom(UDPSock, Ret.data(), Ret.size() - 1, 0, (sockaddr*)&FromServer, &clientLength);
+    int32_t Rcv = recvfrom(UDPSock, Ret.data(), Ret.size() - 1, 0, (sockaddr*)&FromServer, &addrLen);
     if (Rcv == SOCKET_ERROR)
         return;
     Ret[Rcv] = 0;
     UDPParser(std::string_view(Ret.data(), Rcv));
 }
-void UDPClientMain(const std::string& IP, int Port) {
-#ifdef _WIN32
-    WSADATA data;
-    if (WSAStartup(514, &data)) {
-        error("Can't start Winsock!");
+
+void UDPClientMain(const std::string& IP, int Port)
+{
+
+    UDPSock = initSocket(IP, Port, SOCK_DGRAM, &ToServer);
+
+    if (UDPSock == INVALID_SOCKET) {
+        UlStatus = "UlConnection Failed!";
+        neterror("Client: Failed to create UDP socket.");
+        Terminate = true;
         return;
     }
-#endif
 
-    delete ToServer;
-    ToServer = new sockaddr_in;
-    ToServer->sin_family = AF_INET;
-    ToServer->sin_port = htons(Port);
-    inet_pton(AF_INET, IP.c_str(), &ToServer->sin_addr);
-    UDPSock = socket(AF_INET, SOCK_DGRAM, 0);
+    //Send to the game client
     GameSend("P" + std::to_string(ClientID));
     TCPSend("H", TCPSock);
     UDPSend("p");
+    //Main loop
     while (!Terminate)
         UDPRcv();
+
     KillSocket(UDPSock);
-    WSACleanup();
 }
