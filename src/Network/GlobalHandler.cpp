@@ -119,22 +119,24 @@ void ServerSend(std::string Data, bool Rel) {
 }
 
 void NetReset() {
+    debug("Network reset called");
     TCPTerminate = false;
     GConnected = false;
     Terminate = false;
     UlStatus = "Ulstart";
     MStatus = " ";
-    if (UDPSock != (SOCKET)(-1)) {
+
+    if (UDPSock != INVALID_SOCKET) {
         debug("Terminating UDP Socket : " + std::to_string(TCPSock));
         KillSocket(UDPSock);
     }
     UDPSock = -1;
-    if (TCPSock != (SOCKET)(-1)) {
+    if (TCPSock != INVALID_SOCKET) {
         debug("Terminating TCP Socket : " + std::to_string(TCPSock));
         KillSocket(TCPSock);
     }
     TCPSock = -1;
-    if (GSocket != (SOCKET)(-1)) {
+    if (GSocket != INVALID_SOCKET) {
         debug("Terminating GTCP Socket : " + std::to_string(GSocket));
         KillSocket(GSocket);
     }
