@@ -29,8 +29,8 @@
 std::chrono::time_point<std::chrono::high_resolution_clock> PingStart, PingEnd;
 bool GConnected = false;
 bool CServer = true;
-SOCKET CSocket = -1;
-SOCKET GSocket = -1;
+SOCKET CSocket = INVALID_SOCKET;
+SOCKET GSocket = INVALID_SOCKET;
 int ClientID = -1;
 
 int KillSocket(uint64_t Dead) {
@@ -40,7 +40,7 @@ int KillSocket(uint64_t Dead) {
     }
     shutdown(Dead, SD_BOTH);
     int a = closesocket(Dead);
-    if (a != 0) {
+    if (a != 0 && !shuttingdown) {
         warn("Failed to close socket!");
     }
     return a;

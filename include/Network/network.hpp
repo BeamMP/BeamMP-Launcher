@@ -32,6 +32,8 @@ extern bool Dev;
 extern int ping;
 
 [[noreturn]] void CoreNetwork();
+extern SOCKET LSocket;
+extern bool shuttingdown;
 extern int ProxyPort;
 extern int ClientID;
 extern int LastPort;

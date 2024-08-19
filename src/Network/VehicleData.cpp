@@ -74,18 +74,10 @@ void UDPRcv() {
 void UDPClientMain(const std::string& IP, int Port)
 {
 
-#ifdef _WIN32
-    WSADATA data;
-    if (WSAStartup(514, &data)) {
-        error("Can't start Winsock!");
-        return;
-    }
-#endif
     UDPSock = initSocket(IP, Port, SOCK_DGRAM, &ToServer);
 
     if (UDPSock == INVALID_SOCKET) {
         UlStatus = "UlConnection Failed!";
-        WSACleanup();
         neterror("Client: Failed to create UDP socket.");
         Terminate = true;
         return;
@@ -98,6 +90,6 @@ void UDPClientMain(const std::string& IP, int Port)
     //Main loop
     while (!Terminate)
         UDPRcv();
+
     KillSocket(UDPSock);
-    WSACleanup();
 }

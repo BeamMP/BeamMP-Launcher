@@ -31,6 +31,7 @@ bool CheckBytes(int32_t Bytes) {
     }
     return true;
 }
+
 void UUl(const std::string& R) {
     UlStatus = "UlDisconnected: " + R;
 }
@@ -124,9 +125,6 @@ void TCPClientMain(const std::string& IP, int Port) {
 
     if (TCPSock == INVALID_SOCKET) {
         UlStatus = "UlConnection Failed!";
-        error("Client: connect failed! Error code: " + std::to_string(WSAGetLastError()));
-        KillSocket(TCPSock);
-        WSACleanup();
         Terminate = true;
         return;
     }
@@ -135,9 +133,8 @@ void TCPClientMain(const std::string& IP, int Port) {
     if (connect(TCPSock, (struct sockaddr*)&server, sizeof(sockaddr_storage)))
     {
         UlStatus = "UlConnection Failed!";
-        error("Client: connect failed! Error code: " + std::to_string(WSAGetLastError()));
+        neterror("Client: connect to server failed!");
         KillSocket(TCPSock);
-        WSACleanup();
         Terminate = true;
         return;
     }
@@ -152,12 +149,7 @@ void TCPClientMain(const std::string& IP, int Port) {
     GameSend("T");
     ////Game Send Terminate
     if (KillSocket(TCPSock) != 0)
-        debug("(TCP) Cannot close socket. Error code: " + std::to_string(WSAGetLastError()));
-
-#ifdef _WIN32
-    if (WSACleanup() != 0)
-        debug("(TCP) Client: WSACleanup() failed!...");
-#endif
+        neterror("(TCP) Cannot close socket.");
 }
 
 SOCKET initSocket(std::string ip, int port, int sockType, sockaddr_storage* storeAddrInfo) {

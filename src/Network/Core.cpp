@@ -5,8 +5,9 @@
 ///
 /// Created by Anonymous275 on 7/20/2020
 ///
-#include "Http.h"
+
 #include "Network/network.hpp"
+#include "Http.h"
 #include "Security/Init.h"
 #include <cstdlib>
 #include <regex>
@@ -44,10 +45,10 @@ std::string UlStatus;
 std::string MStatus;
 bool ModLoaded;
 int ping = -1;
+bool shuttingdown = false;
+SOCKET LSocket = INVALID_SOCKET;
 
 void StartSync(const std::string& Data) {
-
-    //const std::regex ipv4v6Pattern(R"(((^\h*((([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]).){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]))\h*(|/([0-9]|[1-2][0-9]|3[0-2]))$)|(^\h*((([0-9a-f]{1,4}:){7}([0-9a-f]{1,4}|:))|(([0-9a-f]{1,4}:){6}(:[0-9a-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9a-f]{1,4}:){5}(((:[0-9a-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9a-f]{1,4}:){4}(((:[0-9a-f]{1,4}){1,3})|((:[0-9a-f]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9a-f]{1,4}:){3}(((:[0-9a-f]{1,4}){1,4})|((:[0-9a-f]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9a-f]{1,4}:){2}(((:[0-9a-f]{1,4}){1,5})|((:[0-9a-f]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9a-f]{1,4}:){1}(((:[0-9a-f]{1,4}){1,6})|((:[0-9a-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9a-f]{1,4}){1,7})|((:[0-9a-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?\h*(|/([0-9]|[0-9][0-9]|1[0-1][0-9]|12[0-8]))$)))");
 
     std::string host = Data.substr(1, Data.rfind(':') - 1);
     uint16_t port = std::stoi(Data.substr(Data.rfind(':') + 1));
@@ -192,7 +193,7 @@ void Parse(std::string Data, SOCKET CSocket) {
             if (UserID != -1) {
                 Auth["id"] = UserID;
             }
-            Data = "N" + Auth.dump();
+                Data = "N" + Auth.dump();
         } else {
             Data = "N" + Login(Data.substr(Data.find(':') + 1));
         }
@@ -265,40 +266,31 @@ void localRes() {
 }
 void CoreMain() {
     debug("Core Network on start!");
-#ifdef _WIN32
-    WSADATA wsaData;
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-        error("Can't start Winsock!");
-        return;
-    }
-#endif
-    SOCKET LSocket, CSocket;
+
+    SOCKET CSocket;
 
     struct sockaddr_storage loopBackLUA { };
 
     LSocket = initSocket("0.0.0.0", DEFAULT_PORT, SOCK_STREAM, &loopBackLUA);
 
     if (LSocket == INVALID_SOCKET) {
-        error("Client: LUA Loopback socket creation failed! Error code: " + std::to_string(WSAGetLastError())),
-            WSACleanup();
+        neterror("(Core) Client LUA Loopback socket creation failed!");
         return;
     }
-
-    LSocket = localSocketRes.first;
 
     int iRes = bind(LSocket, (sockaddr*)&loopBackLUA, sizeof(sockaddr_storage));
 
     if (iRes == SOCKET_ERROR) {
-        error("(Core) bind failed with error: " + std::to_string(WSAGetLastError()));
+        neterror("(Core) Client LUA Loopback socket binding failed!");
         KillSocket(LSocket);
-        WSACleanup();
+        shuttingdown = true;
+        warn("Maybe your game is already launched!");
         return;
     }
     iRes = listen(LSocket, SOMAXCONN);
     if (iRes == SOCKET_ERROR) {
-        debug("(Core) listen failed with error: " + std::to_string(WSAGetLastError()));
+        debug("(Core) Client LUA Loopback socket listen failed!");
         KillSocket(LSocket);
-        WSACleanup();
         return;
     }
     //MAIN LOOP
@@ -306,17 +298,18 @@ void CoreMain() {
         //Waiting LUA Connexion
         CSocket = accept(LSocket, nullptr, nullptr);
         if (CSocket == -1) {
-            error("(Core) accept failed with error: " + std::to_string(WSAGetLastError()));
+            if (shuttingdown)
+                break;
+            neterror("(Core) Client LUA Loopback socket accept failed!");
             continue;
         }
         localRes();
         info("Game Connected to LUA interface!");
         GameHandler(CSocket);
         warn("Game reconnecting to LUA interface...");
-    } while (CSocket);
+    } while (LSocket != INVALID_SOCKET);
 
     KillSocket(LSocket);
-    WSACleanup();
 }
 
 #if defined(_WIN32)
@@ -330,22 +323,28 @@ int Handle(EXCEPTION_POINTERS* ep) {
 #endif
 
 [[noreturn]] void CoreNetwork() {
-    while (true) {
-#if not defined(__MINGW32__)
-        __try {
+
+#ifdef WIN32
+    WSADATA wsaData;
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+        fatal("(CoreNetwork) Can't start Winsock!");
+    }
 #endif
 
+    while (!shuttingdown) {
+        try {
             CoreMain();
-
-#if not defined(__MINGW32__) and not defined(__linux__)
-        } __except (Handle(GetExceptionInformation())) { }
-#elif not defined(__MINGW32__) and defined(__linux__)
-    }
-    catch (...) {
-        except("(Core) Code : " + std::string(strerror(errno)));
-    }
+        } catch (const std::exception& e) {
+            except("(Core) Fatal Execption: " + std::string(e.what()));
+#ifdef WIN32
+            WSACleanup();
 #endif
-
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        } catch (...) {
+            except("(Core) Code : " + std::string(strerror(errno)));
+        }
     }
+
+#ifdef _WIN32
+    WSACleanup();
+#endif
 }

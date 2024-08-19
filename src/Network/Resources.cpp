@@ -183,7 +183,6 @@ SOCKET InitDSock() {
 
     if (DSock == INVALID_SOCKET) {
         UlStatus = "UlConnection Failed!";
-        WSACleanup();
         neterror("Client: Download socket creation failed.");
         Terminate = true;
         return INVALID_SOCKET;
@@ -193,7 +192,6 @@ SOCKET InitDSock() {
         UlStatus = "UlConnection Failed!";
         neterror("Client: Connection to download mods failed!.");
         KillSocket(DSock);
-        WSACleanup();
         Terminate = true;
         return INVALID_SOCKET;
     }

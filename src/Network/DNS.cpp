@@ -30,27 +30,14 @@ std::string resolveHost(const std::string& hostStr) {
 
     std::string resolved = "";
 
-#ifdef _WIN32
-    WSADATA wsaData;
-    if (WSAStartup(514, &wsaData) != 0) {
-        error("WSA Startup Failed!");
-        WSACleanup();
-        return resolved;
-    }
-#endif
     // UNSPEC to resolve both ip stack (IPv4 & IPv6)
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
 
-    int res = getaddrinfo(hostStr.c_str(), nullptr, &hints, &addresses);
-    if (res != 0)
+    if (getaddrinfo(hostStr.c_str(), nullptr, &hints, &addresses) != 0)
     {
-        std::cerr << "getaddrinfo failed: " << gai_strerror(res) << std::endl;
-#ifdef _WIN32
-        WSACleanup();
-#endif
-        freeaddrinfo(addresses);
+        neterror("(DNS) getaddrinfo failed.");
         return resolved;
     }
 
@@ -72,6 +59,5 @@ std::string resolveHost(const std::string& hostStr) {
     }
 
     freeaddrinfo(addresses);
-    WSACleanup();
     return resolved;
 }
