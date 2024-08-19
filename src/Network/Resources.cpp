@@ -176,36 +176,29 @@ void MultiKill(SOCKET Sock, SOCKET Sock1) {
  * Init the download socket.
  */
 SOCKET InitDSock() {
-    int AF = (LastIP.find(':') != std::string::npos) ? AF_INET6 : AF_INET;
 
-    SOCKET DSock = socket(AF, SOCK_STREAM, IPPROTO_TCP);
+    struct sockaddr_storage serverDownload { };
 
-    if (DSock < 1) {
+    auto result = initSocket(LastIP, LastPort, SOCK_STREAM, &serverDownload);
+
+    SOCKET DSock = result.first;
+
+    if (result.second != 0) {
+        UlStatus = "UlConnection Failed!";
+        error("Client: download mods failed! Error code: " + std::to_string(WSAGetLastError()));
         KillSocket(DSock);
+        WSACleanup();
         Terminate = true;
-        return 0;
+        return INVALID_SOCKET;
     }
-
-    sockaddr_storage serverAddr;
-    memset(&serverAddr, 0, sizeof(sockaddr_storage));
-
-    if (AF == AF_INET) {
-        sockaddr_in* addr4 = (sockaddr_in*)&serverAddr;
-        addr4->sin_family = AF_INET;
-        addr4->sin_port = htons(LastPort);
-        inet_pton(AF_INET, LastIP.c_str(), &addr4->sin_addr);
-    } else if (AF == AF_INET6) {
-        sockaddr_in6* addr6 = (sockaddr_in6*)&serverAddr;
-        addr6->sin6_family = AF_INET6;
-        addr6->sin6_port = htons(LastPort);
-        inet_pton(AF_INET6, LastIP.c_str(), &addr6->sin6_addr);
-    }
-
-    //Connect to the server
-    if (connect(DSock, (SOCKADDR*)&serverAddr, sizeof(sockaddr_storage)) != 0) {
+    // Try to connect to the distant server, using the socket created
+    if (connect(DSock, (struct sockaddr*)&serverDownload, sizeof(sockaddr_storage))) {
+        UlStatus = "UlConnection Failed!";
+        error("Client: download mods failed! Error code: " + std::to_string(WSAGetLastError()));
         KillSocket(DSock);
+        WSACleanup();
         Terminate = true;
-        return 0;
+        return INVALID_SOCKET;
     }
 
     char Code[2] = { 'D', char(ClientID) };
