@@ -160,23 +160,15 @@ void TCPClientMain(const std::string& IP, int Port) {
 #endif
 }
 
-std::pair<SOCKET, int> initSocket(std::string ip, int port, int sockType, sockaddr_storage* storeAddrInfo) {
+SOCKET initSocket(std::string ip, int port, int sockType, sockaddr_storage* storeAddrInfo) {
     int AF = (ip.find(':') != std::string::npos) ? AF_INET6 : AF_INET;
-    int code = 0;
-#ifdef _WIN32
-    WSADATA wsaData;
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-        std::cerr << "Can't start Winsock!" << std::endl;
-        return std::make_pair(INVALID_SOCKET, -1);
-    }
-#endif
+
     // Create the socket
     SOCKET sock = socket(AF, sockType, (sockType == SOCK_STREAM) ? IPPROTO_TCP : IPPROTO_UDP);
 
     if (sock == -1) {
-        std::cerr << "Client: socket failed! Error code: %d\n" << WSAGetLastError() << std::endl;
-        WSACleanup();
-        return std::make_pair(INVALID_SOCKET, -1);
+        neterror("Client: socket creation failed!");
+        return INVALID_SOCKET;
     }
 
     if (AF == AF_INET) {
@@ -184,15 +176,23 @@ std::pair<SOCKET, int> initSocket(std::string ip, int port, int sockType, sockad
         struct sockaddr_in* saddr = (sockaddr_in*) storeAddrInfo;
         saddr->sin_family = AF_INET;
         saddr->sin_port = htons(port);
-        inet_pton(AF_INET, ip.c_str(), &(saddr->sin_addr));
+        if (inet_pton(AF_INET, ip.c_str(), &(saddr->sin_addr)) != 1) {
+            neterror("Client: inet_pton failed!");
+            KillSocket(sock);
+            return INVALID_SOCKET;
+        }
 
     } else {
         // IPv6
         struct sockaddr_in6 *saddr = (sockaddr_in6*) storeAddrInfo;
         saddr->sin6_family = AF_INET6;
         saddr->sin6_port = htons(port);
-        inet_pton(AF_INET6, ip.c_str(), &(saddr->sin6_addr));
+        if(inet_pton(AF_INET6, ip.c_str(), &(saddr->sin6_addr)) != 1) {
+            neterror("Client: inet_pton failed!");
+            KillSocket(sock);
+            return INVALID_SOCKET;
+        }
     }
 
-    return std::make_pair( sock, code);
+    return sock;
 }

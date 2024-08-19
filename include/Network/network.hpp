@@ -70,4 +70,4 @@ void TCPGameServer(const std::string& IP, int Port);
  * @param sockType : Type of the socket asked: SOCK_DGRAM or SOCK_STREAM
  * @param pStoreAddrInfo : A **valid** pointer to handle sockaddr informations used by the socket
  */
-std::pair<SOCKET, int> initSocket(std::string ip, int port, int sockType, sockaddr_storage* pStoreAddrInfo);
+SOCKET initSocket(std::string ip, int port, int sockType, sockaddr_storage* pStoreAddrInfo);
