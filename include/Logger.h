@@ -8,6 +8,7 @@
 #pragma once
 #include <iostream>
 #include <string>
+
 void InitLog();
 void except(const std::string& toPrint);
 void fatal(const std::string& toPrint);
@@ -15,4 +16,5 @@ void debug(const std::string& toPrint);
 void error(const std::string& toPrint);
 void info(const std::string& toPrint);
 void warn(const std::string& toPrint);
+void neterror(const std::string& toPrint);
 std::string getDate();
