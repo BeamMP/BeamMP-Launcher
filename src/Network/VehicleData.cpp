@@ -81,19 +81,15 @@ void UDPClientMain(const std::string& IP, int Port)
         return;
     }
 #endif
+    UDPSock = initSocket(IP, Port, SOCK_DGRAM, &ToServer);
 
-    auto result = initSocket(IP, Port, SOCK_DGRAM, &ToServer);
-
-    if (result.second != 0) {
+    if (UDPSock == INVALID_SOCKET) {
         UlStatus = "UlConnection Failed!";
-        error("Client: connect failed! Error code: " + std::to_string(WSAGetLastError()));
-        KillSocket(TCPSock);
         WSACleanup();
+        neterror("Client: Failed to create UDP socket.");
         Terminate = true;
         return;
     }
-
-    UDPSock = result.first;
 
     //Send to the game client
     GameSend("P" + std::to_string(ClientID));

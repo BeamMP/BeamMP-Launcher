@@ -120,9 +120,9 @@ void TCPClientMain(const std::string& IP, int Port) {
 
     sockaddr_storage server {};
 
-    auto result = initSocket(IP, Port, SOCK_STREAM, &server);
-    
-    if (result.second != 0) {
+    TCPSock = initSocket(IP, Port, SOCK_STREAM, &server);
+
+    if (TCPSock == INVALID_SOCKET) {
         UlStatus = "UlConnection Failed!";
         error("Client: connect failed! Error code: " + std::to_string(WSAGetLastError()));
         KillSocket(TCPSock);
@@ -130,7 +130,7 @@ void TCPClientMain(const std::string& IP, int Port) {
         Terminate = true;
         return;
     }
-    TCPSock = result.first;
+
     //Try to connect to the distant server, using the socket created
     if (connect(TCPSock, (struct sockaddr*)&server, sizeof(sockaddr_storage)))
     {

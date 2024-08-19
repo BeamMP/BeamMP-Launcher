@@ -179,22 +179,19 @@ SOCKET InitDSock() {
 
     struct sockaddr_storage serverDownload { };
 
-    auto result = initSocket(LastIP, LastPort, SOCK_STREAM, &serverDownload);
+    SOCKET DSock = initSocket(LastIP, LastPort, SOCK_STREAM, &serverDownload);
 
-    SOCKET DSock = result.first;
-
-    if (result.second != 0) {
+    if (DSock == INVALID_SOCKET) {
         UlStatus = "UlConnection Failed!";
-        error("Client: download mods failed! Error code: " + std::to_string(WSAGetLastError()));
-        KillSocket(DSock);
         WSACleanup();
+        neterror("Client: Download socket creation failed.");
         Terminate = true;
         return INVALID_SOCKET;
     }
     // Try to connect to the distant server, using the socket created
     if (connect(DSock, (struct sockaddr*)&serverDownload, sizeof(sockaddr_storage))) {
         UlStatus = "UlConnection Failed!";
-        error("Client: download mods failed! Error code: " + std::to_string(WSAGetLastError()));
+        neterror("Client: Connection to download mods failed!.");
         KillSocket(DSock);
         WSACleanup();
         Terminate = true;

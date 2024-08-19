@@ -276,9 +276,9 @@ void CoreMain() {
 
     struct sockaddr_storage loopBackLUA { };
 
-    auto localSocketRes = initSocket("127.0.0.1", DEFAULT_PORT, SOCK_STREAM, &loopBackLUA);
+    LSocket = initSocket("0.0.0.0", DEFAULT_PORT, SOCK_STREAM, &loopBackLUA);
 
-    if (localSocketRes.second != 0 || localSocketRes.first == INVALID_SOCKET) {
+    if (LSocket == INVALID_SOCKET) {
         error("Client: LUA Loopback socket creation failed! Error code: " + std::to_string(WSAGetLastError())),
             WSACleanup();
         return;
