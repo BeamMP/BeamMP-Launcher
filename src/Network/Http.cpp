@@ -5,7 +5,6 @@
 ///
 /// Created by Anonymous275 on 7/18/2020
 ///
-#define CPPHTTPLIB_OPENSSL_SUPPORT
 
 #include "Http.h"
 #include <Logger.h>
