@@ -23,6 +23,8 @@
 #include <bits/types/siginfo_t.h>
 #include <cstdint>
 #include <sys/ucontext.h>
+
+#define INVALID_SOCKET -1
 #endif
 
 void NetReset();
