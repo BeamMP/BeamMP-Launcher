@@ -8,8 +8,17 @@
 
 #pragma once
 #include <string>
+#include <utility>
 
-#ifdef __linux__
+#if defined(_WIN32)
+#include <ws2tcpip.h>
+#elif defined(__linux__)
+#include <arpa/inet.h>
+#include <cstring>
+#include <errno.h>
+#include <netdb.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 #include "linuxfixes.h"
 #include <bits/types/siginfo_t.h>
 #include <cstdint>
@@ -52,3 +61,11 @@ void TCPSend(const std::string& Data, uint64_t Sock);
 void TCPClientMain(const std::string& IP, int Port);
 void UDPClientMain(const std::string& IP, int Port);
 void TCPGameServer(const std::string& IP, int Port);
+/**
+ * Init a socket on the IP and port provided, and fill an sockaddr_storage.
+ * @param ip : IP of the distant host
+ * @param port : Port of the distant host
+ * @param sockType : Type of the socket asked: SOCK_DGRAM or SOCK_STREAM
+ * @param pStoreAddrInfo : A **valid** pointer to handle sockaddr informations used by the socket
+ */
+std::pair<SOCKET, int> initSocket(std::string ip, int port, int sockType, sockaddr_storage* pStoreAddrInfo);

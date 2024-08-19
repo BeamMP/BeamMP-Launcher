@@ -12,17 +12,6 @@
 #include <iostream>
 #include <vector>
 
-#if defined(_WIN32)
-#include <ws2tcpip.h>
-#elif defined(__linux__)
-#include <arpa/inet.h>
-#include <cstring>
-#include <errno.h>
-#include <netdb.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#endif
-
 #include "Network/network.hpp"
 
 int LastPort;
@@ -129,42 +118,22 @@ void TCPClientMain(const std::string& IP, int Port) {
     LastIP = IP;
     LastPort = Port;
 
-    int AF = (IP.find(':') != std::string::npos) ? AF_INET6 : AF_INET;
-    int RetCode;
-#ifdef _WIN32
-    WSADATA wsaData;
-    WSAStartup(514, &wsaData); // 2.2
-#endif
-    //Create the socket for distant server
-    TCPSock = socket(AF, SOCK_STREAM, IPPROTO_TCP);
+    sockaddr_storage server {};
 
-    if (TCPSock == -1) {
-        printf("Client: socket failed! Error code: %d\n", WSAGetLastError());
+    auto result = initSocket(IP, Port, SOCK_STREAM, &server);
+    
+    if (result.second != 0) {
+        UlStatus = "UlConnection Failed!";
+        error("Client: connect failed! Error code: " + std::to_string(WSAGetLastError()));
+        KillSocket(TCPSock);
         WSACleanup();
+        Terminate = true;
         return;
     }
-
-    if (AF == AF_INET) {
-        // IPv4
-        struct sockaddr_in ServerAddr;
-        memset(&ServerAddr, 0, sizeof(ServerAddr));
-        ServerAddr.sin_family = AF_INET;
-        ServerAddr.sin_port = htons(Port);
-        inet_pton(AF_INET, IP.c_str(), &ServerAddr.sin_addr);
-
-        RetCode = connect(TCPSock, (struct sockaddr*)&ServerAddr, sizeof(ServerAddr));
-    } else {
-        // IPv6
-        struct sockaddr_in6 ServerAddr;
-        memset(&ServerAddr, 0, sizeof(ServerAddr));
-        ServerAddr.sin6_family = AF_INET6;
-        ServerAddr.sin6_port = htons(Port);
-        inet_pton(AF_INET6, IP.c_str(), &ServerAddr.sin6_addr);
-
-        RetCode = connect(TCPSock, (struct sockaddr*)&ServerAddr, sizeof(ServerAddr));
-    }
-
-    if (RetCode != 0) {
+    TCPSock = result.first;
+    //Try to connect to the distant server, using the socket created
+    if (connect(TCPSock, (struct sockaddr*)&server, sizeof(sockaddr_storage)))
+    {
         UlStatus = "UlConnection Failed!";
         error("Client: connect failed! Error code: " + std::to_string(WSAGetLastError()));
         KillSocket(TCPSock);
@@ -189,4 +158,41 @@ void TCPClientMain(const std::string& IP, int Port) {
     if (WSACleanup() != 0)
         debug("(TCP) Client: WSACleanup() failed!...");
 #endif
+}
+
+std::pair<SOCKET, int> initSocket(std::string ip, int port, int sockType, sockaddr_storage* storeAddrInfo) {
+    int AF = (ip.find(':') != std::string::npos) ? AF_INET6 : AF_INET;
+    int code = 0;
+#ifdef _WIN32
+    WSADATA wsaData;
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+        std::cerr << "Can't start Winsock!" << std::endl;
+        return std::make_pair(INVALID_SOCKET, -1);
+    }
+#endif
+    // Create the socket
+    SOCKET sock = socket(AF, sockType, (sockType == SOCK_STREAM) ? IPPROTO_TCP : IPPROTO_UDP);
+
+    if (sock == -1) {
+        std::cerr << "Client: socket failed! Error code: %d\n" << WSAGetLastError() << std::endl;
+        WSACleanup();
+        return std::make_pair(INVALID_SOCKET, -1);
+    }
+
+    if (AF == AF_INET) {
+        // IPv4
+        struct sockaddr_in* saddr = (sockaddr_in*) storeAddrInfo;
+        saddr->sin_family = AF_INET;
+        saddr->sin_port = htons(port);
+        inet_pton(AF_INET, ip.c_str(), &(saddr->sin_addr));
+
+    } else {
+        // IPv6
+        struct sockaddr_in6 *saddr = (sockaddr_in6*) storeAddrInfo;
+        saddr->sin6_family = AF_INET6;
+        saddr->sin6_port = htons(port);
+        inet_pton(AF_INET6, ip.c_str(), &(saddr->sin6_addr));
+    }
+
+    return std::make_pair( sock, code);
 }

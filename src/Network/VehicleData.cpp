@@ -24,18 +24,17 @@
 #include <string>
 
 SOCKET UDPSock = -1;
-sockaddr_storage* ToServer = nullptr;
-socklen_t addrLen = 0;
+sockaddr_storage ToServer {};
 
 void UDPSend(std::string Data) {
-    if (ClientID == -1 || UDPSock == -1 ||ToServer == nullptr)
+    if (ClientID == -1 || UDPSock == -1)
         return;
     if (Data.length() > 400) {
         auto res = Comp(std::span<char>(Data.data(), Data.size()));
         Data = "ABG:" + std::string(res.data(), res.size());
     }
     std::string Packet = char(ClientID + 1) + std::string(":") + Data;
-    int sendOk = sendto(UDPSock, Packet.c_str(), int(Packet.size()), 0, (sockaddr*)ToServer, addrLen);
+    int sendOk = sendto(UDPSock, Packet.c_str(), int(Packet.size()), 0, (sockaddr*)&ToServer, sizeof(sockaddr_storage));
     if (sendOk == SOCKET_ERROR)
         error("Error Code : " + std::to_string(WSAGetLastError()));
 }
@@ -61,6 +60,7 @@ void UDPParser(std::string_view Packet) {
 
 void UDPRcv() {
     sockaddr_storage FromServer {};
+    socklen_t addrLen = sizeof(FromServer);
     static thread_local std::array<char, 10240> Ret {};
     if (UDPSock == -1)
         return;
@@ -81,35 +81,19 @@ void UDPClientMain(const std::string& IP, int Port)
         return;
     }
 #endif
-    //IPv6 or IPv4 ?
-    int AF = (IP.find(':') != std::string::npos) ? AF_INET6 : AF_INET;
 
-    ToServer = new sockaddr_storage;
-    memset(ToServer, 0, sizeof(sockaddr_storage));
+    auto result = initSocket(IP, Port, SOCK_DGRAM, &ToServer);
 
-    if (AF == AF_INET) {
-        // IPv4
-        struct sockaddr_in serverAddrV4;
-        memset(&serverAddrV4, 0, sizeof(sockaddr_in));
-        serverAddrV4.sin_family = AF_INET;
-        serverAddrV4.sin_port = htons(Port);
-        inet_pton(AF_INET, IP.c_str(), &serverAddrV4.sin_addr);
-        memcpy(ToServer, &serverAddrV4, sizeof(sockaddr_in));
-        addrLen = sizeof(sockaddr_in);
-    } else {
-        // IPv6
-        struct sockaddr_in6 serverAddrV6;
-        memset(&serverAddrV6, 0, sizeof(sockaddr_in6));
-        serverAddrV6.sin6_family = AF_INET6;
-        serverAddrV6.sin6_port = htons(Port);
-        inet_pton(AF_INET6, IP.c_str(), &serverAddrV6.sin6_addr);
-        memcpy(ToServer, &serverAddrV6, sizeof(sockaddr_in6));
-        addrLen = sizeof(sockaddr_in6);
+    if (result.second != 0) {
+        UlStatus = "UlConnection Failed!";
+        error("Client: connect failed! Error code: " + std::to_string(WSAGetLastError()));
+        KillSocket(TCPSock);
+        WSACleanup();
+        Terminate = true;
+        return;
     }
 
-    
-    //Open socket
-    UDPSock = socket(AF, SOCK_DGRAM, 0);
+    UDPSock = result.first;
 
     //Send to the game client
     GameSend("P" + std::to_string(ClientID));

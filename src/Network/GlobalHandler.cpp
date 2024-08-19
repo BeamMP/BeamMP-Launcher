@@ -34,8 +34,8 @@ SOCKET GSocket = -1;
 int ClientID = -1;
 
 int KillSocket(uint64_t Dead) {
-    if (Dead == (SOCKET)-1) {
-        debug("Kill socket got -1 returning...");
+    if (Dead == INVALID_SOCKET) {
+        debug("Kill invalid socket got, returning...");
         return 0;
     }
     shutdown(Dead, SD_BOTH);
