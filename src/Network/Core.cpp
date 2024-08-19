@@ -265,41 +265,29 @@ void localRes() {
 }
 void CoreMain() {
     debug("Core Network on start!");
-    SOCKET LSocket, CSocket;
-    struct addrinfo* res = nullptr;
-    struct addrinfo hints { };
-    int iRes;
 #ifdef _WIN32
     WSADATA wsaData;
-    iRes = WSAStartup(514, &wsaData); // 2.2
-    if (iRes)
-        debug("WSAStartup failed with error: " + std::to_string(iRes));
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+        error("Can't start Winsock!");
+        return;
+    }
 #endif
+    SOCKET LSocket, CSocket;
 
-    ZeroMemory(&hints, sizeof(hints));
+    struct sockaddr_storage loopBackLUA { };
 
-    //IPv4 socket waiting handling LUA communications
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = IPPROTO_TCP;
+    auto localSocketRes = initSocket("127.0.0.1", DEFAULT_PORT, SOCK_STREAM, &loopBackLUA);
 
-    //Fill for loopback ipv4
-    iRes = getaddrinfo(nullptr, std::to_string(DEFAULT_PORT).c_str(), &hints, &res);
-    if (iRes) {
-        debug("(Core) addr info failed with error: " + std::to_string(iRes));
-        WSACleanup();
+    if (localSocketRes.second != 0 || localSocketRes.first == INVALID_SOCKET) {
+        error("Client: LUA Loopback socket creation failed! Error code: " + std::to_string(WSAGetLastError())),
+            WSACleanup();
         return;
     }
-    //Create socket
-    LSocket = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-    if (LSocket == -1) {
-        debug("(Core) socket failed with error: " + std::to_string(WSAGetLastError()));
-        freeaddrinfo(res);
-        WSACleanup();
-        return;
-    }
-    iRes = bind(LSocket, res->ai_addr, int(res->ai_addrlen));
-    freeaddrinfo(res);
+
+    LSocket = localSocketRes.first;
+
+    int iRes = bind(LSocket, (sockaddr*)&loopBackLUA, sizeof(sockaddr_storage));
+
     if (iRes == SOCKET_ERROR) {
         error("(Core) bind failed with error: " + std::to_string(WSAGetLastError()));
         KillSocket(LSocket);
@@ -313,6 +301,7 @@ void CoreMain() {
         WSACleanup();
         return;
     }
+    //MAIN LOOP
     do {
         //Waiting LUA Connexion
         CSocket = accept(LSocket, nullptr, nullptr);
@@ -325,6 +314,7 @@ void CoreMain() {
         GameHandler(CSocket);
         warn("Game reconnecting to LUA interface...");
     } while (CSocket);
+
     KillSocket(LSocket);
     WSACleanup();
 }
