@@ -7,6 +7,7 @@
 ///
 
 #include <string>
+#include "IPRegex.h"
 
 #if defined(_WIN32)
 #include <winsock2.h>
@@ -19,8 +20,9 @@
 #include "Logger.h"
 
 std::string GetAddr(const std::string& IP) {
-    if (IP.find_first_not_of("0123456789.") == -1)
+    if (!std::regex_match(IP, IP_REGEX)) {
         return IP;
+    }
     hostent* host;
 #ifdef _WIN32
     WSADATA wsaData;

@@ -85,10 +85,10 @@ void UDPClientMain(const std::string& IP, int Port) {
 
     delete ToServer;
     ToServer = new sockaddr_in;
-    ToServer->sin_family = AF_INET;
+    ToServer->sin_family = AF_UNSPEC;
     ToServer->sin_port = htons(Port);
-    inet_pton(AF_INET, IP.c_str(), &ToServer->sin_addr);
-    UDPSock = socket(AF_INET, SOCK_DGRAM, 0);
+    inet_pton(AF_UNSPEC, IP.c_str(), &ToServer->sin_addr);
+    UDPSock = socket(AF_UNSPEC, SOCK_DGRAM, 0);
     GameSend("P" + std::to_string(ClientID));
     TCPSend("H", TCPSock);
     UDPSend("p");
