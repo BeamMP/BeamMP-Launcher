@@ -68,7 +68,7 @@ void StartSync(const std::string& Data) {
 }
 
 bool IsAllowedLink(const std::string& Link) {
-    std::regex link_pattern(R"(https:\/\/(?:\w+)?(?:\.)?(?:beammp\.com|discord\.gg))");
+    std::regex link_pattern(R"(https:\/\/(?:\w+)?(?:\.)?(?:beammp\.com|discord\.gg|patreon\.com\/BeamMP))");
     std::smatch link_match;
     return std::regex_search(Link, link_match, link_pattern) && link_match.position() == 0;
 }
