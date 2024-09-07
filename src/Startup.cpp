@@ -416,11 +416,15 @@ void StartProxy() {
                     cli_res = backend.Post(remaining_path, headers);
 
             } else if (host == "avatar") {
+                bool error = false;
                 std::string username;
                 std::string avatar_size = "100";
 
-                if (1 < path.size())
+                if (path.size() > 1) {
                     username = path[1];
+                } else {
+                    error = true;
+                }
 
                 if (path.size() > 2) {
                     try {
@@ -430,23 +434,39 @@ void StartProxy() {
                     } catch (std::exception&) {}
                 }
 
-                auto summary_res = forum.Get("/u/" + username + ".json", headers);
-                nlohmann::json d = nlohmann::json::parse(summary_res->body, nullptr, false);
+                httplib::Result summary_res;
 
-                if (d.contains("user")) {
-                    auto user = d.at("user");
-                    auto avatar_link_json = user.at("avatar_template");
+                if (!error) {
+                    summary_res = forum.Get("/u/" + username + ".json", headers);
 
-                    if (avatar_link_json.is_string()) {
+                    if (!summary_res || summary_res->status != 200) {
+                        error = true;
+                    }
+                }
+
+                if (!error) {
+                    try {
+                        nlohmann::json d = nlohmann::json::parse(summary_res->body, nullptr, false); // can fail with parse_error
+
+                        auto user = d.at("user"); // can fail with out_of_range
+                        auto avatar_link_json = user.at("avatar_template"); // can fail with out_of_range
+
                         auto avatar_link = avatar_link_json.get<std::string>();
                         size_t start_pos = avatar_link.find("{size}");
                         if (start_pos != std::string::npos)
                             avatar_link.replace(start_pos, std::strlen("{size}"), avatar_size);
 
                         cli_res = forum.Get(avatar_link, headers);
+
+                    } catch (std::exception&) {
+                        error = true;
                     }
-                } else
+                }
+
+                if (error) {
                     cli_res = forum.Get("/user_avatar/forum.beammp.com/user/0/0.png", headers);
+                }
+
             } else {
                 res.set_content("Host not found", "text/plain");
                 return;
