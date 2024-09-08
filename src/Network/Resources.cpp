@@ -28,26 +28,11 @@
 #include <fstream>
 #include <future>
 #include <iostream>
-#include <string>
 #include <thread>
-#include <vector>
+#include <Utils.h>
 
 namespace fs = std::filesystem;
 std::string ListOfMods;
-std::vector<std::string> Split(const std::string& String, const std::string& delimiter) {
-    std::vector<std::string> Val;
-    size_t pos;
-    std::string token, s = String;
-    while ((pos = s.find(delimiter)) != std::string::npos) {
-        token = s.substr(0, pos);
-        if (!token.empty())
-            Val.push_back(token);
-        s.erase(0, pos + delimiter.length());
-    }
-    if (!s.empty())
-        Val.push_back(s);
-    return Val;
-}
 
 void CheckForDir() {
     if (!fs::exists("Resources")) {
@@ -247,7 +232,7 @@ void SyncResources(SOCKET Sock) {
     info("Checking Resources...");
     CheckForDir();
 
-    std::vector<std::string> list = Split(Ret, ";");
+    std::vector<std::string> list = Utils::Split(Ret, ";");
     std::vector<std::string> FNames(list.begin(), list.begin() + (list.size() / 2));
     std::vector<std::string> FSizes(list.begin() + (list.size() / 2), list.end());
     list.clear();

@@ -15,6 +15,9 @@
 #include <iostream>
 #include <mutex>
 #include <nlohmann/json.hpp>
+#include <Startup.h>
+#include <Network/network.hpp>
+#include <Utils.h>
 
 void WriteHttpDebug(const httplib::Client& client, const std::string& method, const std::string& target, const httplib::Result& result) try {
     const std::filesystem::path folder = ".https_debug";
@@ -170,4 +173,128 @@ bool HTTP::Download(const std::string& IP, const std::string& Path) {
     }
 
     return true;
+}
+
+void set_headers(httplib::Response& res) {
+    res.set_header("Access-Control-Allow-Origin", "*");
+    res.set_header("Access-Control-Request-Method", "POST, OPTIONS, GET");
+    res.set_header("Access-Control-Request-Headers", "X-API-Version");
+}
+
+
+void HTTP::StartProxy() {
+    std::thread proxy([&]() {
+        httplib::Server HTTPProxy;
+        httplib::Headers headers = {
+            { "User-Agent", "BeamMP-Launcher/" + GetVer() + GetPatch() },
+            { "Accept", "*/*" }
+        };
+        httplib::Client backend("https://backend.beammp.com");
+        httplib::Client forum("https://forum.beammp.com");
+
+        const std::string pattern = ".*";
+
+        auto handle_request = [&](const httplib::Request& req, httplib::Response& res) {
+            set_headers(res);
+            if (req.has_header("X-BMP-Authentication")) {
+                headers.emplace("X-BMP-Authentication", PrivateKey);
+            }
+            if (req.has_header("X-API-Version")) {
+                headers.emplace("X-API-Version", req.get_header_value("X-API-Version"));
+            }
+
+            const std::vector<std::string> path = Utils::Split(req.path, "/");
+
+            httplib::Result cli_res;
+            const std::string method = req.method;
+            std::string host = "";
+
+            if (!path.empty())
+                host = path[0];
+
+            if (host == "backend") {
+                std::string remaining_path = req.path.substr(std::strlen("/backend"));
+
+                if (method == "GET")
+                    cli_res = backend.Get(remaining_path, headers);
+                else if (method == "POST")
+                    cli_res = backend.Post(remaining_path, headers);
+
+            } else if (host == "avatar") {
+                bool error = false;
+                std::string username;
+                std::string avatar_size = "100";
+
+                if (path.size() > 1) {
+                    username = path[1];
+                } else {
+                    error = true;
+                }
+
+                if (path.size() > 2) {
+                    try {
+                        if (std::stoi(path[2]) > 0)
+                            avatar_size = path[2];
+
+                    } catch (std::exception&) {}
+                }
+
+                httplib::Result summary_res;
+
+                if (!error) {
+                    summary_res = forum.Get("/u/" + username + ".json", headers);
+
+                    if (!summary_res || summary_res->status != 200) {
+                        error = true;
+                    }
+                }
+
+                if (!error) {
+                    try {
+                        nlohmann::json d = nlohmann::json::parse(summary_res->body, nullptr, false); // can fail with parse_error
+
+                        auto user = d.at("user"); // can fail with out_of_range
+                        auto avatar_link_json = user.at("avatar_template"); // can fail with out_of_range
+
+                        auto avatar_link = avatar_link_json.get<std::string>();
+                        size_t start_pos = avatar_link.find("{size}");
+                        if (start_pos != std::string::npos)
+                            avatar_link.replace(start_pos, std::strlen("{size}"), avatar_size);
+
+                        cli_res = forum.Get(avatar_link, headers);
+
+                    } catch (std::exception&) {
+                        error = true;
+                    }
+                }
+
+                if (error) {
+                    cli_res = forum.Get("/user_avatar/forum.beammp.com/user/0/0.png", headers);
+                }
+
+            } else {
+                res.set_content("Host not found", "text/plain");
+                return;
+            }
+
+            if (cli_res) {
+                res.set_content(cli_res->body, cli_res->get_header_value("Content-Type"));
+            } else {
+                res.set_content(to_string(cli_res.error()), "text/plain");
+            }
+        };
+
+        HTTPProxy.Get(pattern, [&](const httplib::Request& req, httplib::Response& res) {
+            handle_request(req, res);
+        });
+
+        HTTPProxy.Post(pattern, [&](const httplib::Request& req, httplib::Response& res) {
+            handle_request(req, res);
+        });
+
+        ProxyPort = HTTPProxy.bind_to_any_port("0.0.0.0");
+        debug("HTTP Proxy listening on port " + std::to_string(ProxyPort));
+        HTTPProxy.listen_after_bind();
+    });
+    proxy.detach();
 }

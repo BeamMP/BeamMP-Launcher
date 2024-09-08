@@ -36,7 +36,7 @@ int main(int argc, char* argv[]) {
         fatal("Main 1 : " + std::string(e.what()));
     }
 
-    StartProxy();
+    HTTP::StartProxy();
     PreGame(GetGameDir());
     InitGame(GetGameDir());
     CoreNetwork();
