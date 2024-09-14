@@ -37,7 +37,7 @@ jobs:
         run: cmake --build . --config $BUILD_TYPE
 
       - name: Archive artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: BeamMP-Launcher.exe
           path: ${{github.workspace}}/build-windows/Release/BeamMP-Launcher.exe
