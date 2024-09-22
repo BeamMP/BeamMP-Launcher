@@ -124,6 +124,9 @@ void AsyncUpdate(uint64_t& Rcv, uint64_t Size, const std::string& Name) {
     } while (!Terminate && Rcv < Size);
 }
 
+// MICROSOFT, I DONT CARE, WRITE BETTER CODE
+#undef min
+
 std::vector<char> TCPRcvRaw(SOCKET Sock, uint64_t& GRcv, uint64_t Size) {
     if (Sock == -1) {
         Terminate = true;
