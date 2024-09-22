@@ -223,7 +223,6 @@ void LinuxPatch() {
 #if defined(_WIN32)
 
 void InitLauncher() {
-    system("cls");
     SetConsoleTitleA(("BeamMP Launcher v" + std::string(GetVer()) + GetPatch()).c_str());
     InitLog();
     CheckName();
@@ -235,7 +234,6 @@ void InitLauncher() {
 #elif defined(__linux__)
 
 void InitLauncher() {
-    system("clear");
     InitLog();
     info("BeamMP Launcher v" + GetVer() + GetPatch());
     CheckName();

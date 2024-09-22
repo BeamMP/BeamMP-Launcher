@@ -25,6 +25,12 @@ Options options;
 }
 
 int main(int argc, char** argv) try {
+#if defined(_WIN32)
+    system("cls");
+#elif defined(__linux__)
+    system("clear");
+#endif
+
 #ifdef DEBUG
     std::thread th(flush);
     th.detach();
