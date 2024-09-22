@@ -107,8 +107,14 @@ std::string TCPRcv(SOCKET Sock) {
 
     if (Ret.substr(0, 4) == "ABG:") {
         auto substr = Ret.substr(4);
-        auto res = DeComp(std::span<char>(substr.data(), substr.size()));
-        Ret = std::string(res.data(), res.size());
+        try {
+            auto res = DeComp(std::span<char>(substr.data(), substr.size()));
+            Ret = std::string(res.data(), res.size());
+        } catch (const std::runtime_error& err) {
+            // this happens e.g. when we're out of memory, or when we get incomplete data
+            error("Decompression failed");
+            return "";
+        }
     }
 
 #ifdef DEBUG

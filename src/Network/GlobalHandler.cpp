@@ -6,6 +6,7 @@
 /// Created by Anonymous275 on 7/25/2020
 ///
 #include "Network/network.hpp"
+#include <memory>
 #include <zlib.h>
 #if defined(_WIN32)
 #include <winsock2.h>
@@ -124,17 +125,17 @@ void NetReset() {
     UlStatus = "Ulstart";
     MStatus = " ";
     if (UDPSock != (SOCKET)(-1)) {
-        debug("Terminating UDP Socket : " + std::to_string(TCPSock));
+        debug("Terminating UDP Socket: " + std::to_string(TCPSock));
         KillSocket(UDPSock);
     }
     UDPSock = -1;
     if (TCPSock != (SOCKET)(-1)) {
-        debug("Terminating TCP Socket : " + std::to_string(TCPSock));
+        debug("Terminating TCP Socket: " + std::to_string(TCPSock));
         KillSocket(TCPSock);
     }
     TCPSock = -1;
     if (GSocket != (SOCKET)(-1)) {
-        debug("Terminating GTCP Socket : " + std::to_string(GSocket));
+        debug("Terminating GTCP Socket: " + std::to_string(GSocket));
         KillSocket(GSocket);
     }
     GSocket = -1;
@@ -234,6 +235,8 @@ void NetMain(const std::string& IP, int Port) {
 }
 void TCPGameServer(const std::string& IP, int Port) {
     GSocket = SetupListener();
+    std::unique_ptr<std::thread> ClientThread {};
+    std::unique_ptr<std::thread> NetMainThread {};
     while (!TCPTerminate && GSocket != -1) {
         debug("MAIN LOOP OF GAME SERVER");
         GConnected = false;
@@ -245,8 +248,7 @@ void TCPGameServer(const std::string& IP, int Port) {
             break;
         }
         if (CServer) {
-            std::thread Client(TCPClientMain, IP, Port);
-            Client.detach();
+            ClientThread = std::make_unique<std::thread>(TCPClientMain, IP, Port);
         }
         CSocket = accept(GSocket, nullptr, nullptr);
         if (CSocket == -1) {
@@ -256,8 +258,7 @@ void TCPGameServer(const std::string& IP, int Port) {
         debug("(Proxy) Game Connected!");
         GConnected = true;
         if (CServer) {
-            std::thread t1(NetMain, IP, Port);
-            t1.detach();
+            NetMainThread = std::make_unique<std::thread>(NetMain, IP, Port);
             CServer = false;
         }
         int32_t Size, Temp, Rcv;
@@ -300,6 +301,16 @@ void TCPGameServer(const std::string& IP, int Port) {
     TCPTerminate = true;
     GConnected = false;
     Terminate = true;
+    if (ClientThread) {
+        debug("Waiting for client thread");
+        ClientThread->join();
+        debug("Client thread done");
+    }
+    if (NetMainThread) {
+        debug("Waiting for net main thread");
+        NetMainThread->join();
+        debug("Net main thread done");
+    }
     if (CSocket != SOCKET_ERROR)
         KillSocket(CSocket);
     debug("END OF GAME SERVER");
