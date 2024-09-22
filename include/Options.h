@@ -7,6 +7,7 @@ struct Options {
     unsigned int port = 4444;
     bool verbose = false;
     bool no_download = false;
+    bool no_update = false;
     bool no_launch = false;
     char **game_arguments = nullptr;
     int game_arguments_length = 0;

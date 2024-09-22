@@ -46,12 +46,15 @@ void InitOptions(int argc, char *argv[], Options &options) {
             options.verbose = true;
         } else if (argument == "--no-download") {
             options.no_download = true;
+        } else if (argument == "--no-update") {
+            options.no_update = true;
         } else if (argument == "--no-launch") {
             options.no_launch = true;
         } else if (argument == "--dev") {
             options.verbose = true;
             options.no_download = true;
             options.no_launch = true;
+            options.no_update = true;
         } else if (argument == "--") {
             options.game_arguments = &argv[i + 1];
             options.game_arguments_length = argc - i - 1;

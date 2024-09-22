@@ -170,7 +170,7 @@ void CheckForUpdates(const std::string& CV) {
 
     std::string FileHash = hashpp::get::getFileHash(hashpp::ALGORITHMS::SHA2_256, EP);
 
-    if (FileHash != LatestHash && IsOutdated(Version(VersionStrToInts(GetVer() + GetPatch())), Version(VersionStrToInts(LatestVersion))) && !options.no_download) {
+    if (FileHash != LatestHash && IsOutdated(Version(VersionStrToInts(GetVer() + GetPatch())), Version(VersionStrToInts(LatestVersion))) && !options.no_update) {
         info("Launcher update found!");
 #if defined(__linux__)
         error("Auto update is NOT implemented for the Linux version. Please update manually ASAP as updates contain security patches.");
