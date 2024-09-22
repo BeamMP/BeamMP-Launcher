@@ -288,7 +288,7 @@ void localRes() {
     ConfList = new std::set<std::string>;
 }
 void CoreMain() {
-    debug("Core Network on start!");
+    debug("Core Network on start! port: " + std::to_string(options.port));
     SOCKET LSocket, CSocket;
     struct addrinfo* res = nullptr;
     struct addrinfo hints { };
