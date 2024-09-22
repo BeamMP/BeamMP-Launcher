@@ -28,6 +28,13 @@ int main(int argc, char* argv[]) {
 
     GetEP(argv[0]);
 
+    for (int i = 0; i < argc; ++i) {
+        if (std::string_view(argv[i]) == "--skip-ssl-verify") {
+            info("SSL verification skip enabled");
+            HTTP::SkipSslVerify = true;
+        }
+    }
+
     InitLauncher(argc, argv);
 
     try {
