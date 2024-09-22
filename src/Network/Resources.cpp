@@ -32,7 +32,6 @@
 #include <Utils.h>
 
 namespace fs = std::filesystem;
-std::string ListOfMods;
 
 void CheckForDir() {
     if (!fs::exists("Resources")) {
@@ -64,16 +63,20 @@ std::string Auth(SOCKET Sock) {
 
     if (Res.empty() || Res[0] == 'E' || Res[0] == 'K') {
         Abord();
+        CoreSend("L");
         return "";
     }
 
     TCPSend(PublicKey, Sock);
-    if (Terminate)
+    if (Terminate) {
+        CoreSend("L");
         return "";
+    }
 
     Res = TCPRcv(Sock);
     if (Res.empty() || Res[0] != 'P') {
         Abord();
+        CoreSend("L");
         return "";
     }
 
@@ -82,23 +85,27 @@ std::string Auth(SOCKET Sock) {
         ClientID = std::stoi(Res);
     } else {
         Abord();
+        CoreSend("L");
         UUl("Authentication failed!");
         return "";
     }
     TCPSend("SR", Sock);
-    if (Terminate)
+    if (Terminate) {
+        CoreSend("L");
         return "";
+    }
 
     Res = TCPRcv(Sock);
 
     if (Res[0] == 'E' || Res[0] == 'K') {
         Abord();
+        CoreSend("L");
         return "";
     }
 
     if (Res.empty() || Res == "-") {
         info("Didn't Receive any mods...");
-        ListOfMods = "-";
+        CoreSend("L");
         TCPSend("Done", Sock);
         info("Done!");
         return "";
@@ -229,6 +236,9 @@ void SyncResources(SOCKET Sock) {
     if (Ret.empty())
         return;
 
+    if (!SecurityWarning())
+		return;
+
     info("Checking Resources...");
     CheckForDir();
 
@@ -246,9 +256,9 @@ void SyncResources(SOCKET Sock) {
         }
     }
     if (t.empty())
-        ListOfMods = "-";
+        CoreSend("L");
     else
-        ListOfMods = t;
+        CoreSend("L" + t);
     t.clear();
     for (auto FN = FNames.begin(), FS = FSizes.begin(); FN != FNames.end() && !Terminate; ++FN, ++FS) {
         auto pos = FN->find_last_of('/');
