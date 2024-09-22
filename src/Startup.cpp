@@ -252,7 +252,15 @@ void InitLauncher(int argc, char* argv[]) {
     CheckLocalKey();
     ConfigInit();
     CustomPort(argc, argv);
-    CheckForUpdates(argc, argv, std::string(GetVer()) + GetPatch());
+    bool update = true;
+    for (int i = 1; i < argc; ++i) {
+        if (std::string_view(argv[i]) == "--no-update") {
+            update = false;
+        }
+    }
+    if (update) {
+        CheckForUpdates(argc, argv, std::string(GetVer()) + GetPatch());
+    }
 }
 #elif defined(__linux__)
 void InitLauncher(int argc, char* argv[]) {
