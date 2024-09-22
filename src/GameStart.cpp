@@ -64,7 +64,6 @@ std::string GetGamePath() {
     std::string Ver = CheckVer(GetGameDir());
     Ver = Ver.substr(0, Ver.find('.', Ver.find('.') + 1));
     Path += Ver + "/";
-    info("Game user path: '" + Path + "'");
     return Path;
 }
 #endif
