@@ -43,11 +43,17 @@ std::string GetGamePath() {
         sk = R"(SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders)";
         openRes = RegOpenKeyEx(HKEY_CURRENT_USER, sk, 0, KEY_ALL_ACCESS, &hKey);
         if (openRes != ERROR_SUCCESS) {
-            fatal("Cannot get Local Appdata directory!");
+            sk = R"(SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders)";
+            openRes = RegOpenKeyEx(HKEY_CURRENT_USER, sk, 0, KEY_ALL_ACCESS, &hKey);
         }
+        if (openRes != ERROR_SUCCESS) {
+            fatal("Cannot get Local Appdata directory");
+        }
+
         Path = QueryKey(hKey, 5);
         Path += "\\BeamNG.drive\\";
     }
+
     std::string Ver = CheckVer(GetGameDir());
     Ver = Ver.substr(0, Ver.find('.', Ver.find('.') + 1));
     Path += Ver + "\\";
