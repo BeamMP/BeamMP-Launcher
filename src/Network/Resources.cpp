@@ -214,6 +214,8 @@ std::vector<char> MultiDownload(SOCKET MSock, SOCKET DSock, uint64_t Size, const
 
     if (MData.empty()) {
         MultiKill(MSock, DSock);
+        Terminate = true;
+        Au.join();
         return {};
     }
 
@@ -221,6 +223,8 @@ std::vector<char> MultiDownload(SOCKET MSock, SOCKET DSock, uint64_t Size, const
 
     if (DData.empty()) {
         MultiKill(MSock, DSock);
+        Terminate = true;
+        Au.join();
         return {};
     }
 
@@ -228,6 +232,8 @@ std::vector<char> MultiDownload(SOCKET MSock, SOCKET DSock, uint64_t Size, const
     GRcv = MData.size() + DData.size();
     if (GRcv != Size) {
         error("Something went wrong during download; didn't get enough data. Expected " + std::to_string(Size) + " bytes, got " + std::to_string(GRcv) + " bytes instead");
+        Terminate = true;
+        Au.join();
         return {};
     }
 
