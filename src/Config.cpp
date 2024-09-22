@@ -32,6 +32,14 @@ void ParseConfig(const nlohmann::json& d) {
         CachingDirectory = d["CachingDirectory"].get<std::string>();
         info("Mod caching directory: " + CachingDirectory);
     }
+
+    if (d.contains("Dev") && d["Dev"].is_boolean()) {
+        bool dev = d["Dev"].get<bool>();
+        options.verbose = dev;
+        options.no_download = dev;
+        options.no_launch = dev;
+        options.no_update = dev;
+    }
 }
 
 void ConfigInit() {
