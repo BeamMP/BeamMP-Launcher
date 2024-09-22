@@ -217,6 +217,13 @@ std::vector<char> MultiDownload(SOCKET MSock, SOCKET DSock, uint64_t Size, const
         return {};
     }
 
+    // ensure that GRcv is good before joining the async update thread
+    GRcv = MData.size() + DData.size();
+    if (GRcv != Size) {
+        error("Something went wrong during download; didn't get enough data. Expected " + std::to_string(Size) + " bytes, got " + std::to_string(GRcv) + " bytes instead");
+        return {};
+    }
+
     Au.join();
 
     std::vector<char> Result{};
