@@ -11,16 +11,23 @@ void InitOptions(int argc, char *argv[], Options &options) {
     while (i < argc) {
         std::string argument(argv[i]);
         if (argument == "-p" || argument == "--port") {
-            if (argc > i + 1) {
+            if (argc > i) {
                 std::string error_message =
                     "No port specified, resorting to default (";
-                error_message += options.port;
+                error_message += std::to_string(options.port);
                 error_message += ")";
                 error(error_message);
+                i++;
                 continue;
             }
 
-            int port = atoi(argv[i + 1]);
+            int port = options.port;
+
+            try {
+                port = std::stoi(argv[i + 1]);
+            } catch (std::exception& e) { 
+                error("Invalid port specified: " + std::string(argv[i + 1]) + " " + std::string(e.what()));
+            }
 
             if (port <= 0) {
                 std::string error_message =
@@ -29,6 +36,7 @@ void InitOptions(int argc, char *argv[], Options &options) {
                 error_message += options.port;
                 error_message += ")";
                 error(error_message);
+                i++;
                 continue;
             }
 
