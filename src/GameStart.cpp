@@ -23,6 +23,7 @@
 #include <Security/Init.h>
 #include <filesystem>
 #include <thread>
+#include "Options.h"
 
 unsigned long GamePID = 0;
 #if defined(_WIN32)
@@ -121,7 +122,7 @@ void StartGame(std::string Dir) {
 #endif
 
 void InitGame(const std::string& Dir) {
-    if (!Dev) {
+    if (!options.no_launch) {
         std::thread Game(StartGame, Dir);
         Game.detach();
     }

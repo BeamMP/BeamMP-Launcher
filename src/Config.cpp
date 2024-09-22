@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <fstream>
 #include <nlohmann/json.hpp>
+#include "Options.h"
 namespace fs = std::filesystem;
 
 std::string Branch;
@@ -15,7 +16,7 @@ std::string CachingDirectory = "./Resources";
 
 void ParseConfig(const nlohmann::json& d) {
     if (d["Port"].is_number()) {
-        DEFAULT_PORT = d["Port"].get<int>();
+        options.port = d["Port"].get<int>();
     }
     // Default -1
     // Release 1

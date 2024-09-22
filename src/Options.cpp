@@ -1,0 +1,57 @@
+#include "Options.h"
+
+#include "Logger.h"
+#include <cstdlib>
+
+void InitOptions(int argc, char *argv[], Options &options) {
+    int i = 1;
+
+    options.executable_name = std::string(argv[0]);
+
+    while (i < argc) {
+        std::string argument(argv[i]);
+        if (argument == "-p" || argument == "--port") {
+            if (argc > i + 1) {
+                std::string error_message =
+                    "No port specified, resorting to default (";
+                error_message += options.port;
+                error_message += ")";
+                error(error_message);
+                continue;
+            }
+
+            int port = atoi(argv[i + 1]);
+
+            if (port <= 0) {
+                std::string error_message =
+                    "Port invalid, must be a non-zero positive "
+                    "integer, resorting to default (";
+                error_message += options.port;
+                error_message += ")";
+                error(error_message);
+                continue;
+            }
+
+            options.port = port;
+            i++;
+        } else if (argument == "-v" || argument == "--verbose") {
+            options.verbose = true;
+        } else if (argument == "--no-download") {
+            options.no_download = true;
+        } else if (argument == "--no-launch") {
+            options.no_launch = true;
+        } else if (argument == "--dev") {
+            options.verbose = true;
+            options.no_download = true;
+            options.no_launch = true;
+        } else if (argument == "--") {
+            options.game_arguments = &argv[i + 1];
+            options.game_arguments_length = argc - i - 1;
+            break;
+        } else {
+            warn("Unknown option: " + argument);
+        }
+
+        i++;
+    }
+}

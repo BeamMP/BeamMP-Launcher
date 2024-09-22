@@ -13,6 +13,9 @@
 #include <curl/curl.h>
 #include <iostream>
 #include <thread>
+#include "Options.h"
+
+Options options;
 
 [[noreturn]] void flush() {
     while (true) {
@@ -45,7 +48,8 @@ int main(int argc, char** argv) try {
         }
     }
 
-    InitLauncher(argc, argv);
+    InitOptions(argc, argv, options);
+    InitLauncher();
 
     info("IMPORTANT: You MUST keep this window open to play BeamMP!");
 
