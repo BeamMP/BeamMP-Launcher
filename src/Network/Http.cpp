@@ -69,6 +69,10 @@ std::string HTTP::Get(const std::string& IP) {
     httplib::Client cli(IP.substr(0, pos).c_str());
     cli.set_connection_timeout(std::chrono::seconds(10));
     cli.set_follow_location(true);
+    if (SkipSslVerify) {
+        debug("Skipping SSL server validation via --skip-ssl-verify");
+        cli.enable_server_certificate_verification(false);
+    }
     auto res = cli.Get(IP.substr(pos).c_str(), ProgressBar);
     std::string Ret;
 
@@ -98,6 +102,10 @@ std::string HTTP::Post(const std::string& IP, const std::string& Fields) {
 
     httplib::Client cli(IP.substr(0, pos).c_str());
     cli.set_connection_timeout(std::chrono::seconds(10));
+    if (SkipSslVerify) {
+        debug("Skipping SSL server validation via --skip-ssl-verify");
+        cli.enable_server_certificate_verification(false);
+    }
     std::string Ret;
 
     if (!Fields.empty()) {
