@@ -37,7 +37,13 @@ namespace fs = std::filesystem;
 
 void CheckForDir() {
     if (!fs::exists(CachingDirectory)) {
-        fs::create_directory(CachingDirectory);
+        try {
+            fs::create_directories(CachingDirectory);
+        } catch (const std::exception& e) {
+            error(std::string("Failed to create caching directory: ") + e.what() + ". This is a fatal error. Please make sure to configure a directory which you have permission to create, read and write from/to.");
+            std::this_thread::sleep_for(std::chrono::seconds(3));
+            std::exit(1);
+        }
     }
 }
 void WaitForConfirm() {
