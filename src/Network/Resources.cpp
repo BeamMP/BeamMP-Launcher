@@ -36,13 +36,14 @@
 namespace fs = std::filesystem;
 
 void CheckForDir() {
-    if (!fs::exists("Resources")) {
-// Could we just use fs::create_directory instead?
-#if defined(_WIN32)
-        _wmkdir(L"Resources");
-#elif defined(__linux__)
-        fs::create_directory(L"Resources");
-#endif
+    if (!fs::exists(CachingDirectory)) {
+        try {
+            fs::create_directories(CachingDirectory);
+        } catch (const std::exception& e) {
+            error(std::string("Failed to create caching directory: ") + e.what() + ". This is a fatal error. Please make sure to configure a directory which you have permission to create, read and write from/to.");
+            std::this_thread::sleep_for(std::chrono::seconds(3));
+            std::exit(1);
+        }
     }
 }
 void WaitForConfirm() {
@@ -297,7 +298,7 @@ void SyncResources(SOCKET Sock) {
     for (auto FN = FNames.begin(), FS = FSizes.begin(); FN != FNames.end() && !Terminate; ++FN, ++FS) {
         auto pos = FN->find_last_of('/');
         if (pos != std::string::npos) {
-            PathToSaveTo = "Resources" + FN->substr(pos);
+            PathToSaveTo = CachingDirectory + FN->substr(pos);
         } else {
             continue;
         }

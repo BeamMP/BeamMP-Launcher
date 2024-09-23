@@ -11,6 +11,8 @@
 namespace fs = std::filesystem;
 
 std::string Branch;
+std::string CachingDirectory = "./Resources";
+
 void ParseConfig(const nlohmann::json& d) {
     if (d["Port"].is_number()) {
         DEFAULT_PORT = d["Port"].get<int>();
@@ -20,11 +22,14 @@ void ParseConfig(const nlohmann::json& d) {
     // EA 2
     // Dev 3
     // Custom 3
-
     if (d["Build"].is_string()) {
         Branch = d["Build"].get<std::string>();
         for (char& c : Branch)
             c = char(tolower(c));
+    }
+    if (d.contains("CachingDirectory") && d["CachingDirectory"].is_string()) {
+        CachingDirectory = d["CachingDirectory"].get<std::string>();
+        info("Mod caching directory: " + CachingDirectory);
     }
 }
 
@@ -49,7 +54,8 @@ void ConfigInit() {
             cfg <<
                 R"({
     "Port": 4444,
-    "Build": "Default"
+    "Build": "Default",
+    "CachingDirectory": "./Resources",
 })";
             cfg.close();
         } else {
