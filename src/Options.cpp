@@ -6,6 +6,16 @@
 void InitOptions(int argc, char *argv[], Options &options) {
     int i = 1;
 
+    if (argc > 2)
+        if (std::string(argv[1]) == "0" && std::string(argv[2]) == "0") {
+            options.verbose = true;
+            options.no_download = true;
+            options.no_launch = true;
+            options.no_update = true;
+            warn("You are using deprecated commandline arguments, please use --dev instead");
+            return;
+        }
+
     options.executable_name = std::string(argv[0]);
 
     while (i < argc) {
