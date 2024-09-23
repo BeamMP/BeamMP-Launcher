@@ -84,7 +84,7 @@ std::string GetVer() {
     return "2.1";
 }
 std::string GetPatch() {
-    return ".0";
+    return ".2";
 }
 
 std::string GetEP(char* P) {
@@ -247,6 +247,7 @@ void InitLauncher(int argc, char* argv[]) {
 #elif defined(__linux__)
 void InitLauncher(int argc, char* argv[]) {
     InitLog();
+    info("BeamMP Launcher v" + GetVer() + GetPatch());
     CheckName(argc, argv);
     CheckLocalKey();
     ConfigInit();
