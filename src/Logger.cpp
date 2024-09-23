@@ -54,10 +54,10 @@ void info(const std::string& toPrint) {
     addToLog(Print);
 }
 void debug(const std::string& toPrint) {
-    if (!Dev)
-        return;
     std::string Print = getDate() + "[DEBUG] " + toPrint + "\n";
-    std::cout << Print;
+    if (Dev) {
+        std::cout << Print;
+    }
     addToLog(Print);
 }
 void warn(const std::string& toPrint) {
