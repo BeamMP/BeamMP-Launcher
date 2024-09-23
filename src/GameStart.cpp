@@ -97,7 +97,7 @@ void StartGame(std::string Dir) {
 #elif defined(__linux__)
 void StartGame(std::string Dir) {
     int status;
-    std::string filename = (Dir + "/BinLinux/BeamNG.drive.x64");
+    std::string filename = (Dir + "/BinLinux/BeamNG.x64");
     char* argv[] = { filename.data(), NULL };
     pid_t pid;
     int result = posix_spawn(&pid, filename.c_str(), NULL, NULL, argv, environ);
