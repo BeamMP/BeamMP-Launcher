@@ -37,6 +37,8 @@ int main(int argc, char* argv[]) {
 
     InitLauncher(argc, argv);
 
+    info("IMPORTANT: You MUST keep this window open to play BeamMP!");
+
     try {
         LegitimacyCheck();
     } catch (std::exception& e) {
