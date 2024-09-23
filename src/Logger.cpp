@@ -75,7 +75,7 @@ void fatal(const std::string& toPrint) {
     std::cout << Print;
     addToLog(Print);
     std::this_thread::sleep_for(std::chrono::seconds(5));
-    _Exit(-1);
+    std::exit(1);
 }
 void except(const std::string& toPrint) {
     std::string Print = getDate() + "[EXCEP] " + toPrint + "\n";

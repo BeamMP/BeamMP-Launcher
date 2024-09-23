@@ -290,36 +290,6 @@ bool IDCheck(std::string Man, std::string steam) {
     return a;
 }
 void LegitimacyCheck() {
-
-// std::string K1 = R"(Software\Valve\Steam)";
-// std::string K2 = R"(Software\Valve\Steam\Apps\284160)";
-
-/*LONG dwRegOPenKey = OpenKey(HKEY_CURRENT_USER, K1.c_str(), &hKey);
-
-if(dwRegOPenKey == ERROR_SUCCESS) {
-    Result = QueryKey(hKey, 1);
-    if(Result.empty())Exit(1);
-
-    if(fs::exists(Result)){
-        if(!Find("284160.json",Result))Exit(2);
-        if(FindHack(Result))SteamExit(1);
-    }else Exit(3);
-
-    T = Result;
-    Result.clear();
-    TraceBack++;
-}else Exit(4);
-
-K1.clear();
-RegCloseKey(hKey);
-dwRegOPenKey = OpenKey(HKEY_CURRENT_USER, K2.c_str(), &hKey);
-if(dwRegOPenKey == ERROR_SUCCESS) {
-    Result = QueryKey(hKey, 2);
-    if(Result.empty())lowExit(1);
-    TraceBack++;
-}else lowExit(2);
-K2.clear();
-RegCloseKey(hKey);*/
 #if defined(_WIN32)
     std::string Result;
     std::string K3 = R"(Software\BeamNG\BeamNG.drive)";
@@ -329,15 +299,12 @@ RegCloseKey(hKey);*/
         Result = QueryKey(hKey, 3);
         if (Result.empty())
             lowExit(3);
-        // if(IDCheck(Result,T))lowExit(5);
         GameDir = Result;
-        // TraceBack++;
     } else
         lowExit(4);
     K3.clear();
     Result.clear();
     RegCloseKey(hKey);
-// if(TraceBack < 3)exit(-1);
 #elif defined(__linux__)
     struct passwd* pw = getpwuid(getuid());
     std::string homeDir = pw->pw_dir;

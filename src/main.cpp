@@ -20,7 +20,7 @@
     }
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char** argv) try {
 #ifdef DEBUG
     std::thread th(flush);
     th.detach();
@@ -40,13 +40,20 @@ int main(int argc, char* argv[]) {
     try {
         LegitimacyCheck();
     } catch (std::exception& e) {
-        fatal("Main 1 : " + std::string(e.what()));
+        error("Failure in LegitimacyCheck: " + std::string(e.what()));
+        throw;
     }
 
-    HTTP::StartProxy();
+    try {
+        HTTP::StartProxy();
+    } catch (const std::exception& e) {
+        error(std::string("Failed to start HTTP proxy: Some in-game functions may not work. Error: ") + e.what());
+    }
     PreGame(GetGameDir());
     InitGame(GetGameDir());
     CoreNetwork();
-
-    /// TODO: make sure to use argv[0] for everything that should be in the same dir (mod down ect...)
+} catch (const std::exception& e) {
+    error(std::string("Exception in main(): ") + e.what());
+    info("Closing in 5 seconds");
+    std::this_thread::sleep_for(std::chrono::seconds(5));
 }
