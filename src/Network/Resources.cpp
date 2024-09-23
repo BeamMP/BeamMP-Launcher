@@ -36,13 +36,8 @@
 namespace fs = std::filesystem;
 
 void CheckForDir() {
-    if (!fs::exists("Resources")) {
-// Could we just use fs::create_directory instead?
-#if defined(_WIN32)
-        _wmkdir(L"Resources");
-#elif defined(__linux__)
-        fs::create_directory(L"Resources");
-#endif
+    if (!fs::exists(CachingDirectory)) {
+        fs::create_directory(CachingDirectory);
     }
 }
 void WaitForConfirm() {
@@ -297,7 +292,7 @@ void SyncResources(SOCKET Sock) {
     for (auto FN = FNames.begin(), FS = FSizes.begin(); FN != FNames.end() && !Terminate; ++FN, ++FS) {
         auto pos = FN->find_last_of('/');
         if (pos != std::string::npos) {
-            PathToSaveTo = "Resources" + FN->substr(pos);
+            PathToSaveTo = CachingDirectory + FN->substr(pos);
         } else {
             continue;
         }

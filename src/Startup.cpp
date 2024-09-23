@@ -101,6 +101,7 @@ void ReLaunch(int argc, char* args[]) {
         Arg += " ";
         Arg += args[c - 1];
     }
+    info("Relaunch!");
     system("cls");
     ShellExecute(nullptr, "runas", (GetEP() + GetEN()).c_str(), Arg.c_str(), nullptr, SW_SHOWNORMAL);
     ShowWindow(GetConsoleWindow(), 0);
@@ -125,6 +126,7 @@ void ReLaunch(int argc, char* args[]) {
         Arg += " ";
         Arg += args[c - 1];
     }
+    info("Relaunch!");
     system("clear");
     execl((GetEP() + GetEN()).c_str(), Arg.c_str(), NULL);
     std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -167,10 +169,6 @@ void CheckForUpdates(int argc, char* args[], const std::string& CV) {
     std::string EP(GetEP() + GetEN()), Back(GetEP() + "BeamMP-Launcher.back");
 
     std::string FileHash = hashpp::get::getFileHash(hashpp::ALGORITHMS::SHA2_256, EP);
-#if defined(_WIN32)
-#elif defined(__linux__)
-    system("clear");
-#endif
 
     if (FileHash != LatestHash && IsOutdated(Version(VersionStrToInts(GetVer() + GetPatch())), Version(VersionStrToInts(LatestVersion))) && !Dev) {
         info("Launcher update found!");
@@ -237,7 +235,6 @@ void LinuxPatch() {
 
 #if defined(_WIN32)
 void InitLauncher(int argc, char* argv[]) {
-    system("cls");
     SetConsoleTitleA(("BeamMP Launcher v" + std::string(GetVer()) + GetPatch()).c_str());
     InitLog();
     CheckName(argc, argv);
@@ -249,7 +246,6 @@ void InitLauncher(int argc, char* argv[]) {
 }
 #elif defined(__linux__)
 void InitLauncher(int argc, char* argv[]) {
-    system("clear");
     InitLog();
     CheckName(argc, argv);
     CheckLocalKey();

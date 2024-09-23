@@ -26,6 +26,14 @@ int main(int argc, char* argv[]) {
     th.detach();
 #endif
 
+
+#if defined(_WIN32)
+    system("cls");
+#elif defined(__linux__)
+    system("clear");
+#endif
+
+
     GetEP(argv[0]);
 
     for (int i = 0; i < argc; ++i) {
