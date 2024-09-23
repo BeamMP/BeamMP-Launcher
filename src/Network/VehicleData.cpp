@@ -7,6 +7,7 @@
 ///
 #include "Network/network.hpp"
 #include "Zlib/Compressor.h"
+#include <stdexcept>
 
 #if defined(_WIN32)
 #include <ws2tcpip.h>
@@ -50,9 +51,13 @@ void SendLarge(std::string Data) {
 void UDPParser(std::string_view Packet) {
     if (Packet.substr(0, 4) == "ABG:") {
         auto substr = Packet.substr(4);
-        auto res = DeComp(std::span<const char>(substr.data(), substr.size()));
-        std::string DeCompPacket = std::string(res.data(), res.size());
-        ServerParser(DeCompPacket);
+        try {
+            auto res = DeComp(std::span<const char>(substr.data(), substr.size()));
+            std::string DeCompPacket = std::string(res.data(), res.size());
+            ServerParser(DeCompPacket);
+        } catch (const std::runtime_error& err) {
+            error("Error in decompression of UDP, ignoring");
+        }
     } else {
         ServerParser(Packet);
     }
@@ -92,8 +97,11 @@ void UDPClientMain(const std::string& IP, int Port) {
     GameSend("P" + std::to_string(ClientID));
     TCPSend("H", TCPSock);
     UDPSend("p");
-    while (!Terminate)
+    debug("Starting UDP receive loop");
+    while (!Terminate) {
         UDPRcv();
+    }
+    debug("UDP receive loop done");
     KillSocket(UDPSock);
     WSACleanup();
 }

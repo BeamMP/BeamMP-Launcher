@@ -82,39 +82,39 @@ std::string TCPRcv(SOCKET Sock) {
         UUl("Invalid Socket");
         return "";
     }
-    int32_t Header, BytesRcv = 0, Temp;
+    int32_t Header, Temp;
     std::vector<char> Data(sizeof(Header));
-    do {
-        Temp = recv(Sock, &Data[BytesRcv], 4 - BytesRcv, 0);
-        if (!CheckBytes(Temp)) {
-            UUl("Socket Closed Code 3");
-            return "";
-        }
-        BytesRcv += Temp;
-    } while (BytesRcv < 4);
-    memcpy(&Header, &Data[0], sizeof(Header));
+    Temp = recv(Sock, Data.data(), sizeof(Header), MSG_WAITALL);
+    if (!CheckBytes(Temp)) {
+        UUl("Socket Closed Code 3");
+        return "";
+    }
+    memcpy(&Header, Data.data(), sizeof(Header));
 
-    if (!CheckBytes(BytesRcv)) {
+    if (!CheckBytes(Temp)) {
         UUl("Socket Closed Code 4");
         return "";
     }
-    Data.resize(Header);
-    BytesRcv = 0;
-    do {
-        Temp = recv(Sock, &Data[BytesRcv], Header - BytesRcv, 0);
-        if (!CheckBytes(Temp)) {
-            UUl("Socket Closed Code 5");
-            return "";
-        }
-        BytesRcv += Temp;
-    } while (BytesRcv < Header);
+
+    Data.resize(Header, 0);
+    Temp = recv(Sock, Data.data(), Header, MSG_WAITALL);
+    if (!CheckBytes(Temp)) {
+        UUl("Socket Closed Code 5");
+        return "";
+    }
 
     std::string Ret(Data.data(), Header);
 
     if (Ret.substr(0, 4) == "ABG:") {
         auto substr = Ret.substr(4);
-        auto res = DeComp(std::span<char>(substr.data(), substr.size()));
-        Ret = std::string(res.data(), res.size());
+        try {
+            auto res = DeComp(std::span<char>(substr.data(), substr.size()));
+            Ret = std::string(res.data(), res.size());
+        } catch (const std::runtime_error& err) {
+            // this happens e.g. when we're out of memory, or when we get incomplete data
+            error("Decompression failed");
+            return "";
+        }
     }
 
 #ifdef DEBUG
