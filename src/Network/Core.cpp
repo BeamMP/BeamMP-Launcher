@@ -178,8 +178,10 @@ void Parse(std::string Data, SOCKET CSocket) {
             TCPTerminate = true;
             ping = -1;
         }
-        if (SubCode == 'G')
+        if (SubCode == 'G') {
+            debug("Closing via 'G' packet");
             exit(2);
+        }
         Data.clear();
         break;
     case 'R': // will send mod name
