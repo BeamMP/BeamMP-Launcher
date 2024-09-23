@@ -54,10 +54,10 @@ void info(const std::string& toPrint) {
     addToLog(Print);
 }
 void debug(const std::string& toPrint) {
-    if (!Dev)
-        return;
     std::string Print = getDate() + "[DEBUG] " + toPrint + "\n";
-    std::cout << Print;
+    if (Dev) {
+        std::cout << Print;
+    }
     addToLog(Print);
 }
 void warn(const std::string& toPrint) {
@@ -75,7 +75,7 @@ void fatal(const std::string& toPrint) {
     std::cout << Print;
     addToLog(Print);
     std::this_thread::sleep_for(std::chrono::seconds(5));
-    _Exit(-1);
+    std::exit(1);
 }
 void except(const std::string& toPrint) {
     std::string Print = getDate() + "[EXCEP] " + toPrint + "\n";

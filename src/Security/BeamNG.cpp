@@ -17,7 +17,6 @@
 #endif
 #include "Logger.h"
 #include <fstream>
-#include <sstream>
 #include <string>
 #include <thread>
 
@@ -34,24 +33,8 @@ void lowExit(int code) {
     std::this_thread::sleep_for(std::chrono::seconds(10));
     exit(2);
 }
-/*void Exit(int code){
-    TraceBack = 0;
-    std::string msg =
-    "Sorry. We do not support cracked copies report this if you believe this is a mistake code ";
-    error(msg+std::to_string(code));
-    std::this_thread::sleep_for(std::chrono::seconds(10));
-    exit(3);
-}
-void SteamExit(int code){
-    TraceBack = 0;
-    std::string msg =
-    "Illegal steam modifications detected report this if you believe this is a mistake code ";
-    error(msg+std::to_string(code));
-    std::this_thread::sleep_for(std::chrono::seconds(10));
-    exit(4);
-}*/
+
 std::string GetGameDir() {
-// if(TraceBack != 4)Exit(0);
 #if defined(_WIN32)
     return GameDir.substr(0, GameDir.find_last_of('\\'));
 #elif defined(__linux__)
@@ -175,151 +158,7 @@ void FileList(std::vector<std::string>& a, const std::string& Path) {
         }
     }
 }
-bool Find(const std::string& FName, const std::string& Path) {
-    std::vector<std::string> FS;
-    FileList(FS, Path + "\\userdata");
-    for (std::string& a : FS) {
-        if (a.find(FName) != std::string::npos) {
-            FS.clear();
-            return true;
-        }
-    }
-    FS.clear();
-    return false;
-}
-bool FindHack(const std::string& Path) {
-    bool s = true;
-    for (const auto& entry : fs::directory_iterator(Path)) {
-        std::string Name = entry.path().filename().string();
-        for (char& c : Name)
-            c = char(tolower(c));
-        if (Name == "steam.exe")
-            s = false;
-        if (Name.find("greenluma") != -1) {
-            error("Found malicious file/folder \"" + Name + "\"");
-            return true;
-        }
-        Name.clear();
-    }
-    return s;
-}
-std::vector<std::string> GetID(const std::string& log) {
-    std::string vec, t, r;
-    std::vector<std::string> Ret;
-    std::ifstream f(log.c_str(), std::ios::binary);
-    f.seekg(0, std::ios_base::end);
-    std::streampos fileSize = f.tellg();
-    vec.resize(size_t(fileSize) + 1);
-    f.seekg(0, std::ios_base::beg);
-    f.read(&vec[0], fileSize);
-    f.close();
-    std::stringstream ss(vec);
-    bool S = false;
-    while (std::getline(ss, t, '{')) {
-        if (!S)
-            S = true;
-        else {
-            for (char& c : t) {
-                if (isdigit(c))
-                    r += c;
-            }
-            break;
-        }
-    }
-    Ret.emplace_back(r);
-    r.clear();
-    S = false;
-    bool L = true;
-    while (std::getline(ss, t, '}')) {
-        if (L) {
-            L = false;
-            continue;
-        }
-        for (char& c : t) {
-            if (c == '"') {
-                if (!S)
-                    S = true;
-                else {
-                    if (r.length() > 10) {
-                        Ret.emplace_back(r);
-                    }
-                    r.clear();
-                    S = false;
-                    continue;
-                }
-            }
-            if (isdigit(c))
-                r += c;
-        }
-    }
-    vec.clear();
-    return Ret;
-}
-std::string GetManifest(const std::string& Man) {
-    std::string vec;
-    std::ifstream f(Man.c_str(), std::ios::binary);
-    f.seekg(0, std::ios_base::end);
-    std::streampos fileSize = f.tellg();
-    vec.resize(size_t(fileSize) + 1);
-    f.seekg(0, std::ios_base::beg);
-    f.read(&vec[0], fileSize);
-    f.close();
-    std::string ToFind = "\"LastOwner\"\t\t\"";
-    int pos = int(vec.find(ToFind));
-    if (pos != -1) {
-        pos += int(ToFind.length());
-        vec = vec.substr(pos);
-        return vec.substr(0, vec.find('\"'));
-    } else
-        return "";
-}
-bool IDCheck(std::string Man, std::string steam) {
-    bool a = false, b = true;
-    int pos = int(Man.rfind("steamapps"));
-    //  if(pos == -1)Exit(5);
-    Man = Man.substr(0, pos + 9) + "\\appmanifest_284160.acf";
-    steam += "\\config\\loginusers.vdf";
-    if (fs::exists(Man) && fs::exists(steam)) {
-        for (const std::string& ID : GetID(steam)) {
-            if (ID == GetManifest(Man))
-                b = false;
-        }
-        // if(b)Exit(6);
-    } else
-        a = true;
-    return a;
-}
 void LegitimacyCheck() {
-
-// std::string K1 = R"(Software\Valve\Steam)";
-// std::string K2 = R"(Software\Valve\Steam\Apps\284160)";
-
-/*LONG dwRegOPenKey = OpenKey(HKEY_CURRENT_USER, K1.c_str(), &hKey);
-
-if(dwRegOPenKey == ERROR_SUCCESS) {
-    Result = QueryKey(hKey, 1);
-    if(Result.empty())Exit(1);
-
-    if(fs::exists(Result)){
-        if(!Find("284160.json",Result))Exit(2);
-        if(FindHack(Result))SteamExit(1);
-    }else Exit(3);
-
-    T = Result;
-    Result.clear();
-    TraceBack++;
-}else Exit(4);
-
-K1.clear();
-RegCloseKey(hKey);
-dwRegOPenKey = OpenKey(HKEY_CURRENT_USER, K2.c_str(), &hKey);
-if(dwRegOPenKey == ERROR_SUCCESS) {
-    Result = QueryKey(hKey, 2);
-    if(Result.empty())lowExit(1);
-    TraceBack++;
-}else lowExit(2);
-K2.clear();
-RegCloseKey(hKey);*/
 #if defined(_WIN32)
     std::string Result;
     std::string K3 = R"(Software\BeamNG\BeamNG.drive)";
@@ -327,17 +166,18 @@ RegCloseKey(hKey);*/
     LONG dwRegOPenKey = OpenKey(HKEY_CURRENT_USER, K3.c_str(), &hKey);
     if (dwRegOPenKey == ERROR_SUCCESS) {
         Result = QueryKey(hKey, 3);
-        if (Result.empty())
+        if (Result.empty()) {
+            debug("Failed to QUERY key HKEY_CURRENT_USER\\Software\\BeamNG\\BeamNG.drive");
             lowExit(3);
-        // if(IDCheck(Result,T))lowExit(5);
+        }
         GameDir = Result;
-        // TraceBack++;
-    } else
+    } else {
+        debug("Failed to OPEN key HKEY_CURRENT_USER\\Software\\BeamNG\\BeamNG.drive");
         lowExit(4);
+    }
     K3.clear();
     Result.clear();
     RegCloseKey(hKey);
-// if(TraceBack < 3)exit(-1);
 #elif defined(__linux__)
     struct passwd* pw = getpwuid(getuid());
     std::string homeDir = pw->pw_dir;
