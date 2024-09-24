@@ -123,11 +123,13 @@ void UpdateUl(bool D, const std::string& msg) {
         UlStatus = "UlLoading Resource " + msg;
 }
 
+uint32_t DownloadSpeedMbits = 0;
+
 void AsyncUpdate(uint64_t& Rcv, uint64_t Size, const std::string& Name) {
     do {
         double pr = double(Rcv) / double(Size) * 100;
         std::string Per = std::to_string(trunc(pr * 10) / 10);
-        UpdateUl(true, Name + " (" + Per.substr(0, Per.find('.') + 2) + "%)");
+        UpdateUl(true, Name + " (" + Per.substr(0, Per.find('.') + 2) + "%) at " + (DownloadSpeedMbits == 0 ? "?" : std::to_string(DownloadSpeedMbits)) + " Mbit/s");
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     } while (!Terminate && Rcv < Size);
 }
@@ -161,12 +163,13 @@ std::vector<char> TCPRcvRaw(SOCKET Sock, uint64_t& GRcv, uint64_t Size) {
         Rcv += Temp;
         GRcv += Temp;
 
-        // every 8th iteration calculate download speed for that iteration
+        auto end = std::chrono::high_resolution_clock::now();
+        auto difference = end - start;
+        float bits_per_s = float(Temp * 8) / float(std::chrono::duration_cast<std::chrono::milliseconds>(difference).count());
+        float megabits_per_s = bits_per_s / 1000;
+        DownloadSpeedMbits = uint32_t(megabits_per_s);
+        // every 8th iteration print the speed
         if (i % 8 == 0) {
-            auto end = std::chrono::high_resolution_clock::now();
-            auto difference = end - start;
-            float bits_per_s = float(Temp * 8) / float(std::chrono::duration_cast<std::chrono::milliseconds>(difference).count());
-            float megabits_per_s = bits_per_s / 1000;
             debug("Download speed: " + std::to_string(uint32_t(megabits_per_s)) + "Mbit/s");
         }
         ++i;
