@@ -55,7 +55,7 @@ void ConfigInit() {
                 R"({
     "Port": 4444,
     "Build": "Default",
-    "CachingDirectory": "./Resources",
+    "CachingDirectory": "./Resources"
 })";
             cfg.close();
         } else {
