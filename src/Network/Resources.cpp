@@ -8,6 +8,8 @@
 
 #include "Network/network.hpp"
 #include <chrono>
+#include <iomanip>
+#include <ios>
 #include <mutex>
 
 #if defined(_WIN32)
@@ -123,13 +125,19 @@ void UpdateUl(bool D, const std::string& msg) {
         UlStatus = "UlLoading Resource " + msg;
 }
 
-uint32_t DownloadSpeedMbits = 0;
+float DownloadSpeed = 0;
 
 void AsyncUpdate(uint64_t& Rcv, uint64_t Size, const std::string& Name) {
     do {
         double pr = double(Rcv) / double(Size) * 100;
         std::string Per = std::to_string(trunc(pr * 10) / 10);
-        UpdateUl(true, Name + " (" + Per.substr(0, Per.find('.') + 2) + "%) at " + (DownloadSpeedMbits == 0 ? "?" : std::to_string(DownloadSpeedMbits)) + " Mbit/s");
+        std::string SpeedString = "";
+        if (DownloadSpeed > 0.01) {
+            std::stringstream ss;
+            ss << " at " << std::setprecision(1) << std::fixed << DownloadSpeed << " Mbit/s";
+            SpeedString = ss.str();
+        }
+        UpdateUl(true, Name + " (" + Per.substr(0, Per.find('.') + 2) + "%)" + SpeedString);
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     } while (!Terminate && Rcv < Size);
 }
@@ -146,12 +154,12 @@ std::vector<char> TCPRcvRaw(SOCKET Sock, uint64_t& GRcv, uint64_t Size) {
     std::vector<char> File(Size);
     uint64_t Rcv = 0;
 
+    auto start = std::chrono::high_resolution_clock::now();
+
     int i = 0;
     do {
-        auto start = std::chrono::high_resolution_clock::now();
-
         // receive at most some MB at a time
-        int Len = std::min(int(Size - Rcv), 2 * 1024 * 1024);
+        int Len = std::min(int(Size - Rcv), 1 * 1024 * 1024);
         int32_t Temp = recv(Sock, &File[Rcv], Len, MSG_WAITALL);
         if (Temp < 1) {
             info(std::to_string(Temp));
@@ -165,9 +173,9 @@ std::vector<char> TCPRcvRaw(SOCKET Sock, uint64_t& GRcv, uint64_t Size) {
 
         auto end = std::chrono::high_resolution_clock::now();
         auto difference = end - start;
-        float bits_per_s = float(Temp * 8) / float(std::chrono::duration_cast<std::chrono::milliseconds>(difference).count());
+        float bits_per_s = float(Rcv * 8) / float(std::chrono::duration_cast<std::chrono::milliseconds>(difference).count());
         float megabits_per_s = bits_per_s / 1000;
-        DownloadSpeedMbits = uint32_t(megabits_per_s);
+        DownloadSpeed = megabits_per_s;
         // every 8th iteration print the speed
         if (i % 8 == 0) {
             debug("Download speed: " + std::to_string(uint32_t(megabits_per_s)) + "Mbit/s");
@@ -207,6 +215,8 @@ SOCKET InitDSock() {
 }
 
 std::vector<char> MultiDownload(SOCKET MSock, SOCKET DSock, uint64_t Size, const std::string& Name) {
+    DownloadSpeed = 0;
+
     uint64_t GRcv = 0;
 
     uint64_t MSize = Size / 2;
