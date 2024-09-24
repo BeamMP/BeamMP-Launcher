@@ -100,7 +100,11 @@ void StartGame(std::string Dir) {
     std::string filename = (Dir + "/BinLinux/BeamNG.x64");
     char* argv[] = { filename.data(), NULL };
     pid_t pid;
-    int result = posix_spawn(&pid, filename.c_str(), NULL, NULL, argv, environ);
+    posix_spawn_file_actions_t spawn_actions;
+    posix_spawn_file_actions_init(&spawn_actions);
+    posix_spawn_file_actions_addclose(&spawn_actions, STDOUT_FILENO);
+    posix_spawn_file_actions_addclose(&spawn_actions, STDERR_FILENO);
+    int result = posix_spawn(&pid, filename.c_str(), &spawn_actions, nullptr, argv, environ);
 
     if (result != 0) {
         error("Failed to Launch the game! launcher closing soon");
