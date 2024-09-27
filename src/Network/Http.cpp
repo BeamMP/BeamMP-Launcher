@@ -81,7 +81,7 @@ std::string HTTP::Get(const std::string& IP) {
             Ret = res->body;
         } else {
             WriteHttpDebug(cli, "GET", IP, res);
-            error("Failed to GET '" + IP + "': " + res->reason + ", ssl verify = " + std::to_string(cli.get_openssl_verify_result()));
+            error("Failed to GET (status " + std::to_string(res->status) + ") '" + IP + "': " + res->reason + ", ssl verify = " + std::to_string(cli.get_openssl_verify_result()));
         }
     } else {
         if (isDownload) {
