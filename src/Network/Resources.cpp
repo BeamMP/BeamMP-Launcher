@@ -220,6 +220,35 @@ SOCKET InitDSock() {
     return DSock;
 }
 
+std::vector<char> SingleNormalDownload(SOCKET MSock, uint64_t Size, const std::string& Name) {
+    DownloadSpeed = 0;
+
+    uint64_t GRcv = 0;
+
+    std::thread Au([&] { AsyncUpdate(GRcv, Size, Name); });
+
+    const std::vector<char> MData = TCPRcvRaw(MSock, GRcv, Size);
+
+    if (MData.empty()) {
+        KillSocket(MSock);
+        Terminate = true;
+        Au.join();
+        return {};
+    }
+
+    // ensure that GRcv is good before joining the async update thread
+    GRcv = MData.size();
+    if (GRcv != Size) {
+        error("Something went wrong during download; didn't get enough data. Expected " + std::to_string(Size) + " bytes, got " + std::to_string(GRcv) + " bytes instead");
+        Terminate = true;
+        Au.join();
+        return {};
+    }
+
+    Au.join();
+    return MData;
+}
+
 std::vector<char> MultiDownload(SOCKET MSock, SOCKET DSock, uint64_t Size, const std::string& Name) {
     DownloadSpeed = 0;
 
@@ -381,7 +410,6 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
 
     info("Syncing...");
 
-    SOCKET DSock = InitDSock();
     int ModNo = 1;
     int TotalMods = ModInfos.size();
     for (auto ModInfoIter = ModInfos.begin(), AlsoModInfoIter = ModInfos.begin(); ModInfoIter != ModInfos.end() && !Terminate; ++ModInfoIter, ++AlsoModInfoIter) {
@@ -436,7 +464,7 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
 
             std::string Name = std::to_string(ModNo) + "/" + std::to_string(TotalMods) + ": " + FName;
 
-            std::vector<char> DownloadedFile = MultiDownload(Sock, DSock, ModInfoIter->FileSize, Name);
+            std::vector<char> DownloadedFile = SingleNormalDownload(Sock, ModInfoIter->FileSize, Name);
 
             if (Terminate)
                 break;
@@ -446,6 +474,7 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
             {
                 std::ofstream OutFile(PathToSaveTo, std::ios::binary | std::ios::trunc);
                 OutFile.write(DownloadedFile.data(), DownloadedFile.size());
+                OutFile.flush();
             }
             // 2. verify size
             if (std::filesystem::file_size(PathToSaveTo) != DownloadedFile.size()) {
@@ -465,13 +494,12 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
             }
 #endif
 
-            fs::copy_file(PathToSaveTo, GetGamePath() + "mods/multiplayer" + FName, fs::copy_options::overwrite_existing);
+            fs::copy_file(PathToSaveTo, std::filesystem::path(GetGamePath()) / "mods/multiplayer" / FName, fs::copy_options::overwrite_existing);
         }
         WaitForConfirm();
         ++ModNo;
     }
 
-    KillSocket(DSock);
     if (!Terminate) {
         TCPSend("Done", Sock);
         info("Done!");
