@@ -399,7 +399,8 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
 
     std::string t;
     for (const auto& mod : ModInfos) {
-        t += mod.FileName + ";";
+        auto FileName = std::filesystem::path(mod.FileName).stem().string() + "-" + mod.Hash.substr(0, 8) + std::filesystem::path(mod.FileName).extension().string();
+        t += FileName + ";";
     }
 
     if (t.empty())
@@ -436,11 +437,13 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
 #endif
                 debug("Mod name: " + modname);
                 auto name = std::filesystem::path(GetGamePath()) / "mods/multiplayer" / modname;
-                std::filesystem::path tmp_name = name;
-                tmp_name.replace_extension(".tmp");
+                std::string tmp_name = name.string();
+                tmp_name += ".tmp";
 
                 fs::copy_file(PathToSaveTo, tmp_name, fs::copy_options::overwrite_existing);
+                debug("Copying '" + PathToSaveTo + "' to '" + tmp_name + "'");
                 fs::rename(tmp_name, name);
+                debug("Renaming '" + tmp_name + "' to '" + std::string(name) + "'");
             } catch (std::exception& e) {
                 error("Failed copy to the mods folder! " + std::string(e.what()));
                 Terminate = true;
