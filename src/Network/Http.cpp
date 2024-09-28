@@ -81,14 +81,20 @@ std::string HTTP::Get(const std::string& IP) {
             Ret = res->body;
         } else {
             WriteHttpDebug(cli, "GET", IP, res);
-            error("Failed to GET '" + IP + "': " + res->reason + ", ssl verify = " + std::to_string(cli.get_openssl_verify_result()));
+            error("Failed to GET (status " + std::to_string(res->status) + ") '" + IP + "': " + res->reason + ", ssl verify = " + std::to_string(cli.get_openssl_verify_result()));
         }
     } else {
         if (isDownload) {
             std::cout << "\n";
         }
+        auto result = cli.get_openssl_verify_result();
+        std::string verify_error;
+        if (result) {
+            verify_error = X509_verify_cert_error_string(result);
+        }
+
         WriteHttpDebug(cli, "GET", IP, res);
-        error("HTTP Get failed on " + to_string(res.error()) + ", ssl verify = " + std::to_string(cli.get_openssl_verify_result()));
+        error("HTTP Get failed on " + to_string(res.error()) + ", ssl verify = " + verify_error);
     }
 
     return Ret;
@@ -128,8 +134,13 @@ std::string HTTP::Post(const std::string& IP, const std::string& Fields) {
             }
             Ret = res->body;
         } else {
+            auto result = cli.get_openssl_verify_result();
+            std::string verify_error;
+            if (result) {
+                verify_error = X509_verify_cert_error_string(result);
+            }
             WriteHttpDebug(cli, "POST", IP, res);
-            error("HTTP Post failed on " + to_string(res.error()) + ", ssl verify = " + std::to_string(cli.get_openssl_verify_result()));
+            error("HTTP Post failed on " + to_string(res.error()) + ", ssl verify = " + verify_error);
         }
     }
 
