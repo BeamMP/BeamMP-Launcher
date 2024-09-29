@@ -399,8 +399,7 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
 
     std::string t;
     for (const auto& mod : ModInfos) {
-        auto FileName = std::filesystem::path(mod.FileName).stem().string() + "-" + mod.Hash.substr(0, 8) + std::filesystem::path(mod.FileName).extension().string();
-        t += FileName + ";";
+        t += mod.FileName + ";";
     }
 
     if (t.empty())
@@ -428,7 +427,7 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
                 if (!fs::exists(GetGamePath() + "mods/multiplayer")) {
                     fs::create_directories(GetGamePath() + "mods/multiplayer");
                 }
-                auto modname = FileName;
+                auto modname = ModInfoIter->FileName;
 #if defined(__linux__)
                 // Linux version of the game doesnt support uppercase letters in mod names
                 for (char& c : modname) {
