@@ -441,9 +441,7 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
                 tmp_name += ".tmp";
 
                 fs::copy_file(PathToSaveTo, tmp_name, fs::copy_options::overwrite_existing);
-                debug("Copying '" + PathToSaveTo + "' to '" + tmp_name + "'");
                 fs::rename(tmp_name, name);
-                debug("Renaming '" + tmp_name + "' to '" + std::string(name) + "'");
             } catch (std::exception& e) {
                 error("Failed copy to the mods folder! " + std::string(e.what()));
                 Terminate = true;
