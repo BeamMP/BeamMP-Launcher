@@ -8,6 +8,7 @@
 
 #if defined(_WIN32)
 #include <windows.h>
+#include <shlobj.h>
 #elif defined(__linux__)
 #include "vdf_parser.hpp"
 #include <pwd.h>
@@ -40,17 +41,17 @@ std::string GetGamePath() {
     Path = QueryKey(hKey, 4);
 
     if (Path.empty()) {
-        sk = R"(SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders)";
-        openRes = RegOpenKeyEx(HKEY_CURRENT_USER, sk, 0, KEY_ALL_ACCESS, &hKey);
-        if (openRes != ERROR_SUCCESS) {
-            sk = R"(SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders)";
-            openRes = RegOpenKeyEx(HKEY_CURRENT_USER, sk, 0, KEY_ALL_ACCESS, &hKey);
+        Path = "";
+        char appDataPath[MAX_PATH];
+        HRESULT result = SHGetFolderPathA(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, appDataPath);
+        if (SUCCEEDED(result)) {
+            Path = appDataPath;
         }
-        if (openRes != ERROR_SUCCESS) {
+
+        if (Path.empty()) {
             fatal("Cannot get Local Appdata directory");
         }
 
-        Path = QueryKey(hKey, 5);
         Path += "\\BeamNG.drive\\";
     }
 
