@@ -137,7 +137,6 @@ void CheckLocalKey() {
                 if (d.contains("id")) {
                     UserID = d["id"].get<int>();
                 }
-                // info(Role);
             } else {
                 info("Auto-Authentication unsuccessful please re-login!");
                 UpdateKey(nullptr);
