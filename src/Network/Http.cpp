@@ -8,16 +8,18 @@
 
 #include "Http.h"
 #include <Logger.h>
+#include <Network/network.hpp>
+#include <Startup.h>
+#include <Utils.h>
 #include <cmath>
+#include <curl/curl.h>
+#include <curl/easy.h>
 #include <filesystem>
 #include <fstream>
 #include <httplib.h>
 #include <iostream>
 #include <mutex>
 #include <nlohmann/json.hpp>
-#include <Startup.h>
-#include <Network/network.hpp>
-#include <Utils.h>
 
 void WriteHttpDebug(const httplib::Client& client, const std::string& method, const std::string& target, const httplib::Result& result) try {
     const std::filesystem::path folder = ".https_debug";
@@ -59,95 +61,67 @@ void WriteHttpDebug(const httplib::Client& client, const std::string& method, co
     error(e.what());
 }
 
+static size_t CurlWriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
+    std::string* Result = reinterpret_cast<std::string*>(userp);
+    std::string NewContents(reinterpret_cast<char*>(contents), size * nmemb);
+    *Result += NewContents;
+    return size * nmemb;
+}
+
 bool HTTP::isDownload = false;
 std::string HTTP::Get(const std::string& IP) {
-    static std::mutex Lock;
-    std::scoped_lock Guard(Lock);
-
-    auto pos = IP.find('/', 10);
-
-    httplib::Client cli(IP.substr(0, pos).c_str());
-    cli.set_connection_timeout(std::chrono::seconds(10));
-    cli.set_follow_location(true);
-    if (SkipSslVerify) {
-        debug("Skipping SSL server validation via --skip-ssl-verify");
-        cli.enable_server_certificate_verification(false);
-    }
-    auto res = cli.Get(IP.substr(pos).c_str(), ProgressBar);
     std::string Ret;
-
-    if (res) {
-        if (res->status == 200) {
-            Ret = res->body;
-        } else {
-            WriteHttpDebug(cli, "GET", IP, res);
-            error("Failed to GET (status " + std::to_string(res->status) + ") '" + IP + "': " + res->reason + ", ssl verify = " + std::to_string(cli.get_openssl_verify_result()));
+    static thread_local CURL* curl = curl_easy_init();
+    if (curl) {
+        CURLcode res;
+        curl_easy_setopt(curl, CURLOPT_URL, IP.c_str());
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CurlWriteCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&Ret);
+        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10); // seconds
+        res = curl_easy_perform(curl);
+        if (res != CURLE_OK) {
+            error("GET to " + IP + " failed: " + std::string(curl_easy_strerror(res)));
+            return "";
         }
     } else {
-        if (isDownload) {
-            std::cout << "\n";
-        }
+        error("Curl easy init failed");
+        return "";
+    }
         auto result = cli.get_openssl_verify_result();
         std::string verify_error;
         if (result) {
             verify_error = X509_verify_cert_error_string(result);
         }
 
-        WriteHttpDebug(cli, "GET", IP, res);
-        error("HTTP Get failed on " + to_string(res.error()) + ", ssl verify = " + verify_error);
-    }
-
     return Ret;
 }
 
 std::string HTTP::Post(const std::string& IP, const std::string& Fields) {
-    static std::mutex Lock;
-    std::scoped_lock Guard(Lock);
-
-    auto pos = IP.find('/', 10);
-
-    httplib::Client cli(IP.substr(0, pos).c_str());
-    cli.set_connection_timeout(std::chrono::seconds(10));
-    if (SkipSslVerify) {
-        debug("Skipping SSL server validation via --skip-ssl-verify");
-        cli.enable_server_certificate_verification(false);
-    }
     std::string Ret;
-
-    if (!Fields.empty()) {
-        httplib::Result res = cli.Post(IP.substr(pos).c_str(), Fields, "application/json");
-
-        if (res) {
-            if (res->status != 200) {
-                error(res->reason);
-            }
-            Ret = res->body;
-        } else {
-            WriteHttpDebug(cli, "POST", IP, res);
-            error("HTTP Post failed on " + to_string(res.error()) + ", ssl verify = " + std::to_string(cli.get_openssl_verify_result()));
+    static thread_local CURL* curl = curl_easy_init();
+    if (curl) {
+        CURLcode res;
+        curl_easy_setopt(curl, CURLOPT_URL, IP.c_str());
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CurlWriteCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&Ret);
+        curl_easy_setopt(curl, CURLOPT_POST, 1);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, Fields.c_str());
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, Fields.size());
+        struct curl_slist* list = nullptr;
+        list = curl_slist_append(list, "Content-Type: application/json");
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
+        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10); // seconds
+        res = curl_easy_perform(curl);
+        curl_slist_free_all(list);
+        if (res != CURLE_OK) {
+            error("POST to " + IP + " failed: " + std::string(curl_easy_strerror(res)));
+            return "";
         }
     } else {
-        httplib::Result res = cli.Post(IP.substr(pos).c_str());
-        if (res) {
-            if (res->status != 200) {
-                error(res->reason);
-            }
-            Ret = res->body;
-        } else {
-            auto result = cli.get_openssl_verify_result();
-            std::string verify_error;
-            if (result) {
-                verify_error = X509_verify_cert_error_string(result);
-            }
-            WriteHttpDebug(cli, "POST", IP, res);
-            error("HTTP Post failed on " + to_string(res.error()) + ", ssl verify = " + verify_error);
-        }
+        error("Curl easy init failed");
+        return "";
     }
-
-    if (Ret.empty())
-        return "-1";
-    else
-        return Ret;
+    return Ret;
 }
 
 bool HTTP::ProgressBar(size_t c, size_t t) {
@@ -199,7 +173,6 @@ void set_headers(httplib::Response& res) {
     res.set_header("Access-Control-Request-Method", "POST, OPTIONS, GET");
     res.set_header("Access-Control-Request-Headers", "X-API-Version");
 }
-
 
 void HTTP::StartProxy() {
     std::thread proxy([&]() {
@@ -255,7 +228,7 @@ void HTTP::StartProxy() {
                         if (std::stoi(path[2]) > 0)
                             avatar_size = path[2];
 
-                    } catch (std::exception&) {}
+                    } catch (std::exception&) { }
                 }
 
                 httplib::Result summary_res;

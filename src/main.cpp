@@ -10,6 +10,7 @@
 #include "Network/network.hpp"
 #include "Security/Init.h"
 #include "Startup.h"
+#include <curl/curl.h>
 #include <iostream>
 #include <thread>
 
@@ -26,6 +27,7 @@ int main(int argc, char** argv) try {
     th.detach();
 #endif
 
+    curl_global_init(CURL_GLOBAL_ALL);
 
 #if defined(_WIN32)
     system("cls");
