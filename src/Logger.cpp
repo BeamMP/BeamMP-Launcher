@@ -55,10 +55,8 @@ void info(const std::string& toPrint) {
     addToLog(Print);
 }
 void debug(const std::string& toPrint) {
-    if (!options.verbose)
-        return;
     std::string Print = getDate() + "[DEBUG] " + toPrint + "\n";
-    if (Dev) {
+    if (options.verbose) {
         std::cout << Print;
     }
     addToLog(Print);
