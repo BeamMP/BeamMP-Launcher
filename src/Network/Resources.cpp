@@ -201,7 +201,6 @@ SOCKET InitDSock() {
         KillSocket(DSock);
         Terminate = true;
         return 0;
-        return 0;
     }
     ServerAddr.sin_family = AF_INET;
     ServerAddr.sin_port = htons(LastPort);
