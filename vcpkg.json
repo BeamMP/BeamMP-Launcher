@@ -3,6 +3,7 @@
     "cpp-httplib",
     "nlohmann-json",
     "zlib",
-    "openssl"
+    "openssl",
+    "curl"
   ]
 }
