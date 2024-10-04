@@ -87,12 +87,6 @@ std::string HTTP::Get(const std::string& IP) {
         error("Curl easy init failed");
         return "";
     }
-        auto result = cli.get_openssl_verify_result();
-        std::string verify_error;
-        if (result) {
-            verify_error = X509_verify_cert_error_string(result);
-        }
-
     return Ret;
 }
 
