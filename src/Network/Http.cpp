@@ -118,35 +118,17 @@ std::string HTTP::Post(const std::string& IP, const std::string& Fields) {
     return Ret;
 }
 
-bool HTTP::ProgressBar(size_t c, size_t t) {
-    if (isDownload) {
-        static double last_progress, progress_bar_adv;
-        progress_bar_adv = round(c / double(t) * 25);
-        std::cout << "\r";
-        std::cout << "Progress : [ ";
-        std::cout << round(c / double(t) * 100);
-        std::cout << "% ] [";
-        int i;
-        for (i = 0; i <= progress_bar_adv; i++)
-            std::cout << "#";
-        for (i = 0; i < 25 - progress_bar_adv; i++)
-            std::cout << ".";
-        std::cout << "]";
-        last_progress = round(c / double(t) * 100);
-    }
-    return true;
-}
-
 bool HTTP::Download(const std::string& IP, const std::string& Path) {
     static std::mutex Lock;
     std::scoped_lock Guard(Lock);
 
-    isDownload = true;
+    info("Downloading an update (this may take a while)");
     std::string Ret = Get(IP);
-    isDownload = false;
 
-    if (Ret.empty())
+    if (Ret.empty()) {
+        error("Download failed");
         return false;
+    }
 
     std::ofstream File(Path, std::ios::binary);
     if (File.is_open()) {

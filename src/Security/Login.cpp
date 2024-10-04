@@ -58,7 +58,7 @@ std::string Login(const std::string& fields) {
     try {
         std::string Buffer = HTTP::Post("https://auth.beammp.com/userlogin", fields);
 
-        if (Buffer == "-1") {
+        if (Buffer.empty()) {
             return GetFail("Failed to communicate with the auth system!");
         }
 
@@ -119,7 +119,7 @@ void CheckLocalKey() {
 
             nlohmann::json d = nlohmann::json::parse(Buffer, nullptr, false);
 
-            if (Buffer == "-1" || Buffer.at(0) != '{' || d.is_discarded()) {
+            if (Buffer.empty() || Buffer.at(0) != '{' || d.is_discarded()) {
                 error(Buffer);
                 info("Invalid answer from authentication servers.");
                 UpdateKey(nullptr);
