@@ -185,10 +185,10 @@ void CheckForUpdates(const std::string& CV) {
                     + PublicKey + "&branch=" + Branch,
                 EP);
             URelaunch();
+#endif
         } else {
             warn("Launcher update was found, but not updating because --no-update or --dev was specified.");
         }
-#endif
     } else
         info("Launcher version is up to date");
     TraceBack++;
