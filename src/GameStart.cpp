@@ -84,7 +84,14 @@ void StartGame(std::string Dir) {
     std::string BaseDir = Dir; //+"\\Bin64";
     // Dir += R"(\Bin64\BeamNG.drive.x64.exe)";
     Dir += "\\BeamNG.drive.exe";
-    bSuccess = CreateProcessA(Dir.c_str(), nullptr, nullptr, nullptr, TRUE, 0, nullptr, BaseDir.c_str(), &si, &pi);
+    std::string gameArgs = "";
+
+    for (int i = 0; i < options.game_arguments_length; i++) {
+        gameArgs += " ";
+        gameArgs += options.game_arguments[i];
+    }
+
+    bSuccess = CreateProcessA(nullptr, (LPSTR)(Dir + gameArgs).c_str(), nullptr, nullptr, TRUE, 0, nullptr, BaseDir.c_str(), &si, &pi);
     if (bSuccess) {
         info("Game Launched!");
         GamePID = pi.dwProcessId;
