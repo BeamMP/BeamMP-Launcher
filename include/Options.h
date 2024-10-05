@@ -11,6 +11,8 @@ struct Options {
     bool no_launch = false;
     char **game_arguments = nullptr;
     int game_arguments_length = 0;
+    char** argv = nullptr;
+    int argc = 0;
 };
 
 void InitOptions(int argc, char *argv[], Options &options);

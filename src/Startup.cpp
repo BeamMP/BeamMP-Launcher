@@ -97,9 +97,9 @@ std::string GetEP(char* P) {
 #if defined(_WIN32)
 void ReLaunch() {
     std::string Arg;
-    for (int c = 0; c <= options.game_arguments_length; c++) {
+    for (int c = 2; c <= options.argc; c++) {
+        Arg += options.argv[c - 1];
         Arg += " ";
-        Arg += options.game_arguments[c - 1];
     }
     info("Relaunch!");
     system("cls");
@@ -110,9 +110,9 @@ void ReLaunch() {
 }
 void URelaunch() {
     std::string Arg;
-    for (int c = 0; c <= options.game_arguments_length; c++) {
+    for (int c = 2; c <= options.argc; c++) {
+        Arg += options.argv[c - 1];
         Arg += " ";
-        Arg += options.game_arguments[c - 1];
     }
     ShellExecute(nullptr, "open", (GetEP() + GetEN()).c_str(), Arg.c_str(), nullptr, SW_SHOWNORMAL);
     ShowWindow(GetConsoleWindow(), 0);
@@ -122,9 +122,9 @@ void URelaunch() {
 #elif defined(__linux__)
 void ReLaunch() {
     std::string Arg;
-    for (int c = 0; c <= options.game_arguments_length; c++) {
+    for (int c = 2; c <= options.argc; c++) {
+        Arg += options.argv[c - 1];
         Arg += " ";
-        Arg += options.game_arguments[c - 1];
     }
     info("Relaunch!");
     system("clear");
@@ -134,9 +134,9 @@ void ReLaunch() {
 }
 void URelaunch() {
     std::string Arg;
-    for (int c = 0; c <= options.game_arguments_length; c++) {
+    for (int c = 2; c <= options.argc; c++) {
+        Arg += options.argv[c - 1];
         Arg += " ";
-        Arg += options.game_arguments[c - 1];
     }
     execl((GetEP() + GetEN()).c_str(), Arg.c_str(), NULL);
     std::this_thread::sleep_for(std::chrono::seconds(1));

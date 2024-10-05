@@ -6,6 +6,9 @@
 void InitOptions(int argc, char *argv[], Options &options) {
     int i = 1;
 
+    options.argc = argc;
+    options.argv = argv;
+
     if (argc > 2)
         if (std::string(argv[1]) == "0" && std::string(argv[2]) == "0") {
             options.verbose = true;
