@@ -8,6 +8,7 @@
 
 #include "zip_file.h"
 #include <charconv>
+#include <cstring>
 #include <httplib.h>
 #include <nlohmann/json.hpp>
 #include <string>
@@ -87,7 +88,7 @@ std::string GetPatch() {
     return ".0";
 }
 
-std::string GetEP(char* P) {
+std::string GetEP(const char* P) {
     static std::string Ret = [&]() {
         std::string path(P);
         return path.substr(0, path.find_last_of("\\/") + 1);
@@ -128,17 +129,20 @@ void ReLaunch() {
     }
     info("Relaunch!");
     system("clear");
-    execl((GetEP() + GetEN()).c_str(), Arg.c_str(), NULL);
+    int ret = execv(options.executable_name.c_str(), const_cast<char**>(options.argv));
+    if (ret < 0) {
+        error(std::string("execv() failed with: ") + strerror(errno) + ". Failed to relaunch");
+        exit(1);
+    }
     std::this_thread::sleep_for(std::chrono::seconds(1));
     exit(1);
 }
 void URelaunch() {
-    std::string Arg;
-    for (int c = 2; c <= options.argc; c++) {
-        Arg += options.argv[c - 1];
-        Arg += " ";
+    int ret = execv(options.executable_name.c_str(), const_cast<char**>(options.argv));
+    if (ret < 0) {
+        error(std::string("execv() failed with: ") + strerror(errno) + ". Failed to relaunch");
+        exit(1);
     }
-    execl((GetEP() + GetEN()).c_str(), Arg.c_str(), NULL);
     std::this_thread::sleep_for(std::chrono::seconds(1));
     exit(1);
 }

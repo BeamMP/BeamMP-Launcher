@@ -2,14 +2,15 @@
 
 #include "Logger.h"
 #include <cstdlib>
+#include <filesystem>
 
-void InitOptions(int argc, char *argv[], Options &options) {
+void InitOptions(int argc, const char *argv[], Options &options) {
     int i = 1;
 
     options.argc = argc;
     options.argv = argv;
 
-    if (argc > 2)
+    if (argc > 2) {
         if (std::string(argv[1]) == "0" && std::string(argv[2]) == "0") {
             options.verbose = true;
             options.no_download = true;
@@ -18,6 +19,7 @@ void InitOptions(int argc, char *argv[], Options &options) {
             warn("You are using deprecated commandline arguments, please use --dev instead");
             return;
         }
+    }
 
     options.executable_name = std::string(argv[0]);
 
@@ -38,7 +40,7 @@ void InitOptions(int argc, char *argv[], Options &options) {
 
             try {
                 port = std::stoi(argv[i + 1]);
-            } catch (std::exception& e) { 
+            } catch (std::exception& e) {
                 error("Invalid port specified: " + std::string(argv[i + 1]) + " " + std::string(e.what()));
             }
 
@@ -68,10 +70,24 @@ void InitOptions(int argc, char *argv[], Options &options) {
             options.no_download = true;
             options.no_launch = true;
             options.no_update = true;
-        } else if (argument == "--game") {
+        } else if (argument == "--" || argument == "--game") {
             options.game_arguments = &argv[i + 1];
             options.game_arguments_length = argc - i - 1;
             break;
+        } else if (argument == "--help" || argument == "-h" || argument == "/?") {
+            std::cout << "USAGE:\n"
+                "\t" + std::filesystem::path(options.executable_name).filename().string() + " [OPTIONS] [-- <GAME ARGS>...]\n"
+                "\n"
+                "OPTIONS:\n"
+                "\t--port <port>    -p  Change the default listen port to <port>. This must be configured ingame, too\n"
+                "\t--verbose        -v  Verbose mode, prints debug messages\n"
+                "\t--no-download        Skip downloading and installing the BeamMP Lua mod\n"
+                "\t--no-update          Skip applying launcher updates (you must update manually)\n"
+                "\t--no-launch          Skip launching the game (you must launch the game manually)\n"
+                "\t--dev                Developer mode, same as --verbose --no-download --no-launch --no-update\n"
+                "\t--game <args...>     Passes ALL following arguments to the game, see also `--`\n"
+                << std::flush;
+            exit(0);
         } else {
             warn("Unknown option: " + argument);
         }

@@ -136,7 +136,6 @@ bool HTTP::Download(const std::string& IP, const std::string& Path) {
     if (File.is_open()) {
         File << Ret;
         File.close();
-        std::cout << "\n";
         info("Download Complete!");
     } else {
         error("Failed to open file directory: " + Path);

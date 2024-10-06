@@ -24,7 +24,7 @@ Options options;
     }
 }
 
-int main(int argc, char** argv) try {
+int main(int argc, const char** argv) try {
 #if defined(_WIN32)
     system("cls");
 #elif defined(__linux__)
