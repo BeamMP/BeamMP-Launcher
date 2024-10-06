@@ -377,8 +377,8 @@ struct ModInfo {
             }
         } catch (const std::exception& e) {
             debug(std::string("Failed to receive mod list: ") + e.what());
-            error("Failed to receive mod list!");
-            // TODO: Cry and die
+            warn("Failed to receive new mod list format! This server may be outdated, but everything will still work as expected.");
+            return {};
         }
         return modInfos;
     }
