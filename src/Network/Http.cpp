@@ -78,6 +78,7 @@ std::string HTTP::Get(const std::string& IP) {
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CurlWriteCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&Ret);
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10); // seconds
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         res = curl_easy_perform(curl);
         if (res != CURLE_OK) {
             error("GET to " + IP + " failed: " + std::string(curl_easy_strerror(res)));
@@ -105,6 +106,7 @@ std::string HTTP::Post(const std::string& IP, const std::string& Fields) {
         list = curl_slist_append(list, "Content-Type: application/json");
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10); // seconds
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         res = curl_easy_perform(curl);
         curl_slist_free_all(list);
         if (res != CURLE_OK) {
