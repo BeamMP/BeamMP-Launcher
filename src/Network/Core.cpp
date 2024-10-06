@@ -306,7 +306,7 @@ void CoreMain() {
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
     hints.ai_flags = AI_PASSIVE;
-    iRes = getaddrinfo(nullptr, std::to_string(options.port).c_str(), &hints, &res);
+    iRes = getaddrinfo("127.0.0.1", std::to_string(options.port).c_str(), &hints, &res);
     if (iRes) {
         debug("(Core) addr info failed with error: " + std::to_string(iRes));
         WSACleanup();
