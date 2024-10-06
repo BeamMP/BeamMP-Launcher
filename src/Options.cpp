@@ -10,6 +10,16 @@ void InitOptions(int argc, const char *argv[], Options &options) {
     options.argc = argc;
     options.argv = argv;
 
+    std::string AllOptions;
+    for (int i = 0; i < argc; ++i) {
+        AllOptions += std::string(argv[i]);
+        if (i + 1 < argc) {
+            AllOptions += " ";
+        }
+    }
+    debug("Launcher was invoked as: '" + AllOptions + "'");
+
+
     if (argc > 2) {
         if (std::string(argv[1]) == "0" && std::string(argv[2]) == "0") {
             options.verbose = true;
@@ -26,7 +36,7 @@ void InitOptions(int argc, const char *argv[], Options &options) {
     while (i < argc) {
         std::string argument(argv[i]);
         if (argument == "-p" || argument == "--port") {
-            if (argc > i) {
+            if (i + 1 >= argc) {
                 std::string error_message =
                     "No port specified, resorting to default (";
                 error_message += std::to_string(options.port);

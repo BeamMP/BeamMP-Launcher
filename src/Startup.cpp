@@ -242,7 +242,6 @@ void InitLauncher() {
 #elif defined(__linux__)
 
 void InitLauncher() {
-    InitLog();
     info("BeamMP Launcher v" + GetVer() + GetPatch());
     CheckName();
     CheckLocalKey();
