@@ -25,9 +25,9 @@
 #include <filesystem>
 #include <fstream>
 #include <thread>
+#include "Options.h"
 
 extern int TraceBack;
-bool Dev = false;
 int ProxyPort = 0;
 
 namespace fs = std::filesystem;
@@ -95,11 +95,11 @@ std::string GetEP(char* P) {
     return Ret;
 }
 #if defined(_WIN32)
-void ReLaunch(int argc, char* args[]) {
+void ReLaunch() {
     std::string Arg;
-    for (int c = 2; c <= argc; c++) {
+    for (int c = 2; c <= options.argc; c++) {
+        Arg += options.argv[c - 1];
         Arg += " ";
-        Arg += args[c - 1];
     }
     info("Relaunch!");
     system("cls");
@@ -108,11 +108,11 @@ void ReLaunch(int argc, char* args[]) {
     std::this_thread::sleep_for(std::chrono::seconds(1));
     exit(1);
 }
-void URelaunch(int argc, char* args[]) {
+void URelaunch() {
     std::string Arg;
-    for (int c = 2; c <= argc; c++) {
+    for (int c = 2; c <= options.argc; c++) {
+        Arg += options.argv[c - 1];
         Arg += " ";
-        Arg += args[c - 1];
     }
     ShellExecute(nullptr, "open", (GetEP() + GetEN()).c_str(), Arg.c_str(), nullptr, SW_SHOWNORMAL);
     ShowWindow(GetConsoleWindow(), 0);
@@ -120,11 +120,11 @@ void URelaunch(int argc, char* args[]) {
     exit(1);
 }
 #elif defined(__linux__)
-void ReLaunch(int argc, char* args[]) {
+void ReLaunch() {
     std::string Arg;
-    for (int c = 2; c <= argc; c++) {
+    for (int c = 2; c <= options.argc; c++) {
+        Arg += options.argv[c - 1];
         Arg += " ";
-        Arg += args[c - 1];
     }
     info("Relaunch!");
     system("clear");
@@ -132,11 +132,11 @@ void ReLaunch(int argc, char* args[]) {
     std::this_thread::sleep_for(std::chrono::seconds(1));
     exit(1);
 }
-void URelaunch(int argc, char* args[]) {
+void URelaunch() {
     std::string Arg;
-    for (int c = 2; c <= argc; c++) {
+    for (int c = 2; c <= options.argc; c++) {
+        Arg += options.argv[c - 1];
         Arg += " ";
-        Arg += args[c - 1];
     }
     execl((GetEP() + GetEN()).c_str(), Arg.c_str(), NULL);
     std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -144,23 +144,23 @@ void URelaunch(int argc, char* args[]) {
 }
 #endif
 
-void CheckName(int argc, char* args[]) {
+void CheckName() {
 #if defined(_WIN32)
-    std::string DN = GetEN(), CDir = args[0], FN = CDir.substr(CDir.find_last_of('\\') + 1);
+    std::string DN = GetEN(), CDir = options.executable_name, FN = CDir.substr(CDir.find_last_of('\\') + 1);
 #elif defined(__linux__)
-    std::string DN = GetEN(), CDir = args[0], FN = CDir.substr(CDir.find_last_of('/') + 1);
+    std::string DN = GetEN(), CDir = options.executable_name, FN = CDir.substr(CDir.find_last_of('/') + 1);
 #endif
     if (FN != DN) {
         if (fs::exists(DN))
             remove(DN.c_str());
         if (fs::exists(DN))
-            ReLaunch(argc, args);
+            ReLaunch();
         std::rename(FN.c_str(), DN.c_str());
-        URelaunch(argc, args);
+        URelaunch();
     }
 }
 
-void CheckForUpdates(int argc, char* args[], const std::string& CV) {
+void CheckForUpdates(const std::string& CV) {
     std::string LatestHash = HTTP::Get("https://backend.beammp.com/sha/launcher?branch=" + Branch + "&pk=" + PublicKey);
     std::string LatestVersion = HTTP::Get(
         "https://backend.beammp.com/version/launcher?branch=" + Branch + "&pk=" + PublicKey);
@@ -170,39 +170,30 @@ void CheckForUpdates(int argc, char* args[], const std::string& CV) {
 
     std::string FileHash = hashpp::get::getFileHash(hashpp::ALGORITHMS::SHA2_256, EP);
 
-    if (FileHash != LatestHash && IsOutdated(Version(VersionStrToInts(GetVer() + GetPatch())), Version(VersionStrToInts(LatestVersion))) && !Dev) {
-        info("Launcher update found!");
+    if (FileHash != LatestHash && IsOutdated(Version(VersionStrToInts(GetVer() + GetPatch())), Version(VersionStrToInts(LatestVersion)))) {
+        if (!options.no_update) {
+            info("Launcher update found!");
 #if defined(__linux__)
-        error("Auto update is NOT implemented for the Linux version. Please update manually ASAP as updates contain security patches.");
+            error("Auto update is NOT implemented for the Linux version. Please update manually ASAP as updates contain security patches.");
 #else
-        fs::remove(Back);
-        fs::rename(EP, Back);
-        info("Downloading Launcher update " + LatestHash);
-        HTTP::Download(
-            "https://backend.beammp.com/builds/launcher?download=true"
-            "&pk="
-                + PublicKey + "&branch=" + Branch,
-            EP);
-        URelaunch(argc, args);
+            fs::remove(Back);
+            fs::rename(EP, Back);
+            info("Downloading Launcher update " + LatestHash);
+            HTTP::Download(
+                "https://backend.beammp.com/builds/launcher?download=true"
+                "&pk="
+                    + PublicKey + "&branch=" + Branch,
+                EP);
+            URelaunch();
 #endif
+        } else {
+            warn("Launcher update was found, but not updating because --no-update or --dev was specified.");
+        }
     } else
         info("Launcher version is up to date");
     TraceBack++;
 }
 
-void CustomPort(int argc, char* argv[]) {
-    if (argc > 1) {
-        std::string Port = argv[1];
-        if (Port.find_first_not_of("0123456789") == std::string::npos) {
-            if (std::stoi(Port) > 1000) {
-                DEFAULT_PORT = std::stoi(Port);
-                warn("Running on custom port : " + std::to_string(DEFAULT_PORT));
-            }
-        }
-        if (argc > 2)
-            Dev = true;
-    }
-}
 
 #ifdef _WIN32
 void LinuxPatch() {
@@ -234,25 +225,25 @@ void LinuxPatch() {
 #endif
 
 #if defined(_WIN32)
-void InitLauncher(int argc, char* argv[]) {
+
+void InitLauncher() {
     SetConsoleTitleA(("BeamMP Launcher v" + std::string(GetVer()) + GetPatch()).c_str());
     InitLog();
-    CheckName(argc, argv);
+    CheckName();
     LinuxPatch();
     CheckLocalKey();
     ConfigInit();
-    CustomPort(argc, argv);
-    CheckForUpdates(argc, argv, std::string(GetVer()) + GetPatch());
+    CheckForUpdates(std::string(GetVer()) + GetPatch());
 }
 #elif defined(__linux__)
-void InitLauncher(int argc, char* argv[]) {
+
+void InitLauncher() {
     InitLog();
     info("BeamMP Launcher v" + GetVer() + GetPatch());
-    CheckName(argc, argv);
+    CheckName();
     CheckLocalKey();
     ConfigInit();
-    CustomPort(argc, argv);
-    CheckForUpdates(argc, argv, std::string(GetVer()) + GetPatch());
+    CheckForUpdates(std::string(GetVer()) + GetPatch());
 }
 #endif
 
@@ -316,7 +307,7 @@ void PreGame(const std::string& GamePath) {
     CheckMP(GetGamePath() + "mods/multiplayer");
     info("Game user path: " + GetGamePath());
 
-    if (!Dev) {
+    if (!options.no_download) {
         std::string LatestHash = HTTP::Get("https://backend.beammp.com/sha/mod?branch=" + Branch + "&pk=" + PublicKey);
         transform(LatestHash.begin(), LatestHash.end(), LatestHash.begin(), ::tolower);
         LatestHash.erase(std::remove_if(LatestHash.begin(), LatestHash.end(),

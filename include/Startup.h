@@ -10,12 +10,11 @@
 #include <string>
 #include <vector>
 
-void InitLauncher(int argc, char* argv[]);
+void InitLauncher();
 std::string GetEP(char* P = nullptr);
 std::string GetGamePath();
 std::string GetVer();
 std::string GetPatch();
 std::string GetEN();
 void ConfigInit();
-extern bool Dev;
 

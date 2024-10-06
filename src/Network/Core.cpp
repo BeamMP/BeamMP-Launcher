@@ -30,11 +30,11 @@
 #include <nlohmann/json.hpp>
 #include <set>
 #include <thread>
+#include "Options.h"
 
 extern int TraceBack;
 std::set<std::string>* ConfList = nullptr;
 bool TCPTerminate = false;
-int DEFAULT_PORT = 4444;
 bool Terminate = false;
 bool LoginAuth = false;
 std::string Username = "";
@@ -288,7 +288,7 @@ void localRes() {
     ConfList = new std::set<std::string>;
 }
 void CoreMain() {
-    debug("Core Network on start!");
+    debug("Core Network on start! port: " + std::to_string(options.port));
     SOCKET LSocket, CSocket;
     struct addrinfo* res = nullptr;
     struct addrinfo hints { };
@@ -306,7 +306,7 @@ void CoreMain() {
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
     hints.ai_flags = AI_PASSIVE;
-    iRes = getaddrinfo(nullptr, std::to_string(DEFAULT_PORT).c_str(), &hints, &res);
+    iRes = getaddrinfo(nullptr, std::to_string(options.port).c_str(), &hints, &res);
     if (iRes) {
         debug("(Core) addr info failed with error: " + std::to_string(iRes));
         WSACleanup();

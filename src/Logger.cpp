@@ -12,6 +12,7 @@
 #include <fstream>
 #include <sstream>
 #include <thread>
+#include "Options.h"
 
 std::string getDate() {
     time_t tt = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
@@ -55,7 +56,7 @@ void info(const std::string& toPrint) {
 }
 void debug(const std::string& toPrint) {
     std::string Print = getDate() + "[DEBUG] " + toPrint + "\n";
-    if (Dev) {
+    if (options.verbose) {
         std::cout << Print;
     }
     addToLog(Print);

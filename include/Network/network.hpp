@@ -26,7 +26,6 @@ extern int ClientID;
 extern int LastPort;
 extern bool ModLoaded;
 extern bool Terminate;
-extern int DEFAULT_PORT;
 extern uint64_t UDPSock;
 extern uint64_t TCPSock;
 extern std::string Branch;

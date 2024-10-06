@@ -23,6 +23,7 @@
 #include <Security/Init.h>
 #include <filesystem>
 #include <thread>
+#include "Options.h"
 
 unsigned long GamePID = 0;
 #if defined(_WIN32)
@@ -83,7 +84,14 @@ void StartGame(std::string Dir) {
     std::string BaseDir = Dir; //+"\\Bin64";
     // Dir += R"(\Bin64\BeamNG.drive.x64.exe)";
     Dir += "\\BeamNG.drive.exe";
-    bSuccess = CreateProcessA(Dir.c_str(), nullptr, nullptr, nullptr, TRUE, 0, nullptr, BaseDir.c_str(), &si, &pi);
+    std::string gameArgs = "";
+
+    for (int i = 0; i < options.game_arguments_length; i++) {
+        gameArgs += " ";
+        gameArgs += options.game_arguments[i];
+    }
+
+    bSuccess = CreateProcessA(nullptr, (LPSTR)(Dir + gameArgs).c_str(), nullptr, nullptr, TRUE, 0, nullptr, BaseDir.c_str(), &si, &pi);
     if (bSuccess) {
         info("Game Launched!");
         GamePID = pi.dwProcessId;
@@ -99,13 +107,19 @@ void StartGame(std::string Dir) {
 void StartGame(std::string Dir) {
     int status;
     std::string filename = (Dir + "/BinLinux/BeamNG.drive.x64");
-    char* argv[] = { filename.data(), NULL };
+    std::vector<char*> argv;
+    argv.push_back(filename.data());
+    for (int i = 0; i < options.game_arguments_length; i++) {
+        argv.push_back(options.game_arguments[i]);
+    }
+
+    argv.push_back(nullptr);
     pid_t pid;
     posix_spawn_file_actions_t spawn_actions;
     posix_spawn_file_actions_init(&spawn_actions);
     posix_spawn_file_actions_addclose(&spawn_actions, STDOUT_FILENO);
     posix_spawn_file_actions_addclose(&spawn_actions, STDERR_FILENO);
-    int result = posix_spawn(&pid, filename.c_str(), &spawn_actions, nullptr, argv, environ);
+    int result = posix_spawn(&pid, filename.c_str(), &spawn_actions, nullptr, argv.data(), environ);
 
     if (result != 0) {
         error("Failed to Launch the game! launcher closing soon");
@@ -121,7 +135,7 @@ void StartGame(std::string Dir) {
 #endif
 
 void InitGame(const std::string& Dir) {
-    if (!Dev) {
+    if (!options.no_launch) {
         std::thread Game(StartGame, Dir);
         Game.detach();
     }
