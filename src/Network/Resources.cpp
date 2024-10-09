@@ -366,6 +366,9 @@ struct ModInfo {
         std::vector<ModInfo> modInfos;
         try {
             auto json = nlohmann::json::parse(packet);
+            if (json.empty()) {
+                return modInfos;
+            }
             for (const auto& entry : json) {
                 ModInfo modInfo {
                     .FileName = entry["file_name"],
