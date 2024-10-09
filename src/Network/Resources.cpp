@@ -514,6 +514,8 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
 void SyncResources(SOCKET Sock) {
     std::string Ret = Auth(Sock);
 
+    debug("Mod info: " + Ret);
+
     auto ModInfos = ModInfo::ParseModInfosFromPacket(Ret);
 
     if (!ModInfos.empty()) {
