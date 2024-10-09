@@ -194,31 +194,6 @@ void MultiKill(SOCKET Sock, SOCKET Sock1) {
     KillSocket(Sock);
     Terminate = true;
 }
-SOCKET InitDSock() {
-    SOCKET DSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    SOCKADDR_IN ServerAddr;
-    if (DSock < 1) {
-        KillSocket(DSock);
-        Terminate = true;
-        return 0;
-    }
-    ServerAddr.sin_family = AF_INET;
-    ServerAddr.sin_port = htons(LastPort);
-    inet_pton(AF_INET, LastIP.c_str(), &ServerAddr.sin_addr);
-    if (connect(DSock, (SOCKADDR*)&ServerAddr, sizeof(ServerAddr)) != 0) {
-        KillSocket(DSock);
-        Terminate = true;
-        return 0;
-    }
-    char Code[2] = { 'D', char(ClientID) };
-    if (send(DSock, Code, 2, 0) != 2) {
-        KillSocket(DSock);
-        Terminate = true;
-        return 0;
-    }
-    return DSock;
-}
-
 std::vector<char> SingleNormalDownload(SOCKET MSock, uint64_t Size, const std::string& Name) {
     DownloadSpeed = 0;
 
@@ -561,7 +536,6 @@ void SyncResources(SOCKET Sock) {
     }
     if (!FNames.empty())
         info("Syncing...");
-    SOCKET DSock = InitDSock();
     for (auto FN = FNames.begin(), FS = FSizes.begin(); FN != FNames.end() && !Terminate; ++FN, ++FS) {
         auto pos = FN->find_last_of('/');
         if (pos != std::string::npos) {
