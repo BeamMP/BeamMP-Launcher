@@ -383,8 +383,7 @@ struct ModInfo {
             }
         } catch (const std::exception& e) {
             debug(std::string("Failed to receive mod list: ") + e.what());
-            error("Failed to receive mod list!");
-            // TODO: Cry and die
+            warn("Failed to receive new mod list format! This server may be outdated, but everything should still work as expected.");
         }
         return std::make_pair(success, modInfos);
     }
@@ -526,11 +525,15 @@ void SyncResources(SOCKET Sock) {
 
     debug("Mod info: " + Ret);
 
-    auto ModInfos = ModInfo::ParseModInfosFromPacket(Ret);
+    if (Ret.starts_with("R")) {
+        debug("This server is likely outdated, not trying to parse new mod info format");
+    } else {
+        auto ModInfos = ModInfo::ParseModInfosFromPacket(Ret);
 
-    if (ModInfos.first) {
-        NewSyncResources(Sock, Ret, ModInfos.second);
-        return;
+        if (ModInfos.first) {
+            NewSyncResources(Sock, Ret, ModInfos.second);
+            return;
+        }
     }
 
     if (Ret.empty())
