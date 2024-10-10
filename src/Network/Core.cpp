@@ -114,7 +114,10 @@ void Parse(std::string Data, SOCKET CSocket) {
         NetReset();
         Terminate = true;
         TCPTerminate = true;
-        Data = Code + HTTP::Get("https://backend.beammp.com/servers-info");
+        Data.clear();
+        std::thread([&]() {
+            CoreSend(Code + HTTP::Get("https://backend.beammp.com/servers-info"));
+        }).detach();
         break;
     case 'C':
         StartSync(Data);
@@ -210,7 +213,10 @@ void Parse(std::string Data, SOCKET CSocket) {
             }
             Data = "N" + Auth.dump();
         } else {
-            Data = "N" + Login(Data.substr(Data.find(':') + 1));
+            Data.clear();
+            std::thread([&]() {
+                CoreSend(Code + Login(Data.substr(Data.find(':') + 1)));
+            }).detach();
         }
         break;
     case 'W':
