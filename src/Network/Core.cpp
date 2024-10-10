@@ -30,6 +30,7 @@
 #include <nlohmann/json.hpp>
 #include <set>
 #include <thread>
+#include <mutex>
 #include "Options.h"
 
 extern int TraceBack;
@@ -87,7 +88,11 @@ void StartSync(const std::string& Data) {
     info("Connecting to server");
 }
 
+std::mutex sendMutex;
+
 void CoreSend(std::string data) {
+    std::lock_guard lock(sendMutex);
+    
     if (CoreSocket != -1) {
         int res = send(CoreSocket, (data + "\n").c_str(), int(data.size()) + 1, 0);
         if (res < 0) {
@@ -114,7 +119,10 @@ void Parse(std::string Data, SOCKET CSocket) {
         NetReset();
         Terminate = true;
         TCPTerminate = true;
-        Data = Code + HTTP::Get("https://backend.beammp.com/servers-info");
+        Data.clear();
+        std::thread([&]() {
+            CoreSend("B" + HTTP::Get("https://backend.beammp.com/servers-info"));
+        }).detach();
         break;
     case 'C':
         StartSync(Data);
@@ -210,7 +218,10 @@ void Parse(std::string Data, SOCKET CSocket) {
             }
             Data = "N" + Auth.dump();
         } else {
-            Data = "N" + Login(Data.substr(Data.find(':') + 1));
+            Data.clear();
+            std::thread([&]() {
+                CoreSend("N" + Login(Data.substr(Data.find(':') + 1)));
+            }).detach();
         }
         break;
     case 'W':
@@ -226,12 +237,8 @@ void Parse(std::string Data, SOCKET CSocket) {
         Data.clear();
         break;
     }
-    if (!Data.empty() && CSocket != -1) {
-        int res = send(CSocket, (Data + "\n").c_str(), int(Data.size()) + 1, 0);
-        if (res < 0) {
-            debug("(Core) send failed with error: " + std::to_string(WSAGetLastError()));
-        }
-    }
+    if (!Data.empty())
+        CoreSend(Data);
 }
 void GameHandler(SOCKET Client) {
     CoreSocket = Client;
