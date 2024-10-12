@@ -528,10 +528,10 @@ void SyncResources(SOCKET Sock) {
     if (Ret.starts_with("R")) {
         debug("This server is likely outdated, not trying to parse new mod info format");
     } else {
-        auto ModInfos = ModInfo::ParseModInfosFromPacket(Ret);
+        auto [success, modInfo] = ModInfo::ParseModInfosFromPacket(Ret);
 
-        if (ModInfos.first) {
-            NewSyncResources(Sock, Ret, ModInfos.second);
+        if (success) {
+            NewSyncResources(Sock, Ret, modInfo);
             return;
         }
     }
