@@ -362,13 +362,15 @@ std::string GetSha256HashReallyFast(const std::string& filename) {
 }
 
 struct ModInfo {
-    static std::vector<ModInfo> ParseModInfosFromPacket(const std::string& packet) {
+    static std::pair<bool, std::vector<ModInfo>> ParseModInfosFromPacket(const std::string& packet) {
+        bool success = false;
         std::vector<ModInfo> modInfos;
         try {
             auto json = nlohmann::json::parse(packet);
             if (json.empty()) {
-                return modInfos;
+                return std::make_pair(true, modInfos);
             }
+
             for (const auto& entry : json) {
                 ModInfo modInfo {
                     .FileName = entry["file_name"],
@@ -377,13 +379,13 @@ struct ModInfo {
                     .HashAlgorithm = entry["hash_algorithm"],
                 };
                 modInfos.push_back(modInfo);
+                success = true;
             }
         } catch (const std::exception& e) {
             debug(std::string("Failed to receive mod list: ") + e.what());
-            error("Failed to receive mod list!");
-            // TODO: Cry and die
+            warn("Failed to receive new mod list format! This server may be outdated, but everything should still work as expected.");
         }
-        return modInfos;
+        return std::make_pair(success, modInfos);
     }
     std::string FileName;
     size_t FileSize;
@@ -392,6 +394,13 @@ struct ModInfo {
 };
 
 void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<ModInfo> ModInfos) {
+    if (ModInfos.empty()) {
+        CoreSend("L");
+        TCPSend("Done", Sock);
+        info("Done!");
+        return;
+    }
+
     if (!SecurityWarning())
         return;
 
@@ -514,11 +523,17 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
 void SyncResources(SOCKET Sock) {
     std::string Ret = Auth(Sock);
 
-    auto ModInfos = ModInfo::ParseModInfosFromPacket(Ret);
+    debug("Mod info: " + Ret);
 
-    if (!ModInfos.empty()) {
-        NewSyncResources(Sock, Ret, ModInfos);
-        return;
+    if (Ret.starts_with("R")) {
+        debug("This server is likely outdated, not trying to parse new mod info format");
+    } else {
+        auto [success, modInfo] = ModInfo::ParseModInfosFromPacket(Ret);
+
+        if (success) {
+            NewSyncResources(Sock, Ret, modInfo);
+            return;
+        }
     }
 
     if (Ret.empty())
