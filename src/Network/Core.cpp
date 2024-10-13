@@ -91,7 +91,7 @@ void StartSync(const std::string& Data) {
 void CoreSend(std::string data) {
     if (CoreSocket != -1) {
         auto ToSend = Utils::PrependHeader(data);
-        int res = send(CoreSocket, ToSend.data(), ToSend.size(), MSG_WAITALL);
+        int res = send(CoreSocket, ToSend.data(), ToSend.size(), 0);
         if (res < 0) {
             debug("(Core) send failed with error: " + std::to_string(WSAGetLastError()));
         }
@@ -230,7 +230,7 @@ void Parse(std::string Data, SOCKET CSocket) {
     }
     if (!Data.empty() && CSocket != -1) {
         auto ToSend = Utils::PrependHeader(Data);
-        int res = send(CSocket, ToSend.data(), ToSend.size(), MSG_WAITALL);
+        int res = send(CSocket, ToSend.data(), ToSend.size(), 0);
         if (res < 0) {
             debug("(Core) send failed with error: " + std::to_string(WSAGetLastError()));
         }

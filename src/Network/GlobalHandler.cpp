@@ -63,7 +63,7 @@ void GameSend(std::string_view Data) {
     static std::mutex Lock;
     std::scoped_lock Guard(Lock);
     auto ToSend = Utils::PrependHeader<std::string_view>(Data);
-    auto Result = send(CSocket, ToSend.data(), ToSend.size(), MSG_WAITALL);
+    auto Result = send(CSocket, ToSend.data(), ToSend.size(), 0);
     if (Result < 0) {
         error("(Game) send failed with error: " + std::to_string(WSAGetLastError()));
     }
