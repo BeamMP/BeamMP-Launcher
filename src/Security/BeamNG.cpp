@@ -186,7 +186,7 @@ void LegitimacyCheck() {
     auto root = tyti::vdf::read(libraryFolders);
 
     for (auto folderInfo : root.childs) {
-        if (std::filesystem::exists(folderInfo.second->attribs["path"] + "/steamapps/common/BeamNG.drive/")) {
+        if (std::filesystem::exists(folderInfo.second->attribs["path"] + "/steamapps/common/BeamNG.drive/integrity.json")){
             GameDir = folderInfo.second->attribs["path"] + "/steamapps/common/BeamNG.drive/";
             break;
         }
