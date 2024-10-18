@@ -33,6 +33,8 @@
 #include <mutex>
 #include "Options.h"
 
+#include <future>
+
 extern int TraceBack;
 std::set<std::string>* ConfList = nullptr;
 bool TCPTerminate = false;
@@ -115,14 +117,15 @@ void Parse(std::string Data, SOCKET CSocket) {
     case 'A':
         Data = Data.substr(0, 1);
         break;
-    case 'B':
-        NetReset();
-        Terminate = true;
-        TCPTerminate = true;
-        Data.clear();
-        std::thread([&]() {
-            CoreSend("B" + HTTP::Get("https://backend.beammp.com/servers-info"));
-        }).detach();
+    case 'B': {
+            NetReset();
+            Terminate = true;
+            TCPTerminate = true;
+            Data.clear();
+            auto future = std::async(std::launch::async, []() {
+                CoreSend("B" + HTTP::Get("https://backend.beammp.com/servers-info"));
+            });
+        }
         break;
     case 'C':
         StartSync(Data);
@@ -218,10 +221,10 @@ void Parse(std::string Data, SOCKET CSocket) {
             }
             Data = "N" + Auth.dump();
         } else {
+            auto future = std::async(std::launch::async, [data = std::move(Data)]() {
+                CoreSend("N" + Login(data.substr(data.find(':') + 1)));
+            });
             Data.clear();
-            std::thread([&]() {
-                CoreSend("N" + Login(Data.substr(Data.find(':') + 1)));
-            }).detach();
         }
         break;
     case 'W':
