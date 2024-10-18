@@ -91,6 +91,7 @@ std::string Login(const std::string& fields) {
         if (d.contains("message")) {
             d.erase("private_key");
             d.erase("public_key");
+            info(d["message"]);
             return d.dump();
         }
         return GetFail("Invalid message parsing!");
