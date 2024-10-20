@@ -232,7 +232,6 @@ void LinuxPatch() {
 
 void InitLauncher() {
     SetConsoleTitleA(("BeamMP Launcher v" + std::string(GetVer()) + GetPatch()).c_str());
-    InitLog();
     CheckName();
     LinuxPatch();
     CheckLocalKey();

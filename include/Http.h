@@ -17,5 +17,4 @@ public:
     static void StartProxy();
 public:
     static bool isDownload;
-    static inline bool SkipSslVerify = false;
 };

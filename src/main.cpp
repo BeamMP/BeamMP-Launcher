@@ -38,21 +38,7 @@ int main(int argc, const char** argv) try {
 
     curl_global_init(CURL_GLOBAL_ALL);
 
-#if defined(_WIN32)
-    system("cls");
-#elif defined(__linux__)
-    system("clear");
-#endif
-
-
     GetEP(argv[0]);
-
-    for (int i = 0; i < argc; ++i) {
-        if (std::string_view(argv[i]) == "--skip-ssl-verify") {
-            info("SSL verification skip enabled");
-            HTTP::SkipSslVerify = true;
-        }
-    }
 
     InitLog();
     InitOptions(argc, argv, options);
