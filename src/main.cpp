@@ -41,6 +41,7 @@ int main(int argc, const char** argv) try {
     GetEP(argv[0]);
 
     InitLog();
+    ConfigInit();
     InitOptions(argc, argv, options);
     InitLauncher();
 

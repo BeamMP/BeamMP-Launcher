@@ -235,7 +235,6 @@ void InitLauncher() {
     CheckName();
     LinuxPatch();
     CheckLocalKey();
-    ConfigInit();
     CheckForUpdates(std::string(GetVer()) + GetPatch());
 }
 #elif defined(__linux__)
@@ -244,7 +243,6 @@ void InitLauncher() {
     info("BeamMP Launcher v" + GetVer() + GetPatch());
     CheckName();
     CheckLocalKey();
-    ConfigInit();
     CheckForUpdates(std::string(GetVer()) + GetPatch());
 }
 #endif
