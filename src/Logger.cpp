@@ -51,35 +51,35 @@ void addToLog(const std::string& Line) {
 }
 void info(const std::string& toPrint) {
     std::string Print = getDate() + "[INFO] " + toPrint + "\n";
-    std::cout << Print;
+    std::cout << Print << std::flush;
     addToLog(Print);
 }
 void debug(const std::string& toPrint) {
     std::string Print = getDate() + "[DEBUG] " + toPrint + "\n";
     if (options.verbose) {
-        std::cout << Print;
+        std::cout << Print << std::flush;
     }
     addToLog(Print);
 }
 void warn(const std::string& toPrint) {
     std::string Print = getDate() + "[WARN] " + toPrint + "\n";
-    std::cout << Print;
+    std::cout << Print << std::flush;
     addToLog(Print);
 }
 void error(const std::string& toPrint) {
     std::string Print = getDate() + "[ERROR] " + toPrint + "\n";
-    std::cout << Print;
+    std::cout << Print << std::flush;
     addToLog(Print);
 }
 void fatal(const std::string& toPrint) {
     std::string Print = getDate() + "[FATAL] " + toPrint + "\n";
-    std::cout << Print;
+    std::cout << Print << std::flush;
     addToLog(Print);
     std::this_thread::sleep_for(std::chrono::seconds(5));
     std::exit(1);
 }
 void except(const std::string& toPrint) {
     std::string Print = getDate() + "[EXCEP] " + toPrint + "\n";
-    std::cout << Print;
+    std::cout << Print << std::flush;
     addToLog(Print);
 }

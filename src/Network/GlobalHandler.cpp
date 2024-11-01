@@ -6,6 +6,7 @@
 /// Created by Anonymous275 on 7/25/2020
 ///
 #include "Network/network.hpp"
+#include "Utils.h"
 #include <memory>
 #include <zlib.h>
 #if defined(_WIN32)
@@ -22,11 +23,11 @@
 #endif
 
 #include "Logger.h"
+#include "Options.h"
 #include <charconv>
 #include <mutex>
 #include <string>
 #include <thread>
-#include "Options.h"
 
 std::chrono::time_point<std::chrono::high_resolution_clock> PingStart, PingEnd;
 bool GConnected = false;
@@ -61,30 +62,13 @@ bool CheckBytes(uint32_t Bytes) {
 void GameSend(std::string_view Data) {
     static std::mutex Lock;
     std::scoped_lock Guard(Lock);
-    if (TCPTerminate || !GConnected || CSocket == -1)
-        return;
-    int32_t Size, Temp, Sent;
-    Size = int32_t(Data.size());
-    Sent = 0;
-#ifdef DEBUG
-    if (Size > 1000) {
-        debug("Launcher -> game (" + std::to_string(Size) + ")");
-    }
-#endif
-    do {
-        if (Sent > -1) {
-            Temp = send(CSocket, &Data[Sent], Size - Sent, 0);
-        }
-        if (!CheckBytes(Temp))
-            return;
-        Sent += Temp;
-    } while (Sent < Size);
-    // send separately to avoid an allocation for += "\n"
-    Temp = send(CSocket, "\n", 1, 0);
-    if (!CheckBytes(Temp)) {
-        return;
+    auto ToSend = Utils::PrependHeader<std::string_view>(Data);
+    auto Result = send(CSocket, ToSend.data(), ToSend.size(), 0);
+    if (Result < 0) {
+        error("(Game) send failed with error: " + std::to_string(WSAGetLastError()));
     }
 }
+
 void ServerSend(std::string Data, bool Rel) {
     if (Terminate || Data.empty())
         return;
@@ -262,42 +246,19 @@ void TCPGameServer(const std::string& IP, int Port) {
             NetMainThread = std::make_unique<std::thread>(NetMain, IP, Port);
             CServer = false;
         }
-        int32_t Size, Temp, Rcv;
-        char Header[10] = { 0 };
+        std::vector<char> data {};
 
         // Read byte by byte until '>' is rcved then get the size and read based on it
         do {
-            Rcv = 0;
-
-            do {
-                Temp = recv(CSocket, &Header[Rcv], 1, 0);
-                if (Temp < 1 || TCPTerminate)
-                    break;
-            } while (Header[Rcv++] != '>');
-            if (Temp < 1 || TCPTerminate)
-                break;
-            if (std::from_chars(Header, &Header[Rcv], Size).ptr[0] != '>') {
-                debug("(Game) Invalid lua Header -> " + std::string(Header, Rcv));
+            try {
+                Utils::ReceiveFromGame(CSocket, data);
+                ServerSend(std::string(data.data(), data.size()), false);
+            } catch (const std::exception& e) {
+                error(std::string("Error while receiving from game on proxy: ") + e.what());
                 break;
             }
-            std::string Ret(Size, 0);
-            Rcv = 0;
-            do {
-                Temp = recv(CSocket, &Ret[Rcv], Size - Rcv, 0);
-                if (Temp < 1)
-                    break;
-                Rcv += Temp;
-            } while (Rcv < Size && !TCPTerminate);
-            if (Temp < 1 || TCPTerminate)
-                break;
-
-            ServerSend(Ret, false);
-
-        } while (Temp > 0 && !TCPTerminate);
-        if (Temp == 0)
-            debug("(Proxy) Connection closing");
-        else
-            debug("(Proxy) recv failed error : " + std::to_string(WSAGetLastError()));
+        } while (!TCPTerminate);
+        debug("(Proxy) Connection closing");
     }
     TCPTerminate = true;
     GConnected = false;
