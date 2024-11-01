@@ -30,7 +30,10 @@
 #include <nlohmann/json.hpp>
 #include <set>
 #include <thread>
+#include <mutex>
 #include "Options.h"
+
+#include <future>
 
 extern int TraceBack;
 std::set<std::string>* ConfList = nullptr;
@@ -87,7 +90,11 @@ void StartSync(const std::string& Data) {
     info("Connecting to server");
 }
 
+std::mutex sendMutex;
+
 void CoreSend(std::string data) {
+    std::lock_guard lock(sendMutex);
+    
     if (CoreSocket != -1) {
         int res = send(CoreSocket, (data + "\n").c_str(), int(data.size()) + 1, 0);
         if (res < 0) {
@@ -110,11 +117,15 @@ void Parse(std::string Data, SOCKET CSocket) {
     case 'A':
         Data = Data.substr(0, 1);
         break;
-    case 'B':
-        NetReset();
-        Terminate = true;
-        TCPTerminate = true;
-        Data = Code + HTTP::Get("https://backend.beammp.com/servers-info");
+    case 'B': {
+            NetReset();
+            Terminate = true;
+            TCPTerminate = true;
+            Data.clear();
+            auto future = std::async(std::launch::async, []() {
+                CoreSend("B" + HTTP::Get("https://backend.beammp.com/servers-info"));
+            });
+        }
         break;
     case 'C':
         StartSync(Data);
@@ -210,7 +221,10 @@ void Parse(std::string Data, SOCKET CSocket) {
             }
             Data = "N" + Auth.dump();
         } else {
-            Data = "N" + Login(Data.substr(Data.find(':') + 1));
+            auto future = std::async(std::launch::async, [data = std::move(Data)]() {
+                CoreSend("N" + Login(data.substr(data.find(':') + 1)));
+            });
+            Data.clear();
         }
         break;
     case 'W':
@@ -226,12 +240,8 @@ void Parse(std::string Data, SOCKET CSocket) {
         Data.clear();
         break;
     }
-    if (!Data.empty() && CSocket != -1) {
-        int res = send(CSocket, (Data + "\n").c_str(), int(Data.size()) + 1, 0);
-        if (res < 0) {
-            debug("(Core) send failed with error: " + std::to_string(WSAGetLastError()));
-        }
-    }
+    if (!Data.empty())
+        CoreSend(Data);
 }
 void GameHandler(SOCKET Client) {
     CoreSocket = Client;
