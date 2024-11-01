@@ -82,7 +82,7 @@ std::string GetEN() {
 }
 
 std::string GetVer() {
-    return "2.2";
+    return "2.3";
 }
 std::string GetPatch() {
     return ".1";
