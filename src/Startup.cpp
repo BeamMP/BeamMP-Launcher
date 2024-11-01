@@ -232,11 +232,9 @@ void LinuxPatch() {
 
 void InitLauncher() {
     SetConsoleTitleA(("BeamMP Launcher v" + std::string(GetVer()) + GetPatch()).c_str());
-    InitLog();
     CheckName();
     LinuxPatch();
     CheckLocalKey();
-    ConfigInit();
     CheckForUpdates(std::string(GetVer()) + GetPatch());
 }
 #elif defined(__linux__)
@@ -245,7 +243,6 @@ void InitLauncher() {
     info("BeamMP Launcher v" + GetVer() + GetPatch());
     CheckName();
     CheckLocalKey();
-    ConfigInit();
     CheckForUpdates(std::string(GetVer()) + GetPatch());
 }
 #endif
