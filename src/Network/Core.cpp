@@ -104,7 +104,7 @@ void CoreSend(std::string data) {
 }
 
 bool IsAllowedLink(const std::string& Link) {
-    std::regex link_pattern(R"(https:\/\/(?:\w+)?(?:\.)?(?:beammp\.com|discord\.gg|patreon\.com\/BeamMP))");
+    std::regex link_pattern(R"(https:\/\/(?:\w+)?(?:\.)?(?:beammp\.com|beammp\.gg|github.com\/BeamMP\/|discord\.gg|patreon\.com\/BeamMP))");
     std::smatch link_match;
     return std::regex_search(Link, link_match, link_pattern) && link_match.position() == 0;
 }
