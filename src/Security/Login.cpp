@@ -91,6 +91,7 @@ std::string Login(const std::string& fields) {
         if (d.contains("message")) {
             d.erase("private_key");
             d.erase("public_key");
+            debug("Authentication result: " + d["message"].get<std::string>());
             return d.dump();
         }
         return GetFail("Invalid message parsing!");
