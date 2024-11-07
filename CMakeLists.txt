@@ -6,6 +6,8 @@ if (WIN32)
     message(STATUS "MSVC -> forcing use of statically-linked runtime.")
     STRING(REPLACE "/MD" "/MT" CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
     STRING(REPLACE "/MDd" "/MTd" CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
+elseif(APPLE)
+    set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64" CACHE STRING "Build architectures for MacOS" FORCE)
 endif(WIN32)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -28,6 +30,11 @@ if (WIN32)
     target_link_libraries(${PROJECT_NAME} PRIVATE
             ZLIB::ZLIB OpenSSL::SSL OpenSSL::Crypto ws2_32 httplib::httplib nlohmann_json::nlohmann_json CURL::libcurl)
 elseif (LINUX)
+    find_package(ZLIB REQUIRED)
+    find_package(OpenSSL REQUIRED)
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+            ZLIB::ZLIB OpenSSL::SSL OpenSSL::Crypto CURL::libcurl)
+elseif(APPLE)
     find_package(ZLIB REQUIRED)
     find_package(OpenSSL REQUIRED)
     target_link_libraries(${PROJECT_NAME} PRIVATE
