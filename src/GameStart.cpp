@@ -132,6 +132,11 @@ void StartGame(std::string Dir) {
     std::this_thread::sleep_for(std::chrono::seconds(5));
     exit(2);
 }
+
+#elif defined(__APPLE__)
+void StartGame(std::string Dir) {
+    error("Please launch the game manually for now");
+}
 #endif
 
 void InitGame(const std::string& Dir) {
