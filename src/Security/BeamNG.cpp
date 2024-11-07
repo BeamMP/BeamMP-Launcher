@@ -196,7 +196,7 @@ void LegitimacyCheck() {
 std::string CheckVer(const std::string& dir) {
 #if defined(_WIN32)
     std::string temp, Path = dir + "\\integrity.json";
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
     std::string temp, Path = dir + "/integrity.json";
 #endif
     std::ifstream f(Path.c_str(), std::ios::binary);
