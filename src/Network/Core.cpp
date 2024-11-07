@@ -10,18 +10,20 @@
 #include "Security/Init.h"
 #include <cstdlib>
 #include <regex>
+
 #if defined(_WIN32)
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#elif defined(__linux__)
-#include <cstring>
-#include <errno.h>
-#include <netdb.h>
-#include <spawn.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <unistd.h>
+    #include <winsock2.h>
+    #include <ws2tcpip.h>
+#elif defined(__linux__) || defined(__APPLE__)
+    #include <cstring>
+    #include <cerrno>
+    #include <netdb.h>
+    #include <spawn.h>
+    #include <sys/socket.h>
+    #include <sys/types.h>
+    #include <sys/wait.h>
+    #include <unistd.h>
+    extern char **environ;
 #endif
 
 #include "Logger.h"
@@ -47,7 +49,13 @@ std::string UlStatus;
 std::string MStatus;
 bool ModLoaded;
 int ping = -1;
-SOCKET CoreSocket = -1;
+
+#if defined(_WIN32)
+    SOCKET CoreSocket = INVALID_SOCKET;
+#else
+    int CoreSocket = -1;
+#endif
+
 signed char confirmed = -1;
 
 bool SecurityWarning() {
@@ -70,7 +78,7 @@ bool SecurityWarning() {
 
 void StartSync(const std::string& Data) {
     std::string IP = GetAddr(Data.substr(1, Data.find(':') - 1));
-    if (IP.find('.') == -1) {
+    if (IP.find('.') == std::string::npos) {
         if (IP == "DNS")
             UlStatus = "UlConnection Failed! (DNS Lookup Failed)";
         else
@@ -92,24 +100,24 @@ void StartSync(const std::string& Data) {
 
 std::mutex sendMutex;
 
-void CoreSend(std::string data) {
-    std::lock_guard lock(sendMutex);
-    
+void CoreSend(const std::string& data) {
+    std::lock_guard<std::mutex> lock(sendMutex);
+
     if (CoreSocket != -1) {
-        int res = send(CoreSocket, (data + "\n").c_str(), int(data.size()) + 1, 0);
+        int res = send(CoreSocket, (data + "\n").c_str(), static_cast<int>(data.size()) + 1, 0);
         if (res < 0) {
-            debug("(Core) send failed with error: " + std::to_string(WSAGetLastError()));
+            debug("(Core) send failed with error: " + std::to_string(errno));
         }
     }
 }
 
 bool IsAllowedLink(const std::string& Link) {
-    std::regex link_pattern(R"(https:\/\/(?:\w+)?(?:\.)?(?:beammp\.com|beammp\.gg|github.com\/BeamMP\/|discord\.gg|patreon\.com\/BeamMP))");
+    std::regex link_pattern(R"(https:\/\/(?:\w+)?(?:\.)?(?:beammp\.com|beammp\.gg|github\.com\/BeamMP\/|discord\.gg|patreon\.com\/BeamMP))");
     std::smatch link_match;
     return std::regex_search(Link, link_match, link_pattern) && link_match.position() == 0;
 }
 
-void Parse(std::string Data, SOCKET CSocket) {
+void Parse(std::string Data, int CSocket) {
     char Code = Data.at(0), SubCode = 0;
     if (Data.length() > 1)
         SubCode = Data.at(1);
@@ -133,16 +141,14 @@ void Parse(std::string Data, SOCKET CSocket) {
         break;
     case 'O': // open default browser with URL
         if (IsAllowedLink(Data.substr(1))) {
-#if defined(__linux)
-            if (char* browser = getenv("BROWSER"); browser != nullptr && !std::string_view(browser).empty()) {
+#if defined(__linux__) || defined(__APPLE__)
+            if (const char* browser = getenv("BROWSER"); browser != nullptr && !std::string_view(browser).empty()) {
                 pid_t pid;
                 auto arg = Data.substr(1);
-                char* argv[] = { browser, arg.data() };
+                char* argv[] = { const_cast<char*>(browser), arg.data(), nullptr };
                 auto status = posix_spawn(&pid, browser, nullptr, nullptr, argv, environ);
                 if (status == 0) {
                     debug("Browser PID: " + std::to_string(pid));
-                    // we don't wait for it to exit, because we just don't care.
-                    // typically, you'd waitpid() here.
                 } else {
                     error("Failed to open the following link in the browser (error follows below): " + arg);
                     error(std::string("posix_spawn: ") + strerror(status));
@@ -150,8 +156,8 @@ void Parse(std::string Data, SOCKET CSocket) {
             } else {
                 error("Failed to open the following link in the browser because the $BROWSER environment variable is not set: " + Data.substr(1));
             }
-#elif defined(WIN32)
-            ShellExecuteA(nullptr, "open", Data.substr(1).c_str(), nullptr, nullptr, SW_SHOW); /// TODO: Look at when working on linux port
+#elif defined(_WIN32)
+            ShellExecuteA(nullptr, "open", Data.substr(1).c_str(), nullptr, nullptr, SW_SHOW);
 #endif
 
             info("Opening Link \"" + Data.substr(1) + "\"");
@@ -243,7 +249,8 @@ void Parse(std::string Data, SOCKET CSocket) {
     if (!Data.empty())
         CoreSend(Data);
 }
-void GameHandler(SOCKET Client) {
+
+void GameHandler(int Client) {
     CoreSocket = Client;
     int32_t Size, Temp, Rcv;
     char Header[10] = { 0 };
@@ -282,11 +289,12 @@ void GameHandler(SOCKET Client) {
     if (Temp == 0) {
         debug("(Core) Connection closing");
     } else {
-        debug("(Core) recv failed with error: " + std::to_string(WSAGetLastError()));
+        debug("(Core) recv failed with error: " + std::to_string(errno));
     }
     NetReset();
     KillSocket(Client);
 }
+
 void localRes() {
     MStatus = " ";
     UlStatus = "Ulstart";
@@ -297,20 +305,24 @@ void localRes() {
     }
     ConfList = new std::set<std::string>;
 }
+
 void CoreMain() {
     debug("Core Network on start! port: " + std::to_string(options.port));
-    SOCKET LSocket, CSocket;
+    int LSocket, CSocket;
     struct addrinfo* res = nullptr;
-    struct addrinfo hints { };
+    struct addrinfo hints {};
     int iRes;
-#ifdef _WIN32
+
+#if defined(_WIN32)
     WSADATA wsaData;
-    iRes = WSAStartup(514, &wsaData); // 2.2
-    if (iRes)
+    iRes = WSAStartup(MAKEWORD(2, 2), &wsaData); // 2.2
+    if (iRes) {
         debug("WSAStartup failed with error: " + std::to_string(iRes));
+        return;
+    }
 #endif
 
-    ZeroMemory(&hints, sizeof(hints));
+    memset(&hints, 0, sizeof(hints));
 
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
@@ -319,36 +331,44 @@ void CoreMain() {
     iRes = getaddrinfo("127.0.0.1", std::to_string(options.port).c_str(), &hints, &res);
     if (iRes) {
         debug("(Core) addr info failed with error: " + std::to_string(iRes));
+#if defined(_WIN32)
         WSACleanup();
+#endif
         return;
     }
     LSocket = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-    if (LSocket == -1) {
-        debug("(Core) socket failed with error: " + std::to_string(WSAGetLastError()));
+    if (LSocket == INVALID_SOCKET) {
+        debug("(Core) socket failed with error: " + std::to_string(errno));
         freeaddrinfo(res);
+#if defined(_WIN32)
         WSACleanup();
+#endif
         return;
     }
     iRes = bind(LSocket, res->ai_addr, int(res->ai_addrlen));
     if (iRes == SOCKET_ERROR) {
-        error("(Core) bind failed with error: " + std::to_string(WSAGetLastError()));
+        error("(Core) bind failed with error: " + std::to_string(errno));
         freeaddrinfo(res);
         KillSocket(LSocket);
+#if defined(_WIN32)
         WSACleanup();
+#endif
         return;
     }
     iRes = listen(LSocket, SOMAXCONN);
     if (iRes == SOCKET_ERROR) {
-        debug("(Core) listen failed with error: " + std::to_string(WSAGetLastError()));
+        debug("(Core) listen failed with error: " + std::to_string(errno));
         freeaddrinfo(res);
         KillSocket(LSocket);
+#if defined(_WIN32)
         WSACleanup();
+#endif
         return;
     }
     do {
         CSocket = accept(LSocket, nullptr, nullptr);
         if (CSocket == -1) {
-            error("(Core) accept failed with error: " + std::to_string(WSAGetLastError()));
+            error("(Core) accept failed with error: " + std::to_string(errno));
             continue;
         }
         localRes();
@@ -357,36 +377,45 @@ void CoreMain() {
         warn("Game Reconnecting...");
     } while (CSocket);
     KillSocket(LSocket);
+#if defined(_WIN32)
     WSACleanup();
+#endif
 }
 
 #if defined(_WIN32)
 int Handle(EXCEPTION_POINTERS* ep) {
-    char* hex = new char[100];
+    char hex[100];
     sprintf_s(hex, 100, "%lX", ep->ExceptionRecord->ExceptionCode);
     except("(Core) Code : " + std::string(hex));
-    delete[] hex;
     return 1;
 }
 #endif
 
 [[noreturn]] void CoreNetwork() {
     while (true) {
-#if not defined(__MINGW32__)
+#if defined(_WIN32)
         __try {
-#endif
-
             CoreMain();
-
-#if not defined(__MINGW32__) and not defined(__linux__)
         } __except (Handle(GetExceptionInformation())) { }
-#elif not defined(__MINGW32__) and defined(__linux__)
-    }
-    catch (...) {
-        except("(Core) Code : " + std::string(strerror(errno)));
-    }
+#else
+        try {
+            CoreMain();
+        } catch (const std::exception& e) {
+            except("(Core) Exception: " + std::string(e.what()));
+        }
 #endif
 
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 }
+
+#if !defined(_WIN32)
+typedef int SOCKET;
+#define INVALID_SOCKET -1
+#define SOCKET_ERROR   -1
+#define WSAGetLastError() errno
+#define WSACleanup()
+#define KillSocket(s) close(s)
+#else
+#define KillSocket(s) closesocket(s)
+#endif
