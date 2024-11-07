@@ -10,6 +10,9 @@ jobs:
     runs-on: macos-latest
     
     steps:
+      - name: Check system architecture
+        run: uname -m
+        
       - uses: actions/checkout@v2
         with:
             submodules: 'true'
