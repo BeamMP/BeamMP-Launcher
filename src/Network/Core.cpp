@@ -22,6 +22,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include "linuxfixes.h"
 #endif
 
 #include "Logger.h"
