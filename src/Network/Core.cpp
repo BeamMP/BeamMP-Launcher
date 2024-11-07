@@ -5,6 +5,7 @@
 ///
 /// Created by Anonymous275 on 7/20/2020
 ///
+
 #include "Http.h"
 #include "Network/network.hpp"
 #include "Security/Init.h"
@@ -14,7 +15,7 @@
 #if defined(_WIN32)
     #include <winsock2.h>
     #include <ws2tcpip.h>
-#elif defined(__linux__) || defined(__APPLE__)
+#else // For both Linux and macOS
     #include <cstring>
     #include <cerrno>
     #include <netdb.h>
@@ -37,6 +38,18 @@
 
 #include <future>
 
+// Définitions pour plateformes non Windows
+#if !defined(_WIN32)
+typedef int SOCKET;
+#define INVALID_SOCKET -1
+#define SOCKET_ERROR   -1
+#define WSAGetLastError() errno
+#define WSACleanup()
+#define KillSocket(s) close(s)
+#else
+#define KillSocket(s) closesocket(s)
+#endif
+
 extern int TraceBack;
 std::set<std::string>* ConfList = nullptr;
 bool TCPTerminate = false;
@@ -49,13 +62,7 @@ std::string UlStatus;
 std::string MStatus;
 bool ModLoaded;
 int ping = -1;
-
-#if defined(_WIN32)
-    SOCKET CoreSocket = INVALID_SOCKET;
-#else
-    int CoreSocket = -1;
-#endif
-
+SOCKET CoreSocket = INVALID_SOCKET;
 signed char confirmed = -1;
 
 bool SecurityWarning() {
@@ -103,10 +110,10 @@ std::mutex sendMutex;
 void CoreSend(const std::string& data) {
     std::lock_guard<std::mutex> lock(sendMutex);
 
-    if (CoreSocket != -1) {
+    if (CoreSocket != INVALID_SOCKET) {
         int res = send(CoreSocket, (data + "\n").c_str(), static_cast<int>(data.size()) + 1, 0);
         if (res < 0) {
-            debug("(Core) send failed with error: " + std::to_string(errno));
+            debug("(Core) send failed with error: " + std::to_string(WSAGetLastError()));
         }
     }
 }
@@ -117,7 +124,7 @@ bool IsAllowedLink(const std::string& Link) {
     return std::regex_search(Link, link_match, link_pattern) && link_match.position() == 0;
 }
 
-void Parse(std::string Data, int CSocket) {
+void Parse(std::string Data, SOCKET CSocket) {
     char Code = Data.at(0), SubCode = 0;
     if (Data.length() > 1)
         SubCode = Data.at(1);
@@ -250,7 +257,7 @@ void Parse(std::string Data, int CSocket) {
         CoreSend(Data);
 }
 
-void GameHandler(int Client) {
+void GameHandler(SOCKET Client) {
     CoreSocket = Client;
     int32_t Size, Temp, Rcv;
     char Header[10] = { 0 };
@@ -289,7 +296,7 @@ void GameHandler(int Client) {
     if (Temp == 0) {
         debug("(Core) Connection closing");
     } else {
-        debug("(Core) recv failed with error: " + std::to_string(errno));
+        debug("(Core) recv failed with error: " + std::to_string(WSAGetLastError()));
     }
     NetReset();
     KillSocket(Client);
@@ -308,7 +315,7 @@ void localRes() {
 
 void CoreMain() {
     debug("Core Network on start! port: " + std::to_string(options.port));
-    int LSocket, CSocket;
+    SOCKET LSocket, CSocket;
     struct addrinfo* res = nullptr;
     struct addrinfo hints {};
     int iRes;
@@ -338,7 +345,7 @@ void CoreMain() {
     }
     LSocket = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
     if (LSocket == INVALID_SOCKET) {
-        debug("(Core) socket failed with error: " + std::to_string(errno));
+        debug("(Core) socket failed with error: " + std::to_string(WSAGetLastError()));
         freeaddrinfo(res);
 #if defined(_WIN32)
         WSACleanup();
@@ -347,7 +354,7 @@ void CoreMain() {
     }
     iRes = bind(LSocket, res->ai_addr, int(res->ai_addrlen));
     if (iRes == SOCKET_ERROR) {
-        error("(Core) bind failed with error: " + std::to_string(errno));
+        error("(Core) bind failed with error: " + std::to_string(WSAGetLastError()));
         freeaddrinfo(res);
         KillSocket(LSocket);
 #if defined(_WIN32)
@@ -357,7 +364,7 @@ void CoreMain() {
     }
     iRes = listen(LSocket, SOMAXCONN);
     if (iRes == SOCKET_ERROR) {
-        debug("(Core) listen failed with error: " + std::to_string(errno));
+        debug("(Core) listen failed with error: " + std::to_string(WSAGetLastError()));
         freeaddrinfo(res);
         KillSocket(LSocket);
 #if defined(_WIN32)
@@ -367,15 +374,15 @@ void CoreMain() {
     }
     do {
         CSocket = accept(LSocket, nullptr, nullptr);
-        if (CSocket == -1) {
-            error("(Core) accept failed with error: " + std::to_string(errno));
+        if (CSocket == INVALID_SOCKET) {
+            error("(Core) accept failed with error: " + std::to_string(WSAGetLastError()));
             continue;
         }
         localRes();
         info("Game Connected!");
         GameHandler(CSocket);
         warn("Game Reconnecting...");
-    } while (CSocket);
+    } while (CSocket != INVALID_SOCKET);
     KillSocket(LSocket);
 #if defined(_WIN32)
     WSACleanup();
@@ -408,14 +415,3 @@ int Handle(EXCEPTION_POINTERS* ep) {
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 }
-
-#if !defined(_WIN32)
-typedef int SOCKET;
-#define INVALID_SOCKET -1
-#define SOCKET_ERROR   -1
-#define WSAGetLastError() errno
-#define WSACleanup()
-#define KillSocket(s) close(s)
-#else
-#define KillSocket(s) closesocket(s)
-#endif
