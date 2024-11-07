@@ -5,7 +5,7 @@
 struct Options {
 #if defined(_WIN32)
     std::string executable_name = "BeamMP-Launcher.exe";
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
     std::string executable_name = "BeamMP-Launcher";
 #endif
     unsigned int port = 4444;
