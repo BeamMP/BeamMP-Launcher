@@ -18,7 +18,7 @@ jobs:
         uses: lukka/run-vcpkg@v7
         id: runvcpkg
         with:
-            vcpkgArguments: 'zlib nlohmann-json openssl cpp-httplib[openssl]'
+            vcpkgArguments: 'zlib:arm64-osx nlohmann-json:arm64-osx openssl:arm64-osx cpp-httplib[openssl]:arm64-osx curl:arm64-osx'
             vcpkgDirectory: '${{ runner.workspace }}/b/vcpkg'
             vcpkgGitCommitId: '40616a5e954f7be1077ef37db3fbddbd5dcd1ca6'
 
@@ -28,7 +28,11 @@ jobs:
       - name: Configure CMake
         shell: bash
         working-directory: ${{github.workspace}}/build-macos
-        run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE='${{ runner.workspace }}/b/vcpkg/scripts/buildsystems/vcpkg.cmake'
+        run: |
+          cmake $GITHUB_WORKSPACE \
+            -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+            -DCMAKE_TOOLCHAIN_FILE='${{ runner.workspace }}/b/vcpkg/scripts/buildsystems/vcpkg.cmake' \
+            -DCMAKE_OSX_ARCHITECTURES=arm64
 
       - name: Build
         working-directory: ${{github.workspace}}/build-macos
