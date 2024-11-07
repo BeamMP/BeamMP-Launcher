@@ -11,7 +11,7 @@
 #if defined(_WIN32)
 #include <winsock2.h>
 #include <ws2tcpip.h>
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 #include "linuxfixes.h"
 #include <arpa/inet.h>
 #include <cstring>
