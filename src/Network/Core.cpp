@@ -13,16 +13,10 @@
 #if defined(_WIN32)
 #include <winsock2.h>
 #include <ws2tcpip.h>
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 #include <cstring>
 #include <errno.h>
 #include <netdb.h>
-#include <spawn.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#elif defined(__APPLE__)
 #include <spawn.h>
 #include <sys/socket.h>
 #include <sys/types.h>
