@@ -66,7 +66,7 @@ void UDPRcv() {
     sockaddr_in FromServer {};
 #if defined(_WIN32)
     int clientLength = sizeof(FromServer);
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
     socklen_t clientLength = sizeof(FromServer);
 #endif
     ZeroMemory(&FromServer, clientLength);
