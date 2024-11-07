@@ -9,7 +9,7 @@
 #if defined(_WIN32)
 #include <windows.h>
 #include <shlobj.h>
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 #include "vdf_parser.hpp"
 #include <pwd.h>
 #include <spawn.h>
@@ -61,7 +61,7 @@ std::string GetGamePath() {
     Path += Ver + "\\";
     return Path;
 }
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 std::string GetGamePath() {
     // Right now only steam is supported
     struct passwd* pw = getpwuid(getuid());
@@ -103,7 +103,7 @@ void StartGame(std::string Dir) {
     std::this_thread::sleep_for(std::chrono::seconds(5));
     exit(2);
 }
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 void StartGame(std::string Dir) {
     int status;
     std::string filename = (Dir + "/BinLinux/BeamNG.drive.x64");
