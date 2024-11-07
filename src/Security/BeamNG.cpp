@@ -9,7 +9,7 @@
 #include <filesystem>
 #if defined(_WIN32)
 #include <windows.h>
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 #include "vdf_parser.hpp"
 #include <pwd.h>
 #include <unistd.h>
@@ -37,7 +37,7 @@ void lowExit(int code) {
 std::string GetGameDir() {
 #if defined(_WIN32)
     return GameDir.substr(0, GameDir.find_last_of('\\'));
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
     return GameDir.substr(0, GameDir.find_last_of('/'));
 #endif
 }
@@ -178,7 +178,7 @@ void LegitimacyCheck() {
     K3.clear();
     Result.clear();
     RegCloseKey(hKey);
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
     struct passwd* pw = getpwuid(getuid());
     std::string homeDir = pw->pw_dir;
     // Right now only steam is supported
@@ -196,7 +196,7 @@ void LegitimacyCheck() {
 std::string CheckVer(const std::string& dir) {
 #if defined(_WIN32)
     std::string temp, Path = dir + "\\integrity.json";
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
     std::string temp, Path = dir + "/integrity.json";
 #endif
     std::ifstream f(Path.c_str(), std::ios::binary);
