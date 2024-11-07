@@ -10,9 +10,6 @@ jobs:
     runs-on: macos-latest
     
     steps:
-      - name: Check system architecture
-        run: uname -m
-        
       - uses: actions/checkout@v2
         with:
             submodules: 'true'
@@ -21,7 +18,7 @@ jobs:
         uses: lukka/run-vcpkg@v7
         id: runvcpkg
         with:
-            vcpkgArguments: 'zlib:arm64-osx nlohmann-json:arm64-osx openssl:arm64-osx cpp-httplib[openssl]:arm64-osx'
+            vcpkgArguments: 'zlib nlohmann-json openssl cpp-httplib[openssl]'
             vcpkgDirectory: '${{ runner.workspace }}/b/vcpkg'
             vcpkgGitCommitId: '40616a5e954f7be1077ef37db3fbddbd5dcd1ca6'
 
@@ -31,7 +28,7 @@ jobs:
       - name: Configure CMake
         shell: bash
         working-directory: ${{github.workspace}}/build-macos
-        run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE='${{ runner.workspace }}/b/vcpkg/scripts/buildsystems/vcpkg.cmake' -DCMAKE_OSX_ARCHITECTURES=arm64
+        run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE='${{ runner.workspace }}/b/vcpkg/scripts/buildsystems/vcpkg.cmake'
 
       - name: Build
         working-directory: ${{github.workspace}}/build-macos
