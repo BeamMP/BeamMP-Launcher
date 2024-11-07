@@ -25,7 +25,7 @@ std::vector<char> Comp(std::span<const char> input) {
         reinterpret_cast<const Bytef*>(input.data()),
         static_cast<uLongf>(input.size()));
     if (res != Z_OK) {
-        error("zlib compress() failed: " + std::to_string(res));
+        error("zlib compress() failed (code: " + std::to_string(res) + ", message: " + zError(res) + ")");
         throw std::runtime_error("zlib compress() failed");
     }
     debug("zlib compressed " + std::to_string(input.size()) + " B to " + std::to_string(output_size) + " B");
@@ -52,7 +52,7 @@ std::vector<char> DeComp(std::span<const char> input) {
             output_buffer.resize(output_buffer.size() * 2);
             output_size = output_buffer.size();
         } else if (res != Z_OK) {
-            error("zlib uncompress() failed: " + std::to_string(res));
+            error("zlib uncompress() failed (code: " + std::to_string(res) + ", message: " + zError(res) + ")");
             throw std::runtime_error("zlib uncompress() failed");
         } else if (res == Z_OK) {
             break;
