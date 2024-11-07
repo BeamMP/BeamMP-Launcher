@@ -105,6 +105,7 @@ void StartGame(std::string Dir) {
 }
 #elif defined(__linux__) || defined(__APPLE__)
 void StartGame(std::string Dir) {
+    extern char **environ;
     int status;
     std::string filename = (Dir + "/BinLinux/BeamNG.drive.x64");
     std::vector<const char*> argv;
