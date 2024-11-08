@@ -27,7 +27,7 @@ Options options;
 int main(int argc, const char** argv) try {
 #if defined(_WIN32)
     system("cls");
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
     system("clear");
 #endif
 
@@ -46,6 +46,9 @@ int main(int argc, const char** argv) try {
     InitLauncher();
 
     info("IMPORTANT: You MUST keep this window open to play BeamMP!");
+    #if defined(__APPLE__)
+    info("BeamMP is supported on MacOS through CrossOver. Please make sure you have it installed.");
+    #endif
 
     try {
         LegitimacyCheck();
