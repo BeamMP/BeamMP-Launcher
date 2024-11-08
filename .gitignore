@@ -17,3 +17,8 @@ build/
 .vscode/
 vcpkg/
 vcpkg_installed/
+CMakeFiles/
+cmake_install.cmake
+CMakeCache.txt
+Makefile
+BeamMP-Launcher

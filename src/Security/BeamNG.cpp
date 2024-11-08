@@ -15,6 +15,9 @@
 #include <unistd.h>
 #include <vector>
 #endif
+#if defined(__APPLE__)
+#include <algorithm>
+#endif
 #include "Logger.h"
 #include <fstream>
 #include <string>
@@ -158,6 +161,37 @@ void FileList(std::vector<std::string>& a, const std::string& Path) {
         }
     }
 }
+
+std::string ToLower(const std::string& str) {
+    std::string lowerStr = str;
+    std::transform(str.begin(), str.end(), lowerStr.begin(), ::tolower);
+    return lowerStr;
+}
+
+// Fonction pour obtenir les correspondances de lecteurs dans une "bottle"
+std::map<std::string, std::string> GetDriveMappings(const std::string& bottlePath) {
+    std::map<std::string, std::string> driveMappings;
+    std::string dosDevicesPath = bottlePath + "/dosdevices/";
+
+    std::cout << "[INFO] Checking drive mappings in: " << dosDevicesPath << std::endl;
+
+    if (std::filesystem::exists(dosDevicesPath)) {
+        for (const auto& entry : std::filesystem::directory_iterator(dosDevicesPath)) {
+            if (entry.is_symlink()) {
+                std::string driveName = ToLower(entry.path().filename().string());
+                // Supprimer les deux-points des noms de lecteurs
+                driveName.erase(std::remove(driveName.begin(), driveName.end(), ':'), driveName.end());
+                std::string macPath = std::filesystem::read_symlink(entry.path()).string();
+                driveMappings[driveName] = macPath;
+                std::cout << "[INFO] Drive " << driveName << " maps to " << macPath << std::endl;
+            }
+        }
+    } else {
+        std::cerr << "[ERROR] dosdevices directory not found for the specified bottle." << std::endl;
+    }
+    return driveMappings;
+}
+
 void LegitimacyCheck() {
 #if defined(_WIN32)
     std::string Result;
@@ -178,7 +212,7 @@ void LegitimacyCheck() {
     K3.clear();
     Result.clear();
     RegCloseKey(hKey);
-#elif defined(__linux__) || defined(__APPLE__)
+#elif defined(__linux__)
     struct passwd* pw = getpwuid(getuid());
     std::string homeDir = pw->pw_dir;
     // Right now only steam is supported
@@ -191,6 +225,108 @@ void LegitimacyCheck() {
             break;
         }
     }
+#elif defined(__APPLE__)
+struct passwd* pw = getpwuid(getuid());
+    std::string homeDir = pw->pw_dir;
+    std::string crossoverBottlesPath = homeDir + "/Library/Application Support/CrossOver/Bottles/";
+    std::cout << "[INFO] Crossover bottles path: " << crossoverBottlesPath << std::endl;
+
+    for (const auto& bottle : std::filesystem::directory_iterator(crossoverBottlesPath)) {
+        if (bottle.is_directory()) {
+            std::cout << "[INFO] Checking bottle: " << bottle.path().filename().string() << std::endl;
+
+            // Obtenir les correspondances de lecteurs pour cette bottle
+            auto driveMappings = GetDriveMappings(bottle.path().string());
+
+            // Chemin du fichier libraryfolders.vdf
+            std::string libraryFilePath = bottle.path().string() + "/drive_c/Program Files (x86)/Steam/config/libraryfolders.vdf";
+            std::ifstream libraryFile(libraryFilePath);
+
+            if (libraryFile.is_open()) {
+                std::string line;
+                while (std::getline(libraryFile, line)) {
+                    if (line.find("\"path\"") != std::string::npos) {
+                        // Trouver les positions des guillemets
+                        size_t firstQuote = line.find("\"", 0);
+                        size_t secondQuote = line.find("\"", firstQuote + 1);
+                        size_t thirdQuote = line.find("\"", secondQuote + 1);
+                        size_t fourthQuote = line.find("\"", thirdQuote + 1);
+
+                        if (thirdQuote != std::string::npos && fourthQuote != std::string::npos) {
+                            // Extraire la valeur entre le troisième et le quatrième guillemet
+                            std::string path = line.substr(thirdQuote + 1, fourthQuote - thirdQuote - 1);
+
+                            std::cout << "[INFO] Found Steam library path: " << path << std::endl;
+
+                            // Extraction de la lettre de lecteur
+                            std::string driveLetter = path.substr(0, path.find(":"));
+                            // Convertir en minuscules et supprimer les deux-points
+                            driveLetter = ToLower(driveLetter);
+                            driveLetter.erase(std::remove(driveLetter.begin(), driveLetter.end(), ':'), driveLetter.end());
+                            info("Drive letter: " + driveLetter);
+
+                            if (driveMappings.find(driveLetter) != driveMappings.end()) {
+                                // Obtenir le chemin de base du mapping
+                                std::string basePath = driveMappings[driveLetter];
+                                // Retirer la barre oblique de fin si nécessaire
+                                if (!basePath.empty() && basePath.back() == '/')
+                                {
+                                    basePath.pop_back();
+                                }
+                                info("Base path for drive " + driveLetter + ": " + basePath);
+                                // std::filesystem::path convertedPath = basePath;
+                                // std::string convertedPath = basePath;
+                                // info("Converted path: " + convertedPath.string());
+                                
+
+                                // Extraire le chemin additionnel en sautant les deux premiers caractères (par exemple, "C:")
+                                std::string additionalPath = path.substr(2);
+                                info("Additional path: " + additionalPath);
+
+                                // Remplacer les backslashes par des slashes pour une compatibilité Unix
+                                std::replace(additionalPath.begin(), additionalPath.end(), '\\', '/');
+                                info("Additional path after replace: " + additionalPath);
+
+                                // Supprimer la barre oblique initiale si elle existe
+                                if (!additionalPath.empty() && additionalPath.front() == '/')
+                                {
+                                    additionalPath.erase(0, 1);
+                                }
+                                info("Additional path: " + additionalPath);
+
+                                // Ajouter le chemin additionnel
+                                std::string fullPath = basePath + additionalPath;
+                                info("Full path: " + fullPath);
+
+                                //convertir en std::filesystem::path
+                                std::filesystem::path convertedPath = fullPath;
+
+                                info("Converted path after append: " + convertedPath.string());
+
+                                // Chemin complet vers BeamNG.drive
+                                std::filesystem::path beamngPath = convertedPath / "steamapps/common/BeamNG.drive";
+                                info("beamngPath: " + beamngPath.string());
+
+                                std::cout << "[INFO] Checking for BeamNG.drive in: " << beamngPath.string() << std::endl;
+
+                                // Vérifier l'existence du dossier BeamNG.drive
+                                if (std::filesystem::exists(beamngPath)) {
+                                    std::cout << "[SUCCESS] BeamNG.drive found in bottle '" << bottle.path().filename().string() << "' at: " << beamngPath.string() << std::endl;
+                                    return;
+                                }
+                            } else {
+                                std::cout << "[WARN] Drive letter " << driveLetter << " not found in mappings." << std::endl;
+                            }
+                        }
+                    }
+                }
+                libraryFile.close();
+            } else {
+                std::cerr << "[ERROR] Failed to open libraryfolders.vdf in bottle '" << bottle.path().filename().string() << "'" << std::endl;
+            }
+        }
+    }
+    std::cerr << "[FAILURE] Failed to find BeamNG.drive installation in any CrossOver bottle." << std::endl;
 #endif
 }
 std::string CheckVer(const std::string& dir) {
