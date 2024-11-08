@@ -44,6 +44,10 @@
 // internal
 #include <stack>
 
+#if defined(__APPLE__)
+#include <codecvt>
+#endif
+
 //VS < 2015 has only partial C++11 support
 #if defined(_MSC_VER) && _MSC_VER < 1900
 #ifndef CONSTEXPR
@@ -117,12 +121,31 @@ namespace tyti
                 deletable_facet(Args &&... args) : Facet(std::forward<Args>(args)...) {}
                 ~deletable_facet() {}
             };
-
+            
+            #if !defined(__APPLE__)
             inline std::string string_converter(const std::wstring& w) //todo: use us-locale
             {
                 std::wstring_convert<deletable_facet<std::codecvt<wchar_t, char, std::mbstate_t>>> conv1;
                 return conv1.to_bytes(w);
             }
+            #else
+            inline std::string string_converter(const std::wstring& w)
+            {
+                if (w.empty()) return std::string();
+
+                // Calcul de la taille nécessaire
+                size_t size = std::wcstombs(nullptr, w.c_str(), 0);
+                if (size == static_cast<size_t>(-1)) {
+                    // Gestion de l'erreur de conversion
+                    return "";
+                }
+
+                std::string s(size, '\0');
+                std::wcstombs(&s[0], w.c_str(), size);
+                return s;
+            }
+            #endif
+            
 
             ///////////////////////////////////////////////////////////////////////////
             //  Writer helper functions
