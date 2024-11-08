@@ -9,7 +9,6 @@
 #include <filesystem>
 #if defined(_WIN32)
 #include <windows.h>
-#include <map>
 #elif defined(__linux__) || defined(__APPLE__)
 #include "vdf_parser.hpp"
 #include <pwd.h>
@@ -182,6 +181,7 @@ std::string ToLower(const std::string& str) {
     return lowerStr;
 }
 
+#if defined(__APPLE__)
 // Fonction pour obtenir les correspondances de lecteurs dans une "bottle"
 std::map<std::string, std::string> GetDriveMappings(const std::string& bottlePath) {
     std::map<std::string, std::string> driveMappings;
@@ -202,6 +202,7 @@ std::map<std::string, std::string> GetDriveMappings(const std::string& bottlePat
     }
     return driveMappings;
 }
+#endif
 
 void LegitimacyCheck() {
 #if defined(_WIN32)
