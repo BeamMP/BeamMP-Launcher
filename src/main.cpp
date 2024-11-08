@@ -46,6 +46,9 @@ int main(int argc, const char** argv) try {
     InitLauncher();
 
     info("IMPORTANT: You MUST keep this window open to play BeamMP!");
+    #if defined(__APPLE__)
+    info("BeamMP is supported on MacOS through CrossOver. Please make sure you have it installed.");
+    #endif
 
     try {
         LegitimacyCheck();

@@ -77,6 +77,9 @@ std::string GetGamePath() {
 std::string GetGamePath() {
     std::string BootlePath = GetBottlePath();
     std::string Path = BootlePath + "/drive_c/users/crossover/AppData/Local/BeamNG.drive/";
+    std::string Ver = CheckVer(GetGameDir());
+    Ver = Ver.substr(0, Ver.find('.', Ver.find('.') + 1));
+    Path += Ver + "/";
     return Path;
 }
 #endif
@@ -142,22 +145,45 @@ void StartGame(std::string Dir) {
 
 #elif defined(__APPLE__)
 void StartGame(std::string Dir) {
-    // Game Path: /Volumes/Enzo Fournet/MacOS/SteamLibrary/steamapps/common/BeamNG.drive
+    extern char **environ;
+    int status;
+    
     std::string executable = Dir + "/Bin64/BeamNG.drive.x64.exe";
-    info("Lancement du jeu...");
-    info("Exécutable: " + executable);
-    std::string bootleName = GetBottleName();
-    info("Bottle: " + bootleName);
-    std::string command = "/Applications/CrossOver.app/Contents/SharedSupport/CrossOver/bin/wine --bottle '" + bootleName + "' '" + executable + "'";
-    info("Commande: " + command);
-    int result = system(command.c_str());
+    
+    std::string wineExecutable = "/Applications/CrossOver.app/Contents/SharedSupport/CrossOver/bin/wine";
+    std::string bottleName = GetBottleName();
+    
+    std::vector<const char*> argv;
+    argv.push_back(wineExecutable.c_str());
+    argv.push_back("--bottle");
+    argv.push_back(bottleName.c_str());
+    argv.push_back(executable.c_str());
+    
+    for (int i = 0; i < options.game_arguments_length; i++) {
+        argv.push_back(options.game_arguments[i]);
+        info("options.game_arguments[i]");
+        info(options.game_arguments[i]);
+    }
+    argv.push_back(nullptr);
+    
+    pid_t pid;
+    posix_spawn_file_actions_t spawn_actions;
+    posix_spawn_file_actions_init(&spawn_actions);
+    posix_spawn_file_actions_addclose(&spawn_actions, STDOUT_FILENO);
+    posix_spawn_file_actions_addclose(&spawn_actions, STDERR_FILENO);
+    
+    int result = posix_spawn(&pid, wineExecutable.c_str(), &spawn_actions, nullptr, const_cast<char**>(argv.data()), environ);
+    
     if (result != 0) {
-        error("Échec du lancement du jeu ! Le lanceur va se fermer bientôt.");
+        error("Failed to Launch the game! launcher closing soon");
         return;
     } else {
-        info("Jeu lancé !");
-        // Attendre que le processus du jeu se termine si nécessaire
+        waitpid(pid, &status, 0);
+        info("Game Closed! launcher closing soon");
     }
+    
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+    exit(2);
 }
 #endif
 
