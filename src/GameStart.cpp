@@ -61,7 +61,7 @@ std::string GetGamePath() {
     Path += Ver + "\\";
     return Path;
 }
-#elif defined(__linux__) || defined(__APPLE__)
+#elif defined(__linux__)
 std::string GetGamePath() {
     // Right now only steam is supported
     struct passwd* pw = getpwuid(getuid());
@@ -71,6 +71,12 @@ std::string GetGamePath() {
     std::string Ver = CheckVer(GetGameDir());
     Ver = Ver.substr(0, Ver.find('.', Ver.find('.') + 1));
     Path += Ver + "/";
+    return Path;
+}
+#elif defined(__APPLE__)
+std::string GetGamePath() {
+    std::string BootlePath = GetBottlePath();
+    std::string Path = BootlePath + "/drive_c/users/crossover/AppData/Local/BeamNG.drive/";
     return Path;
 }
 #endif
@@ -103,7 +109,7 @@ void StartGame(std::string Dir) {
     std::this_thread::sleep_for(std::chrono::seconds(5));
     exit(2);
 }
-#elif defined(__linux__) || defined(__APPLE__)
+#elif defined(__linux__)
 void StartGame(std::string Dir) {
     extern char **environ;
     int status;
@@ -136,7 +142,22 @@ void StartGame(std::string Dir) {
 
 #elif defined(__APPLE__)
 void StartGame(std::string Dir) {
-    error("Please launch the game manually for now");
+    // Game Path: /Volumes/Enzo Fournet/MacOS/SteamLibrary/steamapps/common/BeamNG.drive
+    std::string executable = Dir + "/Bin64/BeamNG.drive.x64.exe";
+    info("Lancement du jeu...");
+    info("Exécutable: " + executable);
+    std::string bootleName = GetBottleName();
+    info("Bottle: " + bootleName);
+    std::string command = "/Applications/CrossOver.app/Contents/SharedSupport/CrossOver/bin/wine --bottle '" + bootleName + "' '" + executable + "'";
+    info("Commande: " + command);
+    int result = system(command.c_str());
+    if (result != 0) {
+        error("Échec du lancement du jeu ! Le lanceur va se fermer bientôt.");
+        return;
+    } else {
+        info("Jeu lancé !");
+        // Attendre que le processus du jeu se termine si nécessaire
+    }
 }
 #endif
 

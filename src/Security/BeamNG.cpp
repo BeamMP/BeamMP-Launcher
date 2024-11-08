@@ -28,6 +28,7 @@
 
 int TraceBack = 0;
 std::string GameDir;
+std::string BoottlePath;
 
 void lowExit(int code) {
     TraceBack = 0;
@@ -37,11 +38,23 @@ void lowExit(int code) {
     exit(2);
 }
 
+#if defined(__APPLE__)
+std::string GetBottlePath() {
+    return BoottlePath;
+}
+
+std::string GetBottleName() {
+    return BoottlePath.substr(BoottlePath.find_last_of('/') + 1);
+}
+#endif
+
 std::string GetGameDir() {
 #if defined(_WIN32)
     return GameDir.substr(0, GameDir.find_last_of('\\'));
-#elif defined(__linux__) || defined(__APPLE__)
+#elif defined(__linux__)
     return GameDir.substr(0, GameDir.find_last_of('/'));
+#elif defined(__APPLE__)
+    return GameDir;
 #endif
 }
 #ifdef _WIN32
@@ -308,10 +321,16 @@ struct passwd* pw = getpwuid(getuid());
                                 info("beamngPath: " + beamngPath.string());
 
                                 std::cout << "[INFO] Checking for BeamNG.drive in: " << beamngPath.string() << std::endl;
+                                info("Checking for BeamNG.drive in: " + beamngPath.string());
 
                                 // Vérifier l'existence du dossier BeamNG.drive
                                 if (std::filesystem::exists(beamngPath)) {
+                                    info("BeamNG.drive found in bottle '" + bottle.path().filename().string() + "' at: " + beamngPath.string());
                                     std::cout << "[SUCCESS] BeamNG.drive found in bottle '" << bottle.path().filename().string() << "' at: " << beamngPath.string() << std::endl;
+                                    GameDir = beamngPath.string();
+                                    BoottlePath = bottle.path().string();
+                                    info("GameDir: " + GameDir);
+                                    info("BoottlePath: " + BoottlePath);
                                     return;
                                 }
                             } else {
