@@ -9,6 +9,7 @@
 #include <filesystem>
 #if defined(_WIN32)
 #include <windows.h>
+#include <map>
 #elif defined(__linux__) || defined(__APPLE__)
 #include "vdf_parser.hpp"
 #include <pwd.h>
