@@ -311,6 +311,7 @@ struct passwd* pw = getpwuid(getuid());
         }
     }
     error("Failed to find BeamNG.drive installation in any CrossOver bottle.");
+    exit(1);
 #endif
 }
 std::string CheckVer(const std::string& dir) {
