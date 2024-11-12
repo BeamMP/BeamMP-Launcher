@@ -31,28 +31,31 @@ std::string GetGamePath() {
     static std::string Path;
     if (!Path.empty())
         return Path;
-
-    HKEY hKey;
-    LPCTSTR sk = "Software\\BeamNG\\BeamNG.drive";
-    LONG openRes = RegOpenKeyEx(HKEY_CURRENT_USER, sk, 0, KEY_ALL_ACCESS, &hKey);
-    if (openRes != ERROR_SUCCESS) {
-        fatal("Please launch the game at least once!");
-    }
-    Path = QueryKey(hKey, 4);
-
-    if (Path.empty()) {
-        Path = "";
-        char appDataPath[MAX_PATH];
-        HRESULT result = SHGetFolderPathA(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, appDataPath);
-        if (SUCCEEDED(result)) {
-            Path = appDataPath;
+    if (options.user_path) {
+        Path = options.user_path;
+    } else {
+        HKEY hKey;
+        LPCTSTR sk = "Software\\BeamNG\\BeamNG.drive";
+        LONG openRes = RegOpenKeyEx(HKEY_CURRENT_USER, sk, 0, KEY_ALL_ACCESS, &hKey);
+        if (openRes != ERROR_SUCCESS) {
+            fatal("Please launch the game at least once!");
         }
+        Path = QueryKey(hKey, 4);
 
         if (Path.empty()) {
-            fatal("Cannot get Local Appdata directory");
-        }
+            Path = "";
+            char appDataPath[MAX_PATH];
+            HRESULT result = SHGetFolderPathA(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, appDataPath);
+            if (SUCCEEDED(result)) {
+                Path = appDataPath;
+            }
 
-        Path += "\\BeamNG.drive\\";
+            if (Path.empty()) {
+                fatal("Cannot get Local Appdata directory");
+            }
+
+            Path += "\\BeamNG.drive\\";
+        }
     }
 
     std::string Ver = CheckVer(GetGameDir());
