@@ -195,7 +195,7 @@ std::map<std::string, std::string> GetDriveMappings(const std::string& bottlePat
             }
         }
     } else {
-        std::cerr << "[ERROR] dosdevices directory not found for the specified bottle." << std::endl;
+        error("Failed to find dosdevices directory for bottle '" + bottlePath + "'");
     }
     return driveMappings;
 }
@@ -296,7 +296,7 @@ void LegitimacyCheck() {
             }
         }
     }
-    error("Failed to find BeamNG.drive installation in any CrossOver bottle.");
+    error("Failed to find BeamNG.drive installation in any CrossOver bottle. Make sure BeamNG.drive is installed in a CrossOver bottle.");
     exit(1);
 #endif
 }
