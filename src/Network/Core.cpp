@@ -384,9 +384,9 @@ int Handle(EXCEPTION_POINTERS* ep) {
         try {
             CoreMain();
         } catch (const std::exception& e) {
-            except("(Core) Exception: " + std::string(e.what()));
+            error("(Core) Exception: " + std::string(e.what()));
         } catch (...) {
-            except("(Core) Unknown exception");
+            error("(Core) Unknown exception");
         }
 #endif
         std::this_thread::sleep_for(std::chrono::seconds(1));
