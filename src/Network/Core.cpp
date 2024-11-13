@@ -22,6 +22,9 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#endif
+
+#if defined(__APPLE__)
 #include "linuxfixes.h"
 #endif
 
