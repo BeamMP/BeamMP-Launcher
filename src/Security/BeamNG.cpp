@@ -45,7 +45,8 @@ std::string GetBottlePath() {
 }
 
 std::string GetBottleName() {
-    return BottlePath.substr(BottlePath.find_last_of('/') + 1);
+    std::filesystem::path bottlePath(BottlePath);
+    return bottlePath.filename().string();
 }
 #endif
 
