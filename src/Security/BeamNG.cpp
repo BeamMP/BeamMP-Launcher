@@ -17,8 +17,8 @@
 #endif
 #if defined(__APPLE__)
 #include "Utils.h"
-#include <algorithm>
 #endif
+#include <algorithm>
 #include "Logger.h"
 #include <fstream>
 #include <string>
