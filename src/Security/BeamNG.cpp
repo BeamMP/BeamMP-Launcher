@@ -234,76 +234,65 @@ void LegitimacyCheck() {
             break;
         }
     }
+
 #elif defined(__APPLE__)
-struct passwd* pw = getpwuid(getuid());
+    struct passwd* pw = getpwuid(getuid());
     std::string homeDir = pw->pw_dir;
     std::string crossoverBottlesPath = homeDir + "/Library/Application Support/CrossOver/Bottles/";
     info("Crossover bottles path: " + crossoverBottlesPath);
 
     for (const auto& bottle : std::filesystem::directory_iterator(crossoverBottlesPath)) {
-        if (bottle.is_directory()) {
-            info("Checking bottle: " + bottle.path().filename().string());
+        if (!bottle.is_directory()) continue;
 
-            auto driveMappings = GetDriveMappings(bottle.path().string());
+        info("Checking bottle: " + bottle.path().filename().string());
+        auto driveMappings = GetDriveMappings(bottle.path().string());
 
-            std::string libraryFilePath = bottle.path().string() + "/drive_c/Program Files (x86)/Steam/config/libraryfolders.vdf";
-            std::ifstream libraryFile(libraryFilePath);
+        std::string libraryFilePath = bottle.path().string() + "/drive_c/Program Files (x86)/Steam/config/libraryfolders.vdf";
+        std::ifstream libraryFile(libraryFilePath);
+        if (!libraryFile.is_open()) {
+            error("Failed to open libraryfolders.vdf in bottle '" + bottle.path().filename().string() + "'");
+            continue;
+        }
+        
+        auto root = tyti::vdf::read(libraryFile);
+        libraryFile.close();
 
-            if (libraryFile.is_open()) {
-                std::string line;
-                while (std::getline(libraryFile, line)) {
-                    if (line.find("\"path\"") != std::string::npos) {
-                        size_t firstQuote = line.find("\"", 0);
-                        size_t secondQuote = line.find("\"", firstQuote + 1);
-                        size_t thirdQuote = line.find("\"", secondQuote + 1);
-                        size_t fourthQuote = line.find("\"", thirdQuote + 1);
+        for (const auto& [key, folderInfo] : root.childs) {
+            auto pathIter = folderInfo->attribs.find("path");
+            if (pathIter == folderInfo->attribs.end()) continue;
 
-                        if (thirdQuote != std::string::npos && fourthQuote != std::string::npos) {
-                            std::string path = line.substr(thirdQuote + 1, fourthQuote - thirdQuote - 1);
+            std::string path = pathIter->second;
+            info("Found Steam library path: " + path);
 
-                            info("Found Steam library path: " + path);
+            std::string driveLetter = Utils::ToLower(path.substr(0, path.find(":")));
+            driveLetter.erase(std::remove(driveLetter.begin(), driveLetter.end(), ':'), driveLetter.end());
 
-                            std::string driveLetter = path.substr(0, path.find(":"));
-                            driveLetter = Utils::ToLower(driveLetter);
-                            driveLetter.erase(std::remove(driveLetter.begin(), driveLetter.end(), ':'), driveLetter.end());
+            if (driveMappings.find(driveLetter) == driveMappings.end()) {
+                warn("Drive letter " + driveLetter + " not found in mappings.");
+                continue;
+            }
 
-                            if (driveMappings.find(driveLetter) != driveMappings.end()) {
-                                std::string basePath = driveMappings[driveLetter];
-                                if (!basePath.empty() && basePath.back() == '/')
-                                {
-                                    basePath.pop_back();
-                                }                                
-                                std::string additionalPath = path.substr(2);
-                                std::replace(additionalPath.begin(), additionalPath.end(), '\\', '/');
+            std::string basePath = driveMappings[driveLetter];
+            if (!basePath.empty() && basePath.back() == '/') {
+                basePath.pop_back();
+            }
 
-                                if (!additionalPath.empty() && additionalPath.front() == '/')
-                                {
-                                    additionalPath.erase(0, 1);
-                                }
+            std::string additionalPath = path.substr(2);
+            std::replace(additionalPath.begin(), additionalPath.end(), '\\', '/');
+            if (!additionalPath.empty() && additionalPath.front() == '/') {
+                additionalPath.erase(0, 1);
+            }
 
-                                std::string fullPath = basePath + additionalPath;
-                                std::filesystem::path convertedPath = fullPath;
-                                std::filesystem::path beamngPath = convertedPath / "steamapps/common/BeamNG.drive";
+            std::filesystem::path beamngPath = std::filesystem::path(basePath) / additionalPath / "steamapps/common/BeamNG.drive";
+            info("Checking for BeamNG.drive in: " + beamngPath.string());
 
-                                info("Checking for BeamNG.drive in: " + beamngPath.string());
-
-                                if (std::filesystem::exists(beamngPath)) {
-                                    info("BeamNG.drive found in bottle '" + bottle.path().filename().string() + "' at: " + beamngPath.string());
-                                    GameDir = beamngPath.string();
-                                    BottlePath = bottle.path().string();
-                                    info("GameDir: " + GameDir);
-                                    info("BottlePath: " + BottlePath);
-                                    return;
-                                }
-                            } else {
-                                warn("Drive letter " + driveLetter + " not found in mappings.");
-                            }
-                        }
-                    }
-                }
-                libraryFile.close();
-            } else {
-                error("Failed to open libraryfolders.vdf in bottle '" + bottle.path().filename().string() + "'");
+            if (std::filesystem::exists(beamngPath)) {
+                info("BeamNG.drive found in bottle '" + bottle.path().filename().string() + "' at: " + beamngPath.string());
+                GameDir = beamngPath.string();
+                BottlePath = bottle.path().string();
+                info("GameDir: " + GameDir);
+                info("BottlePath: " + BottlePath);
+                return;
             }
         }
     }
