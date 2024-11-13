@@ -75,8 +75,8 @@ std::string GetGamePath() {
 }
 #elif defined(__APPLE__)
 std::string GetGamePath() {
-    std::string BootlePath = GetBottlePath();
-    std::string Path = BootlePath + "/drive_c/users/crossover/AppData/Local/BeamNG.drive/";
+    std::string BotlePath = GetBottlePath();
+    std::string Path = BotlePath + "/drive_c/users/crossover/AppData/Local/BeamNG.drive/";
     std::string Ver = CheckVer(GetGameDir());
     Ver = Ver.substr(0, Ver.find('.', Ver.find('.') + 1));
     Path += Ver + "/";
