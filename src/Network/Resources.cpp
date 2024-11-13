@@ -301,68 +301,6 @@ void InvalidResource(const std::string& File) {
     Terminate = true;
 }
 
-std::string GetSha256HashReallyFast(const std::string& filename) {
-    try {
-        EVP_MD_CTX* mdctx;
-        const EVP_MD* md;
-        uint8_t sha256_value[EVP_MAX_MD_SIZE];
-        md = EVP_sha256();
-        if (md == nullptr) {
-            throw std::runtime_error("EVP_sha256() failed");
-        }
-
-        mdctx = EVP_MD_CTX_new();
-        if (mdctx == nullptr) {
-            throw std::runtime_error("EVP_MD_CTX_new() failed");
-        }
-        if (!EVP_DigestInit_ex2(mdctx, md, NULL)) {
-            EVP_MD_CTX_free(mdctx);
-            throw std::runtime_error("EVP_DigestInit_ex2() failed");
-        }
-
-        std::ifstream stream(filename, std::ios::binary);
-
-        const size_t FileSize = std::filesystem::file_size(filename);
-        size_t Read = 0;
-        std::vector<char> Data;
-        while (Read < FileSize) {
-            Data.resize(size_t(std::min<size_t>(FileSize - Read, 4096)));
-            size_t RealDataSize = Data.size();
-            stream.read(Data.data(), std::streamsize(Data.size()));
-            if (stream.eof() || stream.fail()) {
-                RealDataSize = size_t(stream.gcount());
-            }
-            Data.resize(RealDataSize);
-            if (RealDataSize == 0) {
-                break;
-            }
-            if (RealDataSize > 0 && !EVP_DigestUpdate(mdctx, Data.data(), Data.size())) {
-                EVP_MD_CTX_free(mdctx);
-                throw std::runtime_error("EVP_DigestUpdate() failed");
-            }
-            Read += RealDataSize;
-        }
-        unsigned int sha256_len = 0;
-        if (!EVP_DigestFinal_ex(mdctx, sha256_value, &sha256_len)) {
-            EVP_MD_CTX_free(mdctx);
-            throw std::runtime_error("EVP_DigestFinal_ex() failed");
-        }
-        EVP_MD_CTX_free(mdctx);
-
-        std::string result;
-        for (size_t i = 0; i < sha256_len; i++) {
-            char buf[3];
-            sprintf(buf, "%02x", sha256_value[i]);
-            buf[2] = 0;
-            result += buf;
-        }
-        return result;
-    } catch (const std::exception& e) {
-        error("Sha256 hashing of '" + filename + "' failed: " + e.what());
-        return "";
-    }
-}
-
 struct ModInfo {
     static std::pair<bool, std::vector<ModInfo>> ParseModInfosFromPacket(const std::string& packet) {
         bool success = false;
@@ -507,13 +445,13 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
         }
         auto FileName = std::filesystem::path(ModInfoIter->FileName).stem().string() + "-" + ModInfoIter->Hash.substr(0, 8) + std::filesystem::path(ModInfoIter->FileName).extension().string();
         auto PathToSaveTo = (fs::path(CachingDirectory) / FileName).string();
-        if (fs::exists(PathToSaveTo) && GetSha256HashReallyFast(PathToSaveTo) == ModInfoIter->Hash) {
+        if (fs::exists(PathToSaveTo) && Utils::GetSha256HashReallyFast(PathToSaveTo) == ModInfoIter->Hash) {
             debug("Mod '" + FileName + "' found in cache");
             UpdateUl(false, std::to_string(ModNo) + "/" + std::to_string(TotalMods) + ": " + ModInfoIter->FileName);
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
             try {
-                if (!fs::exists(GetGamePath() + "mods/multiplayer")) {
-                    fs::create_directories(GetGamePath() + "mods/multiplayer");
+                if (!fs::exists(GetGamePath() + L"mods/multiplayer")) {
+                    fs::create_directories(GetGamePath() + L"mods/multiplayer");
                 }
                 auto modname = ModInfoIter->FileName;
 #if defined(__linux__)
@@ -630,8 +568,8 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
             }
         } while (fs::file_size(PathToSaveTo) != ModInfoIter->FileSize && !Terminate);
         if (!Terminate) {
-            if (!fs::exists(GetGamePath() + "mods/multiplayer")) {
-                fs::create_directories(GetGamePath() + "mods/multiplayer");
+            if (!fs::exists(GetGamePath() + L"mods/multiplayer")) {
+                fs::create_directories(GetGamePath() + L"mods/multiplayer");
             }
 
 // Linux version of the game doesnt support uppercase letters in mod names
@@ -729,8 +667,8 @@ void SyncResources(SOCKET Sock) {
                 UpdateUl(false, std::to_string(Pos) + "/" + std::to_string(Amount) + ": " + PathToSaveTo.substr(PathToSaveTo.find_last_of('/')));
                 std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 try {
-                    if (!fs::exists(GetGamePath() + "mods/multiplayer")) {
-                        fs::create_directories(GetGamePath() + "mods/multiplayer");
+                    if (!fs::exists(GetGamePath() + L"mods/multiplayer")) {
+                        fs::create_directories(GetGamePath() + L"mods/multiplayer");
                     }
                     auto modname = PathToSaveTo.substr(PathToSaveTo.find_last_of('/'));
 #if defined(__linux__)
@@ -739,8 +677,8 @@ void SyncResources(SOCKET Sock) {
                         c = ::tolower(c);
                     }
 #endif
-                    auto name = GetGamePath() + "mods/multiplayer" + modname;
-                    auto tmp_name = name + ".tmp";
+                    auto name = GetGamePath() + L"mods/multiplayer" + Utils::ToWString(modname);
+                    auto tmp_name = name + L".tmp";
                     fs::copy_file(PathToSaveTo, tmp_name, fs::copy_options::overwrite_existing);
                     fs::rename(tmp_name, name);
                     UpdateModUsage(modname);
@@ -787,8 +725,8 @@ void SyncResources(SOCKET Sock) {
             }
         } while (fs::file_size(PathToSaveTo) != std::stoull(*FS) && !Terminate);
         if (!Terminate) {
-            if (!fs::exists(GetGamePath() + "mods/multiplayer")) {
-                fs::create_directories(GetGamePath() + "mods/multiplayer");
+            if (!fs::exists(GetGamePath() + L"mods/multiplayer")) {
+                fs::create_directories(GetGamePath() + L"mods/multiplayer");
             }
 
 // Linux version of the game doesnt support uppercase letters in mod names
@@ -798,7 +736,7 @@ void SyncResources(SOCKET Sock) {
             }
 #endif
 
-            fs::copy_file(PathToSaveTo, GetGamePath() + "mods/multiplayer" + FName, fs::copy_options::overwrite_existing);
+            fs::copy_file(PathToSaveTo, GetGamePath() + L"mods/multiplayer" + Utils::ToWString(FName), fs::copy_options::overwrite_existing);
             UpdateModUsage(FN->substr(pos));
         }
         WaitForConfirm();

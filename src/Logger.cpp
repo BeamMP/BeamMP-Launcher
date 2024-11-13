@@ -7,6 +7,7 @@
 
 #include "Logger.h"
 #include "Startup.h"
+#include "Utils.h"
 #include <chrono>
 #include <fstream>
 #include <sstream>
@@ -36,7 +37,7 @@ std::string getDate() {
 }
 void InitLog() {
     std::ofstream LFS;
-    LFS.open(GetEP() + "Launcher.log");
+    LFS.open(GetEP() + L"Launcher.log");
     if (!LFS.is_open()) {
         error("logger file init failed!");
     } else
@@ -44,7 +45,13 @@ void InitLog() {
 }
 void addToLog(const std::string& Line) {
     std::ofstream LFS;
-    LFS.open(GetEP() + "Launcher.log", std::ios_base::app);
+    LFS.open(GetEP() + L"Launcher.log", std::ios_base::app);
+    LFS << Line.c_str();
+    LFS.close();
+}
+void addToLog(const std::wstring& Line) {
+    std::wofstream LFS;
+    LFS.open(GetEP() + L"Launcher.log", std::ios_base::app);
     LFS << Line.c_str();
     LFS.close();
 }
@@ -80,5 +87,41 @@ void fatal(const std::string& toPrint) {
 void except(const std::string& toPrint) {
     std::string Print = getDate() + "[EXCEP] " + toPrint + "\n";
     std::cout << Print;
+    addToLog(Print);
+}
+
+
+void info(const std::wstring& toPrint) {
+    std::wstring Print = Utils::ToWString(getDate()) + L"[INFO] " + toPrint + L"\n";
+    std::wcout << Print;
+    addToLog(Print);
+}
+void debug(const std::wstring& toPrint) {
+    std::wstring Print = Utils::ToWString(getDate()) + L"[DEBUG] " + toPrint + L"\n";
+    if (options.verbose) {
+        std::wcout << Print;
+    }
+    addToLog(Print);
+}
+void warn(const std::wstring& toPrint) {
+    std::wstring Print = Utils::ToWString(getDate()) + L"[WARN] " + toPrint + L"\n";
+    std::wcout << Print;
+    addToLog(Print);
+}
+void error(const std::wstring& toPrint) {
+    std::wstring Print = Utils::ToWString(getDate()) + L"[ERROR] " + toPrint + L"\n";
+    std::wcout << Print;
+    addToLog(Print);
+}
+void fatal(const std::wstring& toPrint) {
+    std::wstring Print = Utils::ToWString(getDate()) + L"[FATAL] " + toPrint + L"\n";
+    std::wcout << Print;
+    addToLog(Print);
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+    std::exit(1);
+}
+void except(const std::wstring& toPrint) {
+    std::wstring Print = Utils::ToWString(getDate()) + L"[EXCEP] " + toPrint + L"\n";
+    std::wcout << Print;
     addToLog(Print);
 }

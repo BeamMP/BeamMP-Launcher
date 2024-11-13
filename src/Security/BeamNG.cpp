@@ -23,7 +23,7 @@
 #define MAX_VALUE_NAME 16383
 
 int TraceBack = 0;
-std::string GameDir;
+std::wstring GameDir;
 
 void lowExit(int code) {
     TraceBack = 0;
@@ -33,7 +33,7 @@ void lowExit(int code) {
     exit(2);
 }
 
-std::string GetGameDir() {
+std::wstring GetGameDir() {
 #if defined(_WIN32)
     return GameDir.substr(0, GameDir.find_last_of('\\'));
 #elif defined(__linux__)
@@ -44,8 +44,8 @@ std::string GetGameDir() {
 LONG OpenKey(HKEY root, const char* path, PHKEY hKey) {
     return RegOpenKeyEx(root, reinterpret_cast<LPCSTR>(path), 0, KEY_READ, hKey);
 }
-std::string QueryKey(HKEY hKey, int ID) {
-    TCHAR achKey[MAX_KEY_LENGTH]; // buffer for subkey name
+std::wstring QueryKey(HKEY hKey, int ID) {
+    wchar_t* achKey; // buffer for subkey name
     DWORD cbName; // size of name string
     TCHAR achClass[MAX_PATH] = TEXT(""); // buffer for class name
     DWORD cchClassName = MAX_PATH; // size of class string
@@ -60,7 +60,7 @@ std::string QueryKey(HKEY hKey, int ID) {
 
     DWORD i, retCode;
 
-    TCHAR achValue[MAX_VALUE_NAME];
+    wchar_t* achValue = new wchar_t[MAX_VALUE_NAME];
     DWORD cchValue = MAX_VALUE_NAME;
 
     retCode = RegQueryInfoKey(
@@ -82,9 +82,9 @@ std::string QueryKey(HKEY hKey, int ID) {
     if (cSubKeys) {
         for (i = 0; i < cSubKeys; i++) {
             cbName = MAX_KEY_LENGTH;
-            retCode = RegEnumKeyEx(hKey, i, achKey, &cbName, nullptr, nullptr, nullptr, &ftLastWriteTime);
+            retCode = RegEnumKeyExW(hKey, i, achKey, &cbName, nullptr, nullptr, nullptr, &ftLastWriteTime);
             if (retCode == ERROR_SUCCESS) {
-                if (strcmp(achKey, "Steam App 284160") == 0) {
+                if (wcscmp(achKey, L"Steam App 284160") == 0) {
                     return achKey;
                 }
             }
@@ -94,36 +94,37 @@ std::string QueryKey(HKEY hKey, int ID) {
         for (i = 0, retCode = ERROR_SUCCESS; i < cValues; i++) {
             cchValue = MAX_VALUE_NAME;
             achValue[0] = '\0';
-            retCode = RegEnumValue(hKey, i, achValue, &cchValue, nullptr, nullptr, nullptr, nullptr);
+            retCode = RegEnumValueW(hKey, i, achValue, &cchValue, nullptr, nullptr, nullptr, nullptr);
             if (retCode == ERROR_SUCCESS) {
                 DWORD lpData = cbMaxValueData;
                 buffer[0] = '\0';
-                LONG dwRes = RegQueryValueEx(hKey, achValue, nullptr, nullptr, buffer, &lpData);
-                std::string data = (char*)(buffer);
-                std::string key = achValue;
+                LONG dwRes = RegQueryValueExW(hKey, achValue, nullptr, nullptr, buffer, &lpData);
+                std::wstring data = (wchar_t*)(buffer);
+                std::wstring key = achValue;
+
 
                 switch (ID) {
                 case 1:
-                    if (key == "SteamExe") {
-                        auto p = data.find_last_of("/\\");
+                    if (key == L"SteamExe") {
+                        auto p = data.find_last_of(L"/\\");
                         if (p != std::string::npos) {
                             return data.substr(0, p);
                         }
                     }
                     break;
                 case 2:
-                    if (key == "Name" && data == "BeamNG.drive")
+                    if (key == L"Name" && data == L"BeamNG.drive")
                         return data;
                     break;
                 case 3:
-                    if (key == "rootpath")
+                    if (key == L"rootpath")
                         return data;
                     break;
                 case 4:
-                    if (key == "userpath_override")
+                    if (key == L"userpath_override")
                         return data;
                 case 5:
-                    if (key == "Local AppData")
+                    if (key == L"Local AppData")
                         return data;
                 default:
                     break;
@@ -131,8 +132,9 @@ std::string QueryKey(HKEY hKey, int ID) {
             }
         }
     }
+    delete[] achValue;
     delete[] buffer;
-    return "";
+    return L"";
 }
 #endif
 
@@ -159,7 +161,7 @@ void FileList(std::vector<std::string>& a, const std::string& Path) {
 }
 void LegitimacyCheck() {
 #if defined(_WIN32)
-    std::string Result;
+    std::wstring Result;
     std::string K3 = R"(Software\BeamNG\BeamNG.drive)";
     HKEY hKey;
     LONG dwRegOPenKey = OpenKey(HKEY_CURRENT_USER, K3.c_str(), &hKey);
@@ -229,11 +231,12 @@ void LegitimacyCheck() {
     }
 #endif
 }
-std::string CheckVer(const std::string& dir) {
+std::string CheckVer(const std::wstring& dir) {
+    std::string temp;
 #if defined(_WIN32)
-    std::string temp, Path = dir + "\\integrity.json";
+    std::wstring Path = dir + L"\\integrity.json";
 #elif defined(__linux__)
-    std::string temp, Path = dir + "/integrity.json";
+    std::wstring Path = dir + L"/integrity.json";
 #endif
     std::ifstream f(Path.c_str(), std::ios::binary);
     int Size = int(std::filesystem::file_size(Path));

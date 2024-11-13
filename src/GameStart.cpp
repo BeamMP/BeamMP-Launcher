@@ -4,10 +4,9 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 */
 
-
 #if defined(_WIN32)
-#include <windows.h>
 #include <shlobj.h>
+#include <windows.h>
 #elif defined(__linux__)
 #include "vdf_parser.hpp"
 #include <pwd.h>
@@ -29,8 +28,8 @@
 
 unsigned long GamePID = 0;
 #if defined(_WIN32)
-std::string QueryKey(HKEY hKey, int ID);
-std::string GetGamePath() {
+std::wstring QueryKey(HKEY hKey, int ID);
+std::wstring GetGamePath() {
     static std::filesystem::path Path;
     if (!Path.empty())
         return Path.string();
@@ -54,22 +53,21 @@ std::string GetGamePath() {
             }
 
             auto ini = Utils::ParseINI(contents);
-                if (ini.empty()) {
-                    warn("Failed to parse startup.ini");
+            if (ini.empty()) {
+                warn("Failed to parse startup.ini");
+            } else
+                debug("Successfully parsed startup.ini");
+
+            std::string userPath;
+            if (ini.contains("filesystem") && ini["filesystem"].contains("UserPath"))
+                userPath = ini["filesystem"]["UserPath"];
+
+            if (!userPath.empty())
+                if (userPath = Utils::ExpandEnvVars(userPath); std::filesystem::exists(userPath)) {
+                    Path = userPath;
+                    debug("Using custom user folder path from startup.ini: " + Path.string());
                 } else
-                    debug("Successfully parsed startup.ini");
-
-
-                std::string userPath;
-                if (ini.contains("filesystem") && ini["filesystem"].contains("UserPath"))
-                    userPath = ini["filesystem"]["UserPath"];
-
-                if (!userPath.empty())
-                    if (userPath = Utils::ExpandEnvVars(userPath); std::filesystem::exists(userPath)) {
-                        Path = userPath;
-                        debug("Using custom user folder path from startup.ini: " + Path.string());
-                    } else
-                        warn("Found custom user folder path ("+ userPath + ") in startup.ini but it doesn't exist, skipping");
+                    warn("Found custom user folder path (" + userPath + ") in startup.ini but it doesn't exist, skipping");
         }
 
         if (Path.empty()) {
@@ -82,22 +80,24 @@ std::string GetGamePath() {
             Path = QueryKey(hKey, 4);
 
             if (Path.empty()) {
-                char appDataPath[MAX_PATH];
-                HRESULT result = SHGetFolderPathA(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, appDataPath);
+                wchar_t* appDataPath = new wchar_t[MAX_PATH];
+                HRESULT result = SHGetFolderPathW(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, appDataPath);
 
                 if (!SUCCEEDED(result)) {
                     fatal("Cannot get Local Appdata directory");
                 }
 
                 Path = std::filesystem::path(appDataPath) / "BeamNG.drive";
+
+                delete[] appDataPath;
             }
         }
     }
 
     std::string Ver = CheckVer(GetGameDir());
     Ver = Ver.substr(0, Ver.find('.', Ver.find('.') + 1));
-    Path = Path / (Ver + "\\");
-    return Path.string();
+    Path += Utils::ToWString(Ver) + L"\\";
+    return Path;
 }
 #elif defined(__linux__)
 std::string GetGamePath() {
@@ -114,24 +114,24 @@ std::string GetGamePath() {
 #endif
 
 #if defined(_WIN32)
-void StartGame(std::string Dir) {
+void StartGame(std::wstring Dir) {
     BOOL bSuccess = FALSE;
     PROCESS_INFORMATION pi;
-    STARTUPINFO si = { 0 };
+    STARTUPINFOW si = { 0 };
     si.cb = sizeof(si);
-    std::string BaseDir = Dir; //+"\\Bin64";
+    std::wstring BaseDir = Dir; //+"\\Bin64";
     // Dir += R"(\Bin64\BeamNG.drive.x64.exe)";
-    Dir += "\\BeamNG.drive.exe";
-    std::string gameArgs = "";
+    Dir += L"\\BeamNG.drive.exe";
+    std::wstring gameArgs = L"";
 
     for (int i = 0; i < options.game_arguments_length; i++) {
-        gameArgs += " ";
-        gameArgs += options.game_arguments[i];
+        gameArgs += L" ";
+        gameArgs += Utils::ToWString(options.game_arguments[i]);
     }
 
     debug("BeamNG executable path: " + Dir);
 
-    bSuccess = CreateProcessA(nullptr, (LPSTR)(Dir + gameArgs).c_str(), nullptr, nullptr, TRUE, 0, nullptr, BaseDir.c_str(), &si, &pi);
+    bSuccess = CreateProcessW(nullptr, (wchar_t*)(Dir + gameArgs).c_str(), nullptr, nullptr, TRUE, 0, nullptr, BaseDir.c_str(), &si, &pi);
     if (bSuccess) {
         info("Game Launched!");
         GamePID = pi.dwProcessId;
@@ -144,7 +144,8 @@ void StartGame(std::string Dir) {
         LPVOID lpErrorMsgBuffer;
 
         if (FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, dw,
-            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&lpErrorMsgBuffer, 0, nullptr) == 0) {
+                MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&lpErrorMsgBuffer, 0, nullptr)
+            == 0) {
             err = "Unknown error code: " + std::to_string(dw);
         } else {
             err = "Error " + std::to_string(dw) + ": " + (char*)lpErrorMsgBuffer;
@@ -186,7 +187,7 @@ void StartGame(std::string Dir) {
 }
 #endif
 
-void InitGame(const std::string& Dir) {
+void InitGame(const std::wstring& Dir) {
     if (!options.no_launch) {
         std::thread Game(StartGame, Dir);
         Game.detach();
