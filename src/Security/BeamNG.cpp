@@ -16,6 +16,7 @@
 #include <vector>
 #endif
 #if defined(__APPLE__)
+#include "Utils.h"
 #include <algorithm>
 #endif
 #include "Logger.h"
@@ -175,12 +176,6 @@ void FileList(std::vector<std::string>& a, const std::string& Path) {
     }
 }
 
-std::string ToLower(const std::string& str) {
-    std::string lowerStr = str;
-    std::transform(str.begin(), str.end(), lowerStr.begin(), ::tolower);
-    return lowerStr;
-}
-
 #if defined(__APPLE__)
 std::map<std::string, std::string> GetDriveMappings(const std::string& bottlePath) {
     std::map<std::string, std::string> driveMappings;
@@ -189,7 +184,7 @@ std::map<std::string, std::string> GetDriveMappings(const std::string& bottlePat
     if (std::filesystem::exists(dosDevicesPath)) {
         for (const auto& entry : std::filesystem::directory_iterator(dosDevicesPath)) {
             if (entry.is_symlink()) {
-                std::string driveName = ToLower(entry.path().filename().string());
+                std::string driveName = Utils::ToLower(entry.path().filename().string());
                 driveName.erase(std::remove(driveName.begin(), driveName.end(), ':'), driveName.end());
                 std::string macPath = std::filesystem::read_symlink(entry.path()).string();
                 if (!std::filesystem::path(macPath).is_absolute()) {
@@ -268,7 +263,7 @@ struct passwd* pw = getpwuid(getuid());
                             info("Found Steam library path: " + path);
 
                             std::string driveLetter = path.substr(0, path.find(":"));
-                            driveLetter = ToLower(driveLetter);
+                            driveLetter = Utils::ToLower(driveLetter);
                             driveLetter.erase(std::remove(driveLetter.begin(), driveLetter.end(), ':'), driveLetter.end());
 
                             if (driveMappings.find(driveLetter) != driveMappings.end()) {

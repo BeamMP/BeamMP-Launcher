@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <algorithm>
 
 namespace Utils {
     inline std::vector<std::string> Split(const std::string& String, const std::string& delimiter) {
@@ -16,5 +17,11 @@ namespace Utils {
         if (!s.empty())
             Val.push_back(s);
         return Val;
-    };
-};
+    }
+
+    inline std::string ToLower(const std::string& str) {
+        std::string lowerStr = str;
+        std::transform(str.begin(), str.end(), lowerStr.begin(), ::tolower);
+        return lowerStr;
+    }
+}
