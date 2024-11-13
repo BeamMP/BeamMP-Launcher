@@ -182,7 +182,6 @@ std::string ToLower(const std::string& str) {
 }
 
 #if defined(__APPLE__)
-// Fonction pour obtenir les correspondances de lecteurs dans une "bottle"
 std::map<std::string, std::string> GetDriveMappings(const std::string& bottlePath) {
     std::map<std::string, std::string> driveMappings;
     std::string dosDevicesPath = bottlePath + "/dosdevices/";
@@ -191,9 +190,11 @@ std::map<std::string, std::string> GetDriveMappings(const std::string& bottlePat
         for (const auto& entry : std::filesystem::directory_iterator(dosDevicesPath)) {
             if (entry.is_symlink()) {
                 std::string driveName = ToLower(entry.path().filename().string());
-                // Supprimer les deux-points des noms de lecteurs
                 driveName.erase(std::remove(driveName.begin(), driveName.end(), ':'), driveName.end());
                 std::string macPath = std::filesystem::read_symlink(entry.path()).string();
+                if (!std::filesystem::path(macPath).is_absolute()) {
+                    macPath = dosDevicesPath + macPath;
+                }
                 driveMappings[driveName] = macPath;
             }
         }
