@@ -117,6 +117,7 @@ namespace tyti
                 deletable_facet(Args &&... args) : Facet(std::forward<Args>(args)...) {}
                 ~deletable_facet() {}
             };
+            
             inline std::string string_converter(const std::wstring& w) //todo: use us-locale
             {
                 std::wstring_convert<deletable_facet<std::codecvt<wchar_t, char, std::mbstate_t>>> conv1;
