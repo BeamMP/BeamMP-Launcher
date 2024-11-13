@@ -29,7 +29,7 @@
 
 int TraceBack = 0;
 std::string GameDir;
-std::string BoottlePath;
+std::string BottlePath;
 
 void lowExit(int code) {
     TraceBack = 0;
@@ -41,11 +41,11 @@ void lowExit(int code) {
 
 #if defined(__APPLE__)
 std::string GetBottlePath() {
-    return BoottlePath;
+    return BottlePath;
 }
 
 std::string GetBottleName() {
-    return BoottlePath.substr(BoottlePath.find_last_of('/') + 1);
+    return BottlePath.substr(BottlePath.find_last_of('/') + 1);
 }
 #endif
 
@@ -289,9 +289,9 @@ struct passwd* pw = getpwuid(getuid());
                                 if (std::filesystem::exists(beamngPath)) {
                                     info("BeamNG.drive found in bottle '" + bottle.path().filename().string() + "' at: " + beamngPath.string());
                                     GameDir = beamngPath.string();
-                                    BoottlePath = bottle.path().string();
+                                    BottlePath = bottle.path().string();
                                     info("GameDir: " + GameDir);
-                                    info("BoottlePath: " + BoottlePath);
+                                    info("BottlePath: " + BottlePath);
                                     return;
                                 }
                             } else {
