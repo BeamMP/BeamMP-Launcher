@@ -10,9 +10,9 @@
 #include <vector>
 
 void InitLauncher();
-std::string GetEP(const char* P = nullptr);
-std::string GetGamePath();
+std::wstring GetEP(const wchar_t* P = nullptr);
+std::wstring GetGamePath();
 std::string GetVer();
 std::string GetPatch();
-std::string GetEN();
+std::wstring GetEN();
 void ConfigInit();

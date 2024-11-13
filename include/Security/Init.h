@@ -6,9 +6,9 @@
 
 #pragma once
 #include <string>
-void PreGame(const std::string& GamePath);
-std::string CheckVer(const std::string& path);
-void InitGame(const std::string& Dir);
-std::string GetGameDir();
+void PreGame(const std::wstring& GamePath);
+std::string CheckVer(const std::wstring& path);
+void InitGame(const std::wstring& Dir);
+std::wstring GetGameDir();
 void LegitimacyCheck();
 void CheckLocalKey();
