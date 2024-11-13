@@ -158,6 +158,7 @@ void StartGame(std::string Dir) {
     argv.push_back("--bottle");
     argv.push_back(bottleName.c_str());
     argv.push_back(executable.c_str());
+    argv.push_back(nullptr);
     
     for (int i = 0; i < options.game_arguments_length; i++) {
         argv.push_back(options.game_arguments[i]);
