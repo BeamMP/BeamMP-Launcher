@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <memory>
 
 namespace Utils {
     inline std::vector<std::string> Split(const std::string& String, const std::string& delimiter) {
