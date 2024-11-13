@@ -162,8 +162,6 @@ void StartGame(std::string Dir) {
     
     for (int i = 0; i < options.game_arguments_length; i++) {
         argv.push_back(options.game_arguments[i]);
-        info("options.game_arguments[i]");
-        info(options.game_arguments[i]);
     }
     argv.push_back(nullptr);
     
