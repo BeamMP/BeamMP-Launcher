@@ -24,10 +24,6 @@
 #include <unistd.h>
 #endif
 
-#if defined(__APPLE__)
-#include "linuxfixes.h"
-#endif
-
 #include "Logger.h"
 #include "Startup.h"
 #include <charconv>
