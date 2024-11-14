@@ -43,6 +43,7 @@ int main(int argc, const char** argv) try {
     InitLog();
     ConfigInit();
     InitOptions(argc, argv, options);
+    info("Mod caching directory: " + CachingDirectory);
     InitLauncher();
 
     info("IMPORTANT: You MUST keep this window open to play BeamMP!");
