@@ -35,7 +35,6 @@
 #include <filesystem>
 #include <fstream>
 #include <future>
-#include <sstream>
 #include <thread>
 
 #include "hashpp.h"
