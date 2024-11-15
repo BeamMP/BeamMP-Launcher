@@ -80,9 +80,11 @@ void InitOptions(int argc, const char *argv[], Options &options) {
             options.no_download = true;
             options.no_launch = true;
             options.no_update = true;
+        #if defined(__APPLE__)
         } else if (argument == "--bottle") {
             options.bottle = argv[i + 1];
             i++;
+        #endif
         } else if (argument == "--" || argument == "--game") {
             options.game_arguments = &argv[i + 1];
             options.game_arguments_length = argc - i - 1;
