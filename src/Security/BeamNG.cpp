@@ -304,10 +304,10 @@ void LegitimacyCheck() {
                     basePath.pop_back();
                 }
 
-                std::string additionalPath = path.substr(2);
-                std::replace(additionalPath.begin(), additionalPath.end(), '\\', '/');
-                if (!additionalPath.empty() && additionalPath.front() == '/') {
-                    additionalPath.erase(0, 1);
+                // Normalize the path using std::filesystem
+                std::filesystem::path additionalPath = std::filesystem::path(path.substr(2)).make_preferred();
+                if (!additionalPath.empty() && additionalPath.is_absolute()) {
+                    additionalPath = additionalPath.relative_path();
                 }
 
                 std::filesystem::path beamngPath = std::filesystem::path(basePath) / additionalPath / "steamapps/common/BeamNG.drive";
