@@ -13,7 +13,7 @@
 #if defined(_WIN32)
 #include <winsock2.h>
 #include <ws2tcpip.h>
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 #include <cstring>
 #include <errno.h>
 #include <netdb.h>
@@ -372,21 +372,19 @@ int Handle(EXCEPTION_POINTERS* ep) {
 
 [[noreturn]] void CoreNetwork() {
     while (true) {
-#if not defined(__MINGW32__)
+#if defined(_WIN32)
         __try {
-#endif
-
             CoreMain();
-
-#if not defined(__MINGW32__) and not defined(__linux__)
         } __except (Handle(GetExceptionInformation())) { }
-#elif not defined(__MINGW32__) and defined(__linux__)
-    }
-    catch (...) {
-        except("(Core) Code : " + std::string(strerror(errno)));
-    }
+#elif defined(__linux__) || defined(__APPLE__)
+        try {
+            CoreMain();
+        } catch (const std::exception& e) {
+            error("(Core) Exception: " + std::string(e.what()));
+        } catch (...) {
+            error("(Core) Unknown exception");
+        }
 #endif
-
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 }

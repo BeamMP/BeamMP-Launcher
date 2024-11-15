@@ -9,12 +9,16 @@
 #include <filesystem>
 #if defined(_WIN32)
 #include <windows.h>
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 #include "vdf_parser.hpp"
 #include <pwd.h>
 #include <unistd.h>
 #include <vector>
 #endif
+#if defined(__APPLE__)
+#include "Utils.h"
+#endif
+#include <algorithm>
 #include "Logger.h"
 #include <fstream>
 #include <string>
@@ -25,6 +29,7 @@
 
 int TraceBack = 0;
 std::string GameDir;
+std::string BottlePath;
 
 void lowExit(int code) {
     TraceBack = 0;
@@ -34,11 +39,24 @@ void lowExit(int code) {
     exit(2);
 }
 
+#if defined(__APPLE__)
+std::string GetBottlePath() {
+    return BottlePath;
+}
+
+std::string GetBottleName() {
+    std::filesystem::path bottlePath(BottlePath);
+    return bottlePath.filename().string();
+}
+#endif
+
 std::string GetGameDir() {
 #if defined(_WIN32)
     return GameDir.substr(0, GameDir.find_last_of('\\'));
 #elif defined(__linux__)
     return GameDir.substr(0, GameDir.find_last_of('/'));
+#elif defined(__APPLE__)
+    return GameDir;
 #endif
 }
 #ifdef _WIN32
@@ -158,6 +176,31 @@ void FileList(std::vector<std::string>& a, const std::string& Path) {
         }
     }
 }
+
+#if defined(__APPLE__)
+std::map<std::string, std::string> GetDriveMappings(const std::string& bottlePath) {
+    std::map<std::string, std::string> driveMappings;
+    std::string dosDevicesPath = bottlePath + "/dosdevices/";
+
+    if (std::filesystem::exists(dosDevicesPath)) {
+        for (const auto& entry : std::filesystem::directory_iterator(dosDevicesPath)) {
+            if (entry.is_symlink()) {
+                std::string driveName = Utils::ToLower(entry.path().filename().string());
+                driveName.erase(std::remove(driveName.begin(), driveName.end(), ':'), driveName.end());
+                std::string macPath = std::filesystem::read_symlink(entry.path()).string();
+                if (!std::filesystem::path(macPath).is_absolute()) {
+                    macPath = dosDevicesPath + macPath;
+                }
+                driveMappings[driveName] = macPath;
+            }
+        }
+    } else {
+        error("Failed to find dosdevices directory for bottle '" + bottlePath + "'");
+    }
+    return driveMappings;
+}
+#endif
+
 void LegitimacyCheck() {
 #if defined(_WIN32)
     std::string Result;
@@ -191,12 +234,76 @@ void LegitimacyCheck() {
             break;
         }
     }
+
+#elif defined(__APPLE__)
+    struct passwd* pw = getpwuid(getuid());
+    std::string homeDir = pw->pw_dir;
+    std::string crossoverBottlesPath = homeDir + "/Library/Application Support/CrossOver/Bottles/";
+    info("Crossover bottles path: " + crossoverBottlesPath);
+
+    for (const auto& bottle : std::filesystem::directory_iterator(crossoverBottlesPath)) {
+        if (!bottle.is_directory()) continue;
+
+        info("Checking bottle: " + bottle.path().filename().string());
+        auto driveMappings = GetDriveMappings(bottle.path().string());
+
+        std::string libraryFilePath = bottle.path().string() + "/drive_c/Program Files (x86)/Steam/config/libraryfolders.vdf";
+        std::ifstream libraryFile(libraryFilePath);
+        if (!libraryFile.is_open()) {
+            error("Failed to open libraryfolders.vdf in bottle '" + bottle.path().filename().string() + "'");
+            continue;
+        }
+        
+        auto root = tyti::vdf::read(libraryFile);
+        libraryFile.close();
+
+        for (const auto& [key, folderInfo] : root.childs) {
+            auto pathIter = folderInfo->attribs.find("path");
+            if (pathIter == folderInfo->attribs.end()) continue;
+
+            std::string path = pathIter->second;
+            info("Found Steam library path: " + path);
+
+            std::string driveLetter = Utils::ToLower(path.substr(0, path.find(":")));
+            driveLetter.erase(std::remove(driveLetter.begin(), driveLetter.end(), ':'), driveLetter.end());
+
+            if (driveMappings.find(driveLetter) == driveMappings.end()) {
+                warn("Drive letter " + driveLetter + " not found in mappings.");
+                continue;
+            }
+
+            std::string basePath = driveMappings[driveLetter];
+            if (!basePath.empty() && basePath.back() == '/') {
+                basePath.pop_back();
+            }
+
+            std::string additionalPath = path.substr(2);
+            std::replace(additionalPath.begin(), additionalPath.end(), '\\', '/');
+            if (!additionalPath.empty() && additionalPath.front() == '/') {
+                additionalPath.erase(0, 1);
+            }
+
+            std::filesystem::path beamngPath = std::filesystem::path(basePath) / additionalPath / "steamapps/common/BeamNG.drive";
+            info("Checking for BeamNG.drive in: " + beamngPath.string());
+
+            if (std::filesystem::exists(beamngPath)) {
+                info("BeamNG.drive found in bottle '" + bottle.path().filename().string() + "' at: " + beamngPath.string());
+                GameDir = beamngPath.string();
+                BottlePath = bottle.path().string();
+                info("GameDir: " + GameDir);
+                info("BottlePath: " + BottlePath);
+                return;
+            }
+        }
+    }
+    error("Failed to find BeamNG.drive installation in any CrossOver bottle. Make sure BeamNG.drive is installed in a CrossOver bottle.");
+    exit(1);
 #endif
 }
 std::string CheckVer(const std::string& dir) {
 #if defined(_WIN32)
     std::string temp, Path = dir + "\\integrity.json";
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
     std::string temp, Path = dir + "/integrity.json";
 #endif
     std::ifstream f(Path.c_str(), std::ios::binary);
