@@ -156,13 +156,27 @@ void StartGame(std::string Dir) {
         error("Failed to detect SharedSupport folder, please make sure CrossOver is installed.");
         exit(1);
     } else {
-        sharedPath.pop_back(); // Remove newline character from the path
+        std::istringstream stream(sharedPath);
+        std::string line;
+        std::vector<std::string> paths;
+        while (std::getline(stream, line)) {
+            if (line.find("CrossOver.app") != std::string::npos) {
+                paths.push_back(line);
+            }
+        }
+        if (paths.empty()) {
+            error("No valid CrossOver.app found.");
+            exit(1);
+        } else if (paths.size() > 1) {
+            debug("Multiple CrossOver.app found, using the first one.");
+        }
+        sharedPath = paths[0];
         sharedPath += "/";
     }
-    
+
     std::string wineExecutable = sharedPath + "Contents/SharedSupport/CrossOver/CrossOver-Hosted Application/wine";
     std::string bottleName = GetBottleName();
-    
+
     std::vector<const char*> argv;
     argv.push_back(wineExecutable.c_str());
     argv.push_back("--bottle");
