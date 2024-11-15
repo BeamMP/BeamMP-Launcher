@@ -24,6 +24,7 @@
 #include <filesystem>
 #include <thread>
 #include "Options.h"
+#include "Utils.h"
 
 unsigned long GamePID = 0;
 #if defined(_WIN32)
@@ -75,8 +76,8 @@ std::string GetGamePath() {
 }
 #elif defined(__APPLE__)
 std::string GetGamePath() {
-    std::string BotlePath = GetBottlePath();
-    std::string Path = BotlePath + "/drive_c/users/crossover/AppData/Local/BeamNG.drive/";
+    std::string BottlePath = GetBottlePath();
+    std::string Path = BottlePath + "/drive_c/users/crossover/AppData/Local/BeamNG.drive/";
     std::string Ver = CheckVer(GetGameDir());
     Ver = Ver.substr(0, Ver.find('.', Ver.find('.') + 1));
     Path += Ver + "/";
@@ -148,10 +149,34 @@ void StartGame(std::string Dir) {
     int status;
     
     std::string executable = Dir + "/Bin64/BeamNG.drive.x64.exe";
-    
-    std::string wineExecutable = "/Applications/CrossOver.app/Contents/SharedSupport/CrossOver/bin/wine";
+    std::pair<std::string, int> sharedCmd = Utils::runCommand("mdfind kMDItemCFBundleIdentifier = 'com.codeweavers.CrossOver'");
+    std::string sharedPath = sharedCmd.first;
+    int statusCode = sharedCmd.second;
+    if (statusCode != 0) {
+        error("Failed to detect SharedSupport folder, please make sure CrossOver is installed.");
+        exit(1);
+    } else {
+        std::istringstream stream(sharedPath);
+        std::string line;
+        std::vector<std::string> paths;
+        while (std::getline(stream, line)) {
+            if (line.find("CrossOver.app") != std::string::npos) {
+                paths.push_back(line);
+            }
+        }
+        if (paths.empty()) {
+            error("No valid CrossOver.app found.");
+            exit(1);
+        } else if (paths.size() > 1) {
+            debug("Multiple CrossOver.app found, using the first one.");
+        }
+        sharedPath = paths[0];
+        sharedPath += "/";
+    }
+
+    std::string wineExecutable = sharedPath + "Contents/SharedSupport/CrossOver/CrossOver-Hosted Application/wine";
     std::string bottleName = GetBottleName();
-    
+
     std::vector<const char*> argv;
     argv.push_back(wineExecutable.c_str());
     argv.push_back("--bottle");

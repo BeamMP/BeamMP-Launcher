@@ -24,4 +24,20 @@ namespace Utils {
         std::transform(str.begin(), str.end(), lowerStr.begin(), ::tolower);
         return lowerStr;
     }
+
+    #if defined(__APPLE__)
+        inline std::pair<std::string, int> runCommand(const char* cmd) {
+            std::array<char, 128> buffer;
+            std::string result;
+            std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
+            if (!pipe) {
+                throw std::runtime_error("failed to run popen()");
+            }
+            while (fgets(buffer.data(), static_cast<int>(buffer.size()), pipe.get()) != nullptr) {
+                result += buffer.data();
+            }    
+            int returnCode = pclose(pipe.release());
+            return { result, returnCode };
+        }
+    #endif
 }
