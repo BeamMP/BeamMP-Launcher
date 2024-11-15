@@ -149,18 +149,7 @@ void StartGame(std::string Dir) {
     int status;
     
     std::string executable = Dir + "/Bin64/BeamNG.drive.x64.exe";
-    std::pair<std::string, int> sharedCmd = Utils::runCommand("mdfind kMDItemCFBundleIdentifier = 'com.codeweavers.CrossOver'");
-    std::string sharedPath = sharedCmd.first;
-    int statusCode = sharedCmd.second;
-    if (statusCode != 0) {
-        error("Failed to detect SharedSupport folder, please make sure CrossOver is installed.");
-        exit(1);
-    } else {
-        sharedPath.pop_back(); // Remove newline character from the path
-        sharedPath += "/";
-    }
-    
-    std::string wineExecutable = sharedPath + "Contents/SharedSupport/CrossOver/CrossOver-Hosted Application/wine";
+    std::string wineExecutable = "/Applications/CrossOver.app/Contents/SharedSupport/CrossOver/bin/wine";
     std::string bottleName = GetBottleName();
     
     std::vector<const char*> argv;
