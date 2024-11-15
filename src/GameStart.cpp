@@ -24,6 +24,7 @@
 #include <filesystem>
 #include <thread>
 #include "Options.h"
+#include "Utils.h"
 
 unsigned long GamePID = 0;
 #if defined(_WIN32)
@@ -75,8 +76,8 @@ std::string GetGamePath() {
 }
 #elif defined(__APPLE__)
 std::string GetGamePath() {
-    std::string BotlePath = GetBottlePath();
-    std::string Path = BotlePath + "/drive_c/users/crossover/AppData/Local/BeamNG.drive/";
+    std::string BottlePath = GetBottlePath();
+    std::string Path = BottlePath + "/drive_c/users/crossover/AppData/Local/BeamNG.drive/";
     std::string Ver = CheckVer(GetGameDir());
     Ver = Ver.substr(0, Ver.find('.', Ver.find('.') + 1));
     Path += Ver + "/";
@@ -148,7 +149,6 @@ void StartGame(std::string Dir) {
     int status;
     
     std::string executable = Dir + "/Bin64/BeamNG.drive.x64.exe";
-    
     std::string wineExecutable = "/Applications/CrossOver.app/Contents/SharedSupport/CrossOver/bin/wine";
     std::string bottleName = GetBottleName();
     

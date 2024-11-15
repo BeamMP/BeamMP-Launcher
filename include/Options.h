@@ -15,6 +15,7 @@ struct Options {
     bool no_launch = false;
     const char **game_arguments = nullptr;
     int game_arguments_length = 0;
+    std::string bottle;
     const char** argv = nullptr;
     int argc = 0;
 };
