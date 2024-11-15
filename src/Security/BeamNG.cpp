@@ -355,7 +355,7 @@ void LegitimacyCheck() {
             std::string driveLetter = Utils::ToLower(path.substr(0, path.find(":")));
             driveLetter.erase(std::remove(driveLetter.begin(), driveLetter.end(), ':'), driveLetter.end());
 
-            if (driveMappings.find(driveLetter) == driveMappings.end()) {
+            if (!driveMappings.contains(driveLetter)) {
                 warn("Drive letter " + driveLetter + " not found in mappings.");
                 continue;
             }
