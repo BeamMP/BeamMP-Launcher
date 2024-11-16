@@ -149,6 +149,10 @@ void StartGame(std::string Dir) {
     int status;
     
     std::string executable = Dir + "/Bin64/BeamNG.drive.x64.exe";
+    if (!std::filesystem::exists(executable)) {
+        error("The executable BeamNG.drive.x64.exe doesn't exist in folder: " + Dir + "/Bin64/");
+        exit(1);
+    }
     std::pair<std::string, int> sharedCmd = Utils::runCommand("mdfind kMDItemCFBundleIdentifier = 'com.codeweavers.CrossOver'");
     std::string sharedPath = sharedCmd.first;
     int statusCode = sharedCmd.second;
@@ -174,13 +178,12 @@ void StartGame(std::string Dir) {
         sharedPath += "/";
     }
 
-    std::string wineExecutable = sharedPath + "Contents/SharedSupport/CrossOver/CrossOver-Hosted Application/wine";
-    std::string bottleName = GetBottleName();
-
+    std::string wineExecutable = sharedPath + "Contents/SharedSupport/CrossOver/bin/wine";
+    std::string bottlePath = GetBottlePath();
     std::vector<const char*> argv;
     argv.push_back(wineExecutable.c_str());
     argv.push_back("--bottle");
-    argv.push_back(bottleName.c_str());
+    argv.push_back(bottlePath.c_str());
     argv.push_back(executable.c_str());
     
     for (int i = 0; i < options.game_arguments_length; i++) {
