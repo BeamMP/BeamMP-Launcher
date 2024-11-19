@@ -15,7 +15,6 @@
 #include <unistd.h>
 #include <vector>
 #endif
-#if defined(__APPLE__)
 #include "Utils.h"
 #include "Options.h"
 #include <cstdio>
@@ -24,7 +23,6 @@
 #include <stdexcept>
 #include <string>
 #include <array>
-#endif
 #include <algorithm>
 #include "Logger.h"
 #include <fstream>
