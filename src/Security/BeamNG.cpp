@@ -309,7 +309,7 @@ void LegitimacyCheck() {
                 }
 
                 std::filesystem::path beamngPath = std::filesystem::path(basePath) / additionalPath / "steamapps/common/BeamNG.drive";
-                info("Checking for BeamNG.drive in: " + beamngPath.string());
+                debug("Checking for BeamNG.drive in: " + beamngPath.string());
 
                 if (std::filesystem::exists(beamngPath)) {
                     info("BeamNG.drive found in bottle '" + bottleFolder.filename().string() + "' at: " + beamngPath.string());
