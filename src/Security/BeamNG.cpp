@@ -315,8 +315,7 @@ void LegitimacyCheck() {
                     info("BeamNG.drive found in bottle '" + bottleFolder.filename().string() + "' at: " + beamngPath.string());
                     GameDir = beamngPath.string();
                     BottlePath = bottleFolder.string();
-                    info("GameDir: " + GameDir);
-                    info("BottlePath: " + BottlePath);
+                    debug("CrossOver bottle path where BeamNG.drive was found: " + BottlePath);
                     return;
                 }
             }
