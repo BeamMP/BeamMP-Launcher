@@ -348,7 +348,7 @@ void LegitimacyCheck() {
                 continue;
 
             std::string path = pathIter->second;
-            info("Found Steam library path: " + path);
+            debug("Found Steam library path: " + path);
 
             std::string driveLetter = Utils::ToLower(path.substr(0, path.find(":")));
             driveLetter.erase(std::remove(driveLetter.begin(), driveLetter.end(), ':'), driveLetter.end());
