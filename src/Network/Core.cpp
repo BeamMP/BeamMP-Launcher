@@ -372,7 +372,7 @@ int Handle(EXCEPTION_POINTERS* ep) {
 
 [[noreturn]] void CoreNetwork() {
     while (true) {
-#if defined(_WIN32)
+#if defined(_WIN32) && !defined(__MINGW32__)
         __try {
             CoreMain();
         } __except (Handle(GetExceptionInformation())) { }
@@ -384,6 +384,8 @@ int Handle(EXCEPTION_POINTERS* ep) {
         } catch (...) {
             error("(Core) Unknown exception");
         }
+#else
+        CoreMain();
 #endif
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
