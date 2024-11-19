@@ -252,7 +252,7 @@ void LegitimacyCheck() {
     if (statusCode != 0) {
         std::filesystem::path bottlesFolder(homeDir + "/Library/Application Support/CrossOver/Bottles");
         if (std::filesystem::exists(bottlesFolder)) {
-            info("Using the default bottles path");
+            debug("Using the default Crossover bottles path");
             crossoverBottlesPath = homeDir + "/Library/Application Support/CrossOver/Bottles";
         } else {
             error("Failed to detect Crossover, please make sure you have it installed.");
@@ -263,7 +263,7 @@ void LegitimacyCheck() {
         crossoverBottlesPath += "/";
     }
 
-    info("Crossover bottles path: " + crossoverBottlesPath);
+    debug("Crossover bottles path: " + crossoverBottlesPath);
 
     if (!empty(options.bottle)) {
         std::filesystem::path bottleFolder(crossoverBottlesPath + options.bottle);
