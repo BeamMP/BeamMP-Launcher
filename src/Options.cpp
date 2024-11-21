@@ -81,8 +81,20 @@ void InitOptions(int argc, const char *argv[], Options &options) {
             options.no_launch = true;
             options.no_update = true;
         #if defined(__APPLE__)
-        } else if (argument == "--bottle") {
-            options.bottle = argv[i + 1];
+        } else if (argument == "--bottle" || argument == "--bottle-path") {
+            // if (i + 1 >= argc) {
+            //     std::string error_message =
+            //         "No bottle specified, resorting to default";
+            //     error(error_message);
+            //     i++;
+            //     continue;
+            // }
+
+            if (argument == "--bottle") {
+                options.bottle = argv[i + 1];
+            } else {
+                options.bottle_path = argv[i + 1];
+            }
             i++;
         #endif
         } else if (argument == "--" || argument == "--game") {
@@ -101,7 +113,8 @@ void InitOptions(int argc, const char *argv[], Options &options) {
                 "\t--no-launch          Skip launching the game (you must launch the game manually)\n"
                 "\t--dev                Developer mode, same as --verbose --no-download --no-launch --no-update\n"
                 #if defined(__APPLE__)
-                "\t--bottle <bottle>    Name of the Bottle where the game is located in\n"
+                "\t--bottle <bottle>        Name of the Bottle where the game is located in\n"
+                "\t--bottle-path <path>     Path to the Bottle where the game is located in\n"
                 #endif
                 "\t--game <args...>     Passes ALL following arguments to the game, see also `--`\n"
                 << std::flush;

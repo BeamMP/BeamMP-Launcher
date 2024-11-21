@@ -17,6 +17,7 @@ struct Options {
     int game_arguments_length = 0;
 #if defined(__APPLE__)
     std::string bottle;
+    std::string bottle_path;
 #endif
     const char** argv = nullptr;
     int argc = 0;
