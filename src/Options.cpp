@@ -82,14 +82,6 @@ void InitOptions(int argc, const char *argv[], Options &options) {
             options.no_update = true;
         #if defined(__APPLE__)
         } else if (argument == "--bottle" || argument == "--bottle-path") {
-            // if (i + 1 >= argc) {
-            //     std::string error_message =
-            //         "No bottle specified, resorting to default";
-            //     error(error_message);
-            //     i++;
-            //     continue;
-            // }
-
             if (argument == "--bottle") {
                 options.bottle = argv[i + 1];
             } else {
