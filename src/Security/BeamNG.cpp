@@ -205,7 +205,7 @@ std::map<std::string, std::string> GetDriveMappings(const std::string& bottlePat
 }
 
 bool CheckForGame(const std::string& libraryPath, const std::map<std::string, std::string>& driveMappings) {
-    // Convertir le chemin Windows en style Unix
+    //Convert the Windows path to Unix path
     std::string driveLetter = Utils::ToLower(libraryPath.substr(0, libraryPath.find(":")));
     driveLetter.erase(std::remove(driveLetter.begin(), driveLetter.end(), ':'), driveLetter.end());
 
@@ -216,7 +216,7 @@ bool CheckForGame(const std::string& libraryPath, const std::map<std::string, st
 
     std::string basePath = driveMappings.at(driveLetter);
 
-    // Corriger les slashs
+    // Correct the path separators
     std::replace(basePath.begin(), basePath.end(), '\\', '/');
 
     std::string cleanLibraryPath = libraryPath.substr(2);
