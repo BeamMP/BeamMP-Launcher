@@ -205,7 +205,6 @@ std::map<char, std::string> GetDriveMappings(const std::string& bottlePath) {
 }
 
 bool CheckForGame(const std::string& libraryPath, const std::map<char, std::string>& driveMappings) {
-    //Convert the Windows path to Unix path
     char driveLetter = std::tolower(libraryPath[0]);
 
     if (!driveMappings.contains(driveLetter)) {
