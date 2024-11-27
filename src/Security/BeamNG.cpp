@@ -190,7 +190,7 @@ std::map<std::string, std::string> GetDriveMappings(const std::string& bottlePat
         for (const auto& entry : std::filesystem::directory_iterator(dosDevicesPath)) {
             if (entry.is_symlink()) {
                 std::string driveName = Utils::ToLower(entry.path().filename().string());
-                driveName.erase(std::remove(driveName.begin(), driveName.end(), ':'), driveName.end());
+                driveName = driveName.substr(0, 1);
                 std::string macPath = std::filesystem::read_symlink(entry.path()).string();
                 if (!std::filesystem::path(macPath).is_absolute()) {
                     macPath = dosDevicesPath + macPath;
