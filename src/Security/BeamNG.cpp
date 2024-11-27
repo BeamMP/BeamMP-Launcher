@@ -322,7 +322,7 @@ void LegitimacyCheck() {
 
         debug("Crossover bottles path: " + crossoverBottlesPath);
 
-        if (empty(options.bottle)) {
+        if (options.bottle.empty()) {
             for (const auto& bottle : fs::directory_iterator(crossoverBottlesPath)) {
                 if (bottle.is_directory()) {
                     ProcessBottle(bottle.path());
