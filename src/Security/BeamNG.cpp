@@ -182,20 +182,20 @@ std::string GetBottleName() {
     return bottlePath.filename().string();
 }
 
-std::map<std::string, std::string> GetDriveMappings(const std::string& bottlePath) {
-    std::map<std::string, std::string> driveMappings;
+std::map<char, std::string> GetDriveMappings(const std::string& bottlePath) {
+    std::map<char, std::string> driveMappings;
     std::string dosDevicesPath = bottlePath + "/dosdevices/";
 
     if (std::filesystem::exists(dosDevicesPath)) {
         for (const auto& entry : std::filesystem::directory_iterator(dosDevicesPath)) {
             if (entry.is_symlink()) {
                 std::string driveName = Utils::ToLower(entry.path().filename().string());
-                driveName = driveName.substr(0, 1);
+                char driveLetter = driveName[0];
                 std::string macPath = std::filesystem::read_symlink(entry.path()).string();
                 if (!std::filesystem::path(macPath).is_absolute()) {
                     macPath = dosDevicesPath + macPath;
                 }
-                driveMappings[driveName] = macPath;
+                driveMappings[driveLetter] = macPath;
             }
         }
     } else {
@@ -204,19 +204,17 @@ std::map<std::string, std::string> GetDriveMappings(const std::string& bottlePat
     return driveMappings;
 }
 
-bool CheckForGame(const std::string& libraryPath, const std::map<std::string, std::string>& driveMappings) {
+bool CheckForGame(const std::string& libraryPath, const std::map<char, std::string>& driveMappings) {
     //Convert the Windows path to Unix path
-    char driveLetterChar = std::tolower(libraryPath[0]);
-    std::string driveLetter(1, driveLetterChar);
+    char driveLetter = std::tolower(libraryPath[0]);
 
     if (!driveMappings.contains(driveLetter)) {
-        warn("Drive letter " + driveLetter + " not found in mappings.");
+        warn(std::string("Drive letter ") + driveLetter + " not found in mappings.");
         return false;
     }
 
     std::filesystem::path basePath = driveMappings.at(driveLetter);
     debug("Base path: " + basePath.string());
-
 
     std::filesystem::path cleanLibraryPath = std::filesystem::path(libraryPath.substr(2)).make_preferred();
     std::string cleanPathStr = cleanLibraryPath.string();
