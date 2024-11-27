@@ -215,10 +215,10 @@ bool CheckForGame(const std::string& libraryPath, const std::map<char, std::stri
     std::filesystem::path basePath = driveMappings.at(driveLetter);
     debug("Base path: " + basePath.string());
 
-    std::filesystem::path cleanLibraryPath = std::filesystem::path(libraryPath.substr(2)).make_preferred();
-    std::string cleanPathStr = cleanLibraryPath.string();
+    std::string cleanPathStr = libraryPath.substr(2);
     std::replace(cleanPathStr.begin(), cleanPathStr.end(), '\\', '/');
-    cleanLibraryPath = std::filesystem::path(cleanPathStr);
+    std::filesystem::path cleanLibraryPath = std::filesystem::path(cleanPathStr);
+
     if (!cleanPathStr.empty() ){
         if ( cleanPathStr[0] == '/') {
             cleanPathStr.erase(0, 1);
