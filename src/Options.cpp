@@ -81,17 +81,14 @@ void InitOptions(int argc, const char *argv[], Options &options) {
             options.no_launch = true;
             options.no_update = true;
         #if defined(__APPLE__)
-        if ((argument == "--bottle" && !options.bottle_path.empty()) ||
+        } else if ((argument == "--bottle" && !options.bottle_path.empty()) ||
             (argument == "--bottle-path" && !options.bottle.empty())) {
             error("--bottle and --bottle-path cannot be used at the same time.");
             exit(1);
-        }
-        if (argument == "--bottle") {
+        } else if (argument == "--bottle") {
             options.bottle = argv[i + 1];
-        } else {
+        } else if (argument == "--bottle-path") {
             options.bottle_path = argv[i + 1];
-        }
-        i++;
         #endif
         } else if (argument == "--" || argument == "--game") {
             options.game_arguments = &argv[i + 1];

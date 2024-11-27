@@ -214,16 +214,22 @@ bool CheckForGame(const std::string& libraryPath, const std::map<std::string, st
         return false;
     }
 
-    std::string basePath = driveMappings.at(driveLetter);
+    std::filesystem::path basePath = driveMappings.at(driveLetter);
+    debug("Base path: " + basePath.string());
 
-    // Correct the path separators
-    std::replace(basePath.begin(), basePath.end(), '\\', '/');
 
-    std::string cleanLibraryPath = libraryPath.substr(2);
-    std::replace(cleanLibraryPath.begin(), cleanLibraryPath.end(), '\\', '/');
-    debug("Cleaned library path: " + cleanLibraryPath);
+    std::filesystem::path cleanLibraryPath = std::filesystem::path(libraryPath.substr(2)).make_preferred();
+    std::string cleanPathStr = cleanLibraryPath.string();
+    std::replace(cleanPathStr.begin(), cleanPathStr.end(), '\\', '/');
+    cleanLibraryPath = std::filesystem::path(cleanPathStr);
+    if (!cleanPathStr.empty() && cleanPathStr[0] == '/') {
+        cleanPathStr.erase(0, 1);
+    }
+    cleanLibraryPath = std::filesystem::path(cleanPathStr);
 
-    fs::path beamngPath = basePath + cleanLibraryPath + "/steamapps/common/BeamNG.drive";
+    debug("Cleaned library path: " + cleanLibraryPath.string());
+
+    fs::path beamngPath = basePath / cleanLibraryPath / "steamapps/common/BeamNG.drive";
 
     // Normalise the path
     beamngPath = beamngPath.lexically_normal();
@@ -354,7 +360,7 @@ void LegitimacyCheck() {
         }
     }
 
-    error("Failed to find BeamNG.drive installation in any CrossOver bottle. Make sure BeamNG.drive is installed in a CrossOver bottle, or set it with the --bottle or bottle-path argument.");
+    error("Failed to find BeamNG.drive installation in any CrossOver bottle. Make sure BeamNG.drive is installed in a CrossOver bottle, or set it with the --bottle or --bottle-path argument.");
     exit(1);
 
 #endif
