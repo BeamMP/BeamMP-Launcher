@@ -376,7 +376,7 @@ int Handle(EXCEPTION_POINTERS* ep) {
         __try {
             CoreMain();
         } __except (Handle(GetExceptionInformation())) { }
-#elif defined(__linux__) || defined(__APPLE__)
+#else
         try {
             CoreMain();
         } catch (const std::exception& e) {
