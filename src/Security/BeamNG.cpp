@@ -223,14 +223,10 @@ bool CheckForGame(const std::string& libraryPath, const std::map<std::string, st
     std::replace(cleanLibraryPath.begin(), cleanLibraryPath.end(), '\\', '/');
     debug("Cleaned library path: " + cleanLibraryPath);
 
-    // Construire le chemin complet
-    std::string fullPath = basePath + cleanLibraryPath + "/steamapps/common/BeamNG.drive";
-    debug("Checking for BeamNG.drive at: " + fullPath);
+    fs::path beamngPath = basePath + cleanLibraryPath + "/steamapps/common/BeamNG.drive";
 
-
-    // Normaliser le chemin complet
-    fs::path beamngPath = fullPath;
-    beamngPath = beamngPath.lexically_normal(); // Normalise les `../` dans le chemin
+    // Normalise the path
+    beamngPath = beamngPath.lexically_normal();
 
     debug("Checking for BeamNG.drive at: " + beamngPath.string());
 
