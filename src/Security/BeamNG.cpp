@@ -206,8 +206,8 @@ std::map<std::string, std::string> GetDriveMappings(const std::string& bottlePat
 
 bool CheckForGame(const std::string& libraryPath, const std::map<std::string, std::string>& driveMappings) {
     //Convert the Windows path to Unix path
-    std::string driveLetter = Utils::ToLower(libraryPath.substr(0, libraryPath.find(":")));
-    driveLetter.erase(std::remove(driveLetter.begin(), driveLetter.end(), ':'), driveLetter.end());
+    char driveLetterChar = std::tolower(libraryPath[0]);
+    std::string driveLetter(1, driveLetterChar);
 
     if (!driveMappings.contains(driveLetter)) {
         warn("Drive letter " + driveLetter + " not found in mappings.");
