@@ -107,6 +107,7 @@ void InitOptions(int argc, const char *argv[], Options &options) {
                 #if defined(__APPLE__)
                 "\t--bottle <bottle>        Name of the Bottle where the game is located in\n"
                 "\t--bottle-path <path>     Path to the Bottle where the game is located in\n"
+                "\tWARNING: The bottle-path and bottle options cannot be used at the same time\n"
                 #endif
                 "\t--game <args...>     Passes ALL following arguments to the game, see also `--`\n"
                 << std::flush;
