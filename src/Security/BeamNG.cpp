@@ -228,7 +228,6 @@ bool CheckForGame(const std::string& libraryPath, const std::map<char, std::stri
 
     fs::path beamngPath = basePath / cleanLibraryPath / "steamapps/common/BeamNG.drive";
 
-    // Normalise the path
     beamngPath = beamngPath.lexically_normal();
 
     debug("Checking for BeamNG.drive at: " + beamngPath.string());
