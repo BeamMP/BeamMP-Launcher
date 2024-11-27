@@ -303,7 +303,7 @@ void LegitimacyCheck() {
     }
 
 #elif defined(__APPLE__)
-    if (empty(options.bottle_path)) {
+    if (options.bottle_path.empty()) {
         const char* homeDir = getpwuid(getuid())->pw_dir;
         std::string crossoverBottlesPath;
 
