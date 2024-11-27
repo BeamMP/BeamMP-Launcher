@@ -372,7 +372,7 @@ int Handle(EXCEPTION_POINTERS* ep) {
 
 [[noreturn]] void CoreNetwork() {
     while (true) {
-#if defined(_WIN32) && !defined(__MINGW32__)
+#if defined(_WIN32)
         __try {
             CoreMain();
         } __except (Handle(GetExceptionInformation())) { }
