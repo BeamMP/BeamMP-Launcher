@@ -217,17 +217,16 @@ bool CheckForGame(const std::string& libraryPath, const std::map<char, std::stri
 
     std::string cleanPathStr = libraryPath.substr(2);
     std::replace(cleanPathStr.begin(), cleanPathStr.end(), '\\', '/');
-    std::filesystem::path cleanLibraryPath = std::filesystem::path(cleanPathStr);
-
     if (!cleanPathStr.empty() ){
-        if ( cleanPathStr[0] == '/') {
+        if (cleanPathStr[0] == '/') {
             cleanPathStr.erase(0, 1);
         }
         if (cleanPathStr.back() == '/') {
             cleanPathStr.pop_back();
         }
     }
-    cleanLibraryPath = std::filesystem::path(cleanPathStr);
+    std::filesystem::path cleanLibraryPath = std::filesystem::path(cleanPathStr);
+
 
     debug("Cleaned library path: " + cleanLibraryPath.string());
 
