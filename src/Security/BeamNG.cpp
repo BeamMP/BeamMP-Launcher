@@ -182,7 +182,24 @@ void LegitimacyCheck() {
     struct passwd* pw = getpwuid(getuid());
     std::string homeDir = pw->pw_dir;
     // Right now only steam is supported
-    std::ifstream libraryFolders(homeDir + "/.steam/root/steamapps/libraryfolders.vdf");
+    std::vector<std::string> steamappsCommonPaths = {
+        homeDir + "/.steam/root/steamapps/", // default
+        homeDir + "/.var/app/com.valvesoftware.Steam/.steam/root/steamapps/", // flatpak
+    };
+    std::string libraryFoldersPath;
+    bool libraryFoldersFound = false;
+    for (const std::string& path : steamappsCommonPaths) {
+        std::string fullPath = path + "/libraryfolders.vdf";
+        if (std::filesystem::exists(fullPath)) {
+            libraryFoldersPath = fullPath;
+            libraryFoldersFound = true;
+            break;
+        }
+    }
+    if (!libraryFoldersFound) {
+        throw std::runtime_error("Failed to find libraryfolders.vdf");
+    }
+    std::ifstream libraryFolders(libraryFoldersPath);
     auto root = tyti::vdf::read(libraryFolders);
 
     for (auto folderInfo : root.childs) {
@@ -190,6 +207,13 @@ void LegitimacyCheck() {
             GameDir = folderInfo.second->attribs["path"] + "/steamapps/common/BeamNG.drive/";
             break;
         }
+    }
+    if (GameDir.empty()) {
+        // Check if user is using Snap, which can't be located from libraryFolders...
+        const std::string snapPath = 
+            homeDir + "/snap/steam/common/.local/share/Steam/steamapps/common/BeamNG.drive/";
+
+        if (std::filesystem::exists(snapPath)) GameDir = snapPath;
     }
 #endif
 }
