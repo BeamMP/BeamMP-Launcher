@@ -182,7 +182,24 @@ void LegitimacyCheck() {
     struct passwd* pw = getpwuid(getuid());
     std::string homeDir = pw->pw_dir;
     // Right now only steam is supported
-    std::ifstream libraryFolders(homeDir + "/.steam/root/steamapps/libraryfolders.vdf");
+    std::vector<std::string> steamappsCommonPaths = {
+        "/.steam/root/steamapps/", // default
+        "/.var/app/com.valvesoftware.Steam/.steam/root/steamapps/", // flatpak
+        "/snap/steam/common/.local/share/Steam/steamapps/" //snap
+    };
+
+    std::string libraryFoldersPath;
+    bool libraryFoldersFound = false;
+    for (const std::string& path : steamappsCommonPaths) {
+        std::string fullPath = homeDir + path + "/libraryfolders.vdf";
+
+        if (std::filesystem::exists(fullPath)) {
+            libraryFoldersPath = fullPath;
+            libraryFoldersFound = true;
+            break;
+        }
+    }
+    std::ifstream libraryFolders(libraryFoldersPath);
     auto root = tyti::vdf::read(libraryFolders);
 
     for (auto folderInfo : root.childs) {
