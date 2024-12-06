@@ -31,7 +31,7 @@ std::string GetGamePath() {
     static std::string Path;
     if (!Path.empty())
         return Path;
-    if (options.user_path) {
+    if (options.user_path && std::filesystem::exists(options.user_path)) {
         Path = options.user_path;
     } else {
         HKEY hKey;
