@@ -183,9 +183,11 @@ void LegitimacyCheck() {
     std::string homeDir = pw->pw_dir;
     // Right now only steam is supported
     std::vector<std::string> steamappsCommonPaths = {
-        homeDir + "/.steam/root/steamapps/", // default
-        homeDir + "/.var/app/com.valvesoftware.Steam/.steam/root/steamapps/", // flatpak
+        "/.steam/root/steamapps/", // default
+        "/.var/app/com.valvesoftware.Steam/.steam/root/steamapps/", // flatpak
+        "/snap/steam/common/.local/share/Steam/steamapps/" //snap
     };
+
     std::string libraryFoldersPath;
     bool libraryFoldersFound = false;
     for (const std::string& path : steamappsCommonPaths) {
