@@ -196,9 +196,6 @@ void LegitimacyCheck() {
             break;
         }
     }
-    if (!libraryFoldersFound) {
-        throw std::runtime_error("Failed to find libraryfolders.vdf");
-    }
     std::ifstream libraryFolders(libraryFoldersPath);
     auto root = tyti::vdf::read(libraryFolders);
 
