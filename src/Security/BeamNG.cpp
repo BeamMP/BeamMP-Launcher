@@ -191,7 +191,8 @@ void LegitimacyCheck() {
     std::string libraryFoldersPath;
     bool libraryFoldersFound = false;
     for (const std::string& path : steamappsCommonPaths) {
-        std::string fullPath = path + "/libraryfolders.vdf";
+        std::string fullPath = homeDir + path + "/libraryfolders.vdf";
+
         if (std::filesystem::exists(fullPath)) {
             libraryFoldersPath = fullPath;
             libraryFoldersFound = true;
