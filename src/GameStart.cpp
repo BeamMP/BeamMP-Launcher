@@ -23,45 +23,66 @@
 #include <filesystem>
 #include <thread>
 #include "Options.h"
+#include <fstream>
 
 unsigned long GamePID = 0;
 #if defined(_WIN32)
 std::string QueryKey(HKEY hKey, int ID);
 std::string GetGamePath() {
-    static std::string Path;
+    static std::filesystem::path Path;
     if (!Path.empty())
-        return Path;
-    if (options.user_path && std::filesystem::exists(options.user_path)) {
-        Path = options.user_path;
-    } else {
-        HKEY hKey;
-        LPCTSTR sk = "Software\\BeamNG\\BeamNG.drive";
-        LONG openRes = RegOpenKeyEx(HKEY_CURRENT_USER, sk, 0, KEY_ALL_ACCESS, &hKey);
-        if (openRes != ERROR_SUCCESS) {
-            fatal("Please launch the game at least once!");
-        }
-        Path = QueryKey(hKey, 4);
+        return Path.string();
+
+    if (options.user_path) {
+        if (std::filesystem::exists(options.user_path)) {
+            Path = options.user_path;
+            debug("Using custom user folder path: " + Path.string());
+        } else
+            warn("Invalid or non-existent path (" + std::string(options.user_path) + ") specified using --user-path, skipping");
+    }
+
+    if (std::string startupIniPath = GetGameDir() + "\\startup.ini"; std::filesystem::exists(startupIniPath)) {
+
+        std::ifstream startupIni(startupIniPath);
+        std::string line;
+        while (std::getline(startupIni, line))
+            if (line.find("UserPath = ") == 0) {
+                std::string userPath = line.substr(11);
+                if (!userPath.empty())
+                    if (std::filesystem::exists(userPath)) {
+                        Path = userPath;
+                        debug("Using custom user folder path from startup.ini: " + Path.string());
+                    } else
+                        warn("Found custom user folder path ("+ userPath + ") in startup.ini but it doesn't exist, skipping");
+
+            }
 
         if (Path.empty()) {
-            Path = "";
-            char appDataPath[MAX_PATH];
-            HRESULT result = SHGetFolderPathA(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, appDataPath);
-            if (SUCCEEDED(result)) {
-                Path = appDataPath;
+            HKEY hKey;
+            LPCTSTR sk = "Software\\BeamNG\\BeamNG.drive";
+            LONG openRes = RegOpenKeyEx(HKEY_CURRENT_USER, sk, 0, KEY_ALL_ACCESS, &hKey);
+            if (openRes != ERROR_SUCCESS) {
+                fatal("Please launch the game at least once!");
             }
+            Path = QueryKey(hKey, 4);
 
             if (Path.empty()) {
-                fatal("Cannot get Local Appdata directory");
-            }
+                char appDataPath[MAX_PATH];
+                HRESULT result = SHGetFolderPathA(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, appDataPath);
 
-            Path += "\\BeamNG.drive\\";
+                if (!SUCCEEDED(result)) {
+                    fatal("Cannot get Local Appdata directory");
+                }
+
+                Path = std::filesystem::path(appDataPath) / "BeamNG.drive";
+            }
         }
     }
 
     std::string Ver = CheckVer(GetGameDir());
     Ver = Ver.substr(0, Ver.find('.', Ver.find('.') + 1));
-    Path += Ver + "\\";
-    return Path;
+    Path = Path / (Ver + "\\");
+    return Path.string();
 }
 #elif defined(__linux__)
 std::string GetGamePath() {
