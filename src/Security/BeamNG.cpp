@@ -205,13 +205,6 @@ void LegitimacyCheck() {
             break;
         }
     }
-    if (GameDir.empty()) {
-        // Check if user is using Snap, which can't be located from libraryFolders...
-        const std::string snapPath = 
-            homeDir + "/snap/steam/common/.local/share/Steam/steamapps/common/BeamNG.drive/";
-
-        if (std::filesystem::exists(snapPath)) GameDir = snapPath;
-    }
 #endif
 }
 std::string CheckVer(const std::string& dir) {
