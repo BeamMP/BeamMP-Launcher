@@ -1,6 +1,8 @@
-///
-/// Created by Anonymous275 on 2/23/2021
-///
+/*
+ Copyright (C) 2024 BeamMP Ltd., BeamMP team and contributors.
+ Licensed under AGPL-3.0 (or later), see <https://www.gnu.org/licenses/>.
+ SPDX-License-Identifier: AGPL-3.0-or-later
+*/
 
 #include "Logger.h"
 #include "Network/network.hpp"
