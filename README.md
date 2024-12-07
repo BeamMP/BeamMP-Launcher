@@ -57,7 +57,7 @@ You can also specify a number of threads to use, for example `--parallel 4` will
 ## License
 
 BeamMP Launcher, a launcher for the BeamMP mod for BeamNG.drive
-Copyright (C) 2020-2024 Anonymous275, Lion Kortlepel, the BeamMP Mod Team, and contributors.
+Copyright (C) 2024 BeamMP Ltd., BeamMP team and contributors.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as published
