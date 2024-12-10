@@ -180,33 +180,43 @@ void LegitimacyCheck() {
     RegCloseKey(hKey);
 #elif defined(__linux__)
     struct passwd* pw = getpwuid(getuid());
-    std::string homeDir = pw->pw_dir;
+    std::filesystem::path homeDir = pw->pw_dir;
+
     // Right now only steam is supported
-    std::vector<std::string> steamappsCommonPaths = {
-        "/.steam/root/steamapps/", // default
-        "/.var/app/com.valvesoftware.Steam/.steam/root/steamapps/", // flatpak
-        "/snap/steam/common/.local/share/Steam/steamapps/" //snap
+    std::vector<std::filesystem::path> steamappsCommonPaths = {
+        ".steam/root/steamapps", // default
+        ".var/app/com.valvesoftware.Steam/.steam/root/steamapps", // flatpak
+        "snap/steam/common/.local/share/Steam/steamapps" // snap
     };
 
-    std::string libraryFoldersPath;
+    std::filesystem::path libraryFoldersPath;
     bool libraryFoldersFound = false;
-    for (const std::string& path : steamappsCommonPaths) {
-        std::string fullPath = homeDir + path + "/libraryfolders.vdf";
 
+    for (const auto& path : steamappsCommonPaths) {
+        std::filesystem::path fullPath = homeDir / path / "libraryfolders.vdf";
         if (std::filesystem::exists(fullPath)) {
             libraryFoldersPath = fullPath;
             libraryFoldersFound = true;
             break;
         }
     }
+
+    if (!libraryFoldersFound) {
+        error("Did not find a valid path to a libraryfolders.vdf file.");
+        return;
+    }
+
     std::ifstream libraryFolders(libraryFoldersPath);
     auto root = tyti::vdf::read(libraryFolders);
-
     for (auto folderInfo : root.childs) {
         if (std::filesystem::exists(folderInfo.second->attribs["path"] + "/steamapps/common/BeamNG.drive/")) {
             GameDir = folderInfo.second->attribs["path"] + "/steamapps/common/BeamNG.drive/";
             break;
         }
+    }
+    if (GameDir.empty()) {
+        error("The game directory was not found.");
+        return;
     }
 #endif
 }
