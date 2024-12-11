@@ -27,7 +27,7 @@ Remember to change `C:/vcpkg` to wherever you have vcpkg installed.
 Make sure you have the necessary development tools installed
 
 - Debian: `sudo apt install build-essential`
-- Fedora: `sudo dnf groupinstall "Development Tools"`
+- Fedora: `sudo dnf groupinstall "Development Tools" && sudo dnf install vcpkg`
 - Arch: `sudo pacman -S base-devel`
 - openSUSE: `zypper in -t pattern devel-basis`
 
