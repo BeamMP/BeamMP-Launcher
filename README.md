@@ -30,7 +30,7 @@ Remember to change `C:/vcpkg` to wherever you have vcpkg installed.
 
 Make sure you have `vcpkg` installed, as well as basic development tools, often found in packages, for example:
 
-- Debian: `sudo apt install build-essential`
+- Debian: `sudo apt install build-essential libcpp-httplib-dev nlohmann-json3-dev libcurlpp-dev`
 - Fedora: `sudo dnf groupinstall "Development Tools"`
 - Arch: `sudo pacman -S base-devel`
 - openSUSE: `zypper in -t pattern devel-basis`
@@ -38,7 +38,7 @@ Make sure you have `vcpkg` installed, as well as basic development tools, often 
 ### Release
 
 In the root directory of the project,
-1. `cmake -DCMAKE_BUILD_TYPE=Release . -B bin -DCMAKE_TOOLCHAIN_FILE=~/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-linux`
+1. `cmake -DCMAKE_BUILD_TYPE=Release . -B bin -DCMAKE_INSTALL_PREFIX=~/.local`
 2. `cmake --build bin --parallel --config Release`
 
 ### Debug
