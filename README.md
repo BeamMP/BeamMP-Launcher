@@ -6,6 +6,10 @@ The launcher is the way we communitcate to outside the game, it does a few autom
 
 ## How to build for Windows
 
+Make sure you have the necessary development tools installed:
+
+[vcpkg](https://vcpkg.io/en/)
+
 ### Release
 
 In the root directory of the project,
@@ -24,7 +28,7 @@ Remember to change `C:/vcpkg` to wherever you have vcpkg installed.
 
 ## How to build for Linux
 
-Make sure you have the necessary development tools installed
+Make sure you have `vcpkg` installed, as well as basic development tools, often found in packages, for example:
 
 - Debian: `sudo apt install build-essential`
 - Fedora: `sudo dnf groupinstall "Development Tools"`
@@ -34,18 +38,14 @@ Make sure you have the necessary development tools installed
 ### Release
 
 In the root directory of the project,
-1. `cmake -DCMAKE_BUILD_TYPE=Release . -B bin -DCMAKE_TOOLCHAIN_FILE=/~/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-linux`
+1. `cmake -DCMAKE_BUILD_TYPE=Release . -B bin -DCMAKE_TOOLCHAIN_FILE=~/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-linux`
 2. `cmake --build bin --parallel --config Release`
-
-Remember to change `/~/vcpkg` to wherever you have vcpkg installed.
 
 ### Debug
 
 In the root directory of the project,
-1. `cmake . -B bin -DCMAKE_TOOLCHAIN_FILE=/~/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-linux`
+1. `cmake . -B bin -DCMAKE_TOOLCHAIN_FILE=~/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-linux`
 2. `cmake --build bin --parallel`
-
-Remember to change `/~/vcpkg` to wherever you have vcpkg installed.
 
 ## Running out of RAM while building
 
