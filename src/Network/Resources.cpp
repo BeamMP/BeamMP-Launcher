@@ -16,7 +16,7 @@
 
 #if defined(_WIN32)
 #include <ws2tcpip.h>
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 #include <arpa/inet.h>
 #include <cstring>
 #include <errno.h>
@@ -34,7 +34,6 @@
 #include <filesystem>
 #include <fstream>
 #include <future>
-#include <iostream>
 #include <thread>
 
 #include "hashpp.h"
