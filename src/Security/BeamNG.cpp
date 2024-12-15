@@ -189,20 +189,30 @@ void LegitimacyCheck() {
         "snap/steam/common/.local/share/Steam/steamapps" // snap
     };
 
+    std::filesystem::path steamappsPath;
     std::filesystem::path libraryFoldersPath;
+    bool steamappsFolderFound = false;
     bool libraryFoldersFound = false;
 
     for (const auto& path : steamappsCommonPaths) {
-        std::filesystem::path fullPath = homeDir / path / "libraryfolders.vdf";
-        if (std::filesystem::exists(fullPath)) {
-            libraryFoldersPath = fullPath;
-            libraryFoldersFound = true;
-            break;
+        steamappsPath = homeDir / path;
+        if (std::filesystem::exists(steamappsPath)) {
+            steamappsFolderFound = true;
+            libraryFoldersPath = steamappsPath / "libraryfolders.vdf";
+            if (std::filesystem::exists(libraryFoldersPath)) {
+                libraryFoldersPath = libraryFoldersPath;
+                libraryFoldersFound = true;
+                break;
+            }
         }
     }
 
+    if (!steamappsFolderFound) {
+        error("Unsupported Steam installation.");
+        return;
+    }
     if (!libraryFoldersFound) {
-        error("Did not find a valid path to a libraryfolders.vdf file.");
+        error("libraryfolders.vdf is missing.");
         return;
     }
 
