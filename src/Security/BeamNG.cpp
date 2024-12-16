@@ -179,16 +179,53 @@ void LegitimacyCheck() {
     RegCloseKey(hKey);
 #elif defined(__linux__)
     struct passwd* pw = getpwuid(getuid());
-    std::string homeDir = pw->pw_dir;
-    // Right now only steam is supported
-    std::ifstream libraryFolders(homeDir + "/.steam/root/steamapps/libraryfolders.vdf");
-    auto root = tyti::vdf::read(libraryFolders);
+    std::filesystem::path homeDir = pw->pw_dir;
 
+    // Right now only steam is supported
+    std::vector<std::filesystem::path> steamappsCommonPaths = {
+        ".steam/root/steamapps", // default
+        ".var/app/com.valvesoftware.Steam/.steam/root/steamapps", // flatpak
+        "snap/steam/common/.local/share/Steam/steamapps" // snap
+    };
+
+    std::filesystem::path steamappsPath;
+    std::filesystem::path libraryFoldersPath;
+    bool steamappsFolderFound = false;
+    bool libraryFoldersFound = false;
+
+    for (const auto& path : steamappsCommonPaths) {
+        steamappsPath = homeDir / path;
+        if (std::filesystem::exists(steamappsPath)) {
+            steamappsFolderFound = true;
+            libraryFoldersPath = steamappsPath / "libraryfolders.vdf";
+            if (std::filesystem::exists(libraryFoldersPath)) {
+                libraryFoldersPath = libraryFoldersPath;
+                libraryFoldersFound = true;
+                break;
+            }
+        }
+    }
+
+    if (!steamappsFolderFound) {
+        error("Unsupported Steam installation.");
+        return;
+    }
+    if (!libraryFoldersFound) {
+        error("libraryfolders.vdf is missing.");
+        return;
+    }
+
+    std::ifstream libraryFolders(libraryFoldersPath);
+    auto root = tyti::vdf::read(libraryFolders);
     for (auto folderInfo : root.childs) {
         if (std::filesystem::exists(folderInfo.second->attribs["path"] + "/steamapps/common/BeamNG.drive/integrity.json")){
             GameDir = folderInfo.second->attribs["path"] + "/steamapps/common/BeamNG.drive/";
             break;
         }
+    }
+    if (GameDir.empty()) {
+        error("The game directory was not found.");
+        return;
     }
 #endif
 }
