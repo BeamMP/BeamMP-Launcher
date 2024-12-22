@@ -382,7 +382,7 @@ struct ModInfo {
             }
         } catch (const std::exception& e) {
             debug(std::string("Failed to receive mod list: ") + e.what());
-            warn("Failed to receive new mod list format! This server may be outdated, but everything should still work as expected.");
+            debug("Failed to receive new mod list format! This server may be outdated, but everything should still work as expected.");
         }
         return std::make_pair(success, modInfos);
     }
