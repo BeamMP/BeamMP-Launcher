@@ -89,6 +89,61 @@ void StartSync(const std::string& Data) {
     info("Connecting to server");
 }
 
+void GetServerInfo(std::string Data) {
+    debug("Fetching server info of " + Data);
+
+    std::string IP = GetAddr(Data.substr(1, Data.find(':') - 1));
+    if (IP.find('.') == -1) {
+        if (IP == "DNS")
+            warn("Connection Failed! (DNS Lookup Failed) for " + Data);
+        else
+            warn("Connection Failed! (WSA failed to start) for " + Data);
+        CoreSend("I" + Data + ";");
+        return;
+    }
+
+    SOCKET ISock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    SOCKADDR_IN ServerAddr;
+    if (ISock < 1) {
+        debug("Socket creation failed with error: " + std::to_string(WSAGetLastError()));
+        KillSocket(ISock);
+        CoreSend("I" + Data + ";");
+        return;
+    }
+    ServerAddr.sin_family = AF_INET;
+    ServerAddr.sin_port = htons(std::stoi(Data.substr(Data.find(':') + 1)));
+    inet_pton(AF_INET, IP.c_str(), &ServerAddr.sin_addr);
+    if (connect(ISock, (SOCKADDR*)&ServerAddr, sizeof(ServerAddr)) != 0) {
+        debug("Connection to server failed with error: " + std::to_string(WSAGetLastError()));
+        KillSocket(ISock);
+        CoreSend("I" + Data + ";");
+        return;
+    }
+    char Code[1] = { 'I' };
+    if (send(ISock, Code, 1, 0) != 1) {
+        debug("Sending data to server failed with error: " + std::to_string(WSAGetLastError()));
+        KillSocket(ISock);
+        CoreSend("I" + Data + ";");
+        return;
+    }
+
+    std::string buffer;
+    buffer.resize(1024);
+    int bytesReceived = recv(ISock, &buffer[0], buffer.size() - 1, 0);
+
+    if (bytesReceived > 0) {
+        buffer.resize(bytesReceived);
+        debug("Server Info: " + buffer);
+
+        CoreSend("I" + Data + ";" + buffer);
+    } else {
+        debug("Receiving data from server failed with error: " + std::to_string(WSAGetLastError()));
+        debug("Failed to receive server info from " + Data);
+        CoreSend("I" + Data + ";");
+    }
+
+    KillSocket(ISock);
+}
 std::mutex sendMutex;
 
 void CoreSend(std::string data) {
@@ -235,6 +290,12 @@ void Parse(std::string Data, SOCKET CSocket) {
 
         Data.clear();
         break;
+    case 'I': {
+        auto future = std::async(std::launch::async, [data = std::move(Data)]() {
+            GetServerInfo(data);
+        });
+        break;
+    }
     default:
         Data.clear();
         break;
