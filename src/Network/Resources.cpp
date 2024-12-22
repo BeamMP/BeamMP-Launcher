@@ -458,6 +458,40 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
             }
             WaitForConfirm();
             continue;
+        } else if (auto OldCachedPath = fs::path(CachingDirectory) / std::filesystem::path(ModInfoIter->FileName).filename();
+                   fs::exists(OldCachedPath) && GetSha256HashReallyFast(OldCachedPath.string()) == ModInfoIter->Hash) {
+            debug("Mod '" + FileName + "' found in old cache, copying it to the new cache");
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            try {
+                fs::copy_file(OldCachedPath, PathToSaveTo, fs::copy_options::overwrite_existing);
+
+                if (!fs::exists(GetGamePath() + "mods/multiplayer")) {
+                    fs::create_directories(GetGamePath() + "mods/multiplayer");
+                }
+
+                auto modname = ModInfoIter->FileName;
+
+#if defined(__linux__)
+                // Linux version of the game doesnt support uppercase letters in mod names
+                for (char& c : modname) {
+                    c = ::tolower(c);
+                }
+#endif
+
+                debug("Mod name: " + modname);
+                auto name = std::filesystem::path(GetGamePath()) / "mods/multiplayer" / modname;
+                std::string tmp_name = name.string();
+                tmp_name += ".tmp";
+
+                fs::copy_file(PathToSaveTo, tmp_name, fs::copy_options::overwrite_existing);
+                fs::rename(tmp_name, name);
+            } catch (std::exception& e) {
+                error("Failed copy to the mods folder! " + std::string(e.what()));
+                Terminate = true;
+                continue;
+            }
+            WaitForConfirm();
+            continue;
         }
         CheckForDir();
         std::string FName = ModInfoIter->FileName;
