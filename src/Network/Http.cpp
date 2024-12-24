@@ -104,7 +104,7 @@ std::string HTTP::Post(const std::string& IP, const std::string& Fields) {
         struct curl_slist* list = nullptr;
         list = curl_slist_append(list, "Content-Type: application/json");
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
-        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10); // seconds
+        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 120); // seconds
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         res = curl_easy_perform(curl);
         curl_slist_free_all(list);
