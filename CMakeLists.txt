@@ -41,3 +41,5 @@ else(WIN32) #MINGW
     target_link_libraries(${PROJECT_NAME} ssl crypto ws2_32 ssp crypt32 z CURL::libcurl)
 endif(WIN32)
 target_include_directories(${PROJECT_NAME} PRIVATE "include")
+
+install(TARGETS ${PROJECT_NAME} DESTINATION bin)
