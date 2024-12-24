@@ -13,6 +13,7 @@
 #include <bits/types/siginfo_t.h>
 #include <cstdint>
 #include <sys/ucontext.h>
+#include <arpa/inet.h>
 #endif
 
 void NetReset();
