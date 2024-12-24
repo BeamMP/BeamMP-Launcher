@@ -392,6 +392,40 @@ struct ModInfo {
     std::string HashAlgorithm;
 };
 
+nlohmann::json modUsage = {};
+
+void UpdateModUsage(const std::string& fileName) {
+    try {
+        std::fstream file(fs::path(CachingDirectory) / "mods.json", std::ios::in | std::ios::out);
+        if (!file.is_open()) {
+            error("Failed to open or create mods.json");
+            return;
+        }
+
+        if (modUsage.empty()) {
+            auto Size = fs::file_size(fs::path(CachingDirectory) / "mods.json");
+            std::string modsJson(Size, 0);
+            file.read(&modsJson[0], Size);
+
+            if (!modsJson.empty()) {
+                auto parsedModJson = nlohmann::json::parse(modsJson, nullptr, false);
+
+                if (parsedModJson.is_object())
+                    modUsage = parsedModJson;
+            }
+        }
+
+        modUsage[fileName] = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+
+        file.clear();
+        file.seekp(0, std::ios::beg);
+        file << modUsage.dump();
+    } catch (std::exception& e) {
+        error("Failed to update mods.json: " + std::string(e.what()));
+    }
+}
+
+
 void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<ModInfo> ModInfos) {
     if (ModInfos.empty()) {
         CoreSend("L");
@@ -451,6 +485,7 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
 
                 fs::copy_file(PathToSaveTo, tmp_name, fs::copy_options::overwrite_existing);
                 fs::rename(tmp_name, name);
+                UpdateModUsage(FileName);
             } catch (std::exception& e) {
                 error("Failed copy to the mods folder! " + std::string(e.what()));
                 Terminate = true;
@@ -485,6 +520,7 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
 
                 fs::copy_file(PathToSaveTo, tmp_name, fs::copy_options::overwrite_existing);
                 fs::rename(tmp_name, name);
+                UpdateModUsage(FileName);
             } catch (std::exception& e) {
                 error("Failed copy to the mods folder! " + std::string(e.what()));
                 Terminate = true;
@@ -539,6 +575,7 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
 #endif
 
             fs::copy_file(PathToSaveTo, std::filesystem::path(GetGamePath()) / "mods/multiplayer" / FName, fs::copy_options::overwrite_existing);
+            UpdateModUsage(FName);
         }
         WaitForConfirm();
         ++ModNo;
@@ -640,6 +677,7 @@ void SyncResources(SOCKET Sock) {
                     auto tmp_name = name + ".tmp";
                     fs::copy_file(PathToSaveTo, tmp_name, fs::copy_options::overwrite_existing);
                     fs::rename(tmp_name, name);
+                    UpdateModUsage(modname);
                 } catch (std::exception& e) {
                     error("Failed copy to the mods folder! " + std::string(e.what()));
                     Terminate = true;
@@ -695,6 +733,7 @@ void SyncResources(SOCKET Sock) {
 #endif
 
             fs::copy_file(PathToSaveTo, GetGamePath() + "mods/multiplayer" + FName, fs::copy_options::overwrite_existing);
+            UpdateModUsage(FN->substr(pos));
         }
         WaitForConfirm();
     }
