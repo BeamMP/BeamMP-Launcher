@@ -14,13 +14,8 @@ jobs:
         with:
             submodules: 'true'
       
-      - name: Restore artifacts, or run vcpkg, build and cache artifacts
-        uses: lukka/run-vcpkg@v7
-        id: runvcpkg
-        with:
-            vcpkgArguments: 'zlib nlohmann-json openssl cpp-httplib[openssl]'
-            vcpkgDirectory: '${{ runner.workspace }}/b/vcpkg'
-            vcpkgGitCommitId: '40616a5e954f7be1077ef37db3fbddbd5dcd1ca6'
+      - name: Install dependencies
+        run: sudo apt-get install -y build-essential libcpp-httplib-dev nlohmann-json3-dev libcurlpp-dev
 
       - name: Create Build Environment
         run: cmake -E make_directory ${{github.workspace}}/build-linux
@@ -28,7 +23,7 @@ jobs:
       - name: Configure CMake
         shell: bash
         working-directory: ${{github.workspace}}/build-linux
-        run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE='${{ runner.workspace }}/b/vcpkg/scripts/buildsystems/vcpkg.cmake'
+        run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE
 
       - name: Build
         working-directory: ${{github.workspace}}/build-linux
