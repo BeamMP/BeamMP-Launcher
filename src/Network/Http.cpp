@@ -68,7 +68,7 @@ static size_t CurlWriteCallback(void* contents, size_t size, size_t nmemb, void*
 }
 
 bool HTTP::isDownload = false;
-std::string HTTP::Get(const std::string& IP) {
+std::string HTTP::Get(const std::string& IP, const std::string& Fields) {
     std::string Ret;
     static thread_local CURL* curl = curl_easy_init();
     if (curl) {
@@ -78,6 +78,11 @@ std::string HTTP::Get(const std::string& IP) {
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&Ret);
         curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10); // seconds
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+        if (!Fields.empty()) {
+            curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "GET");
+            curl_easy_setopt(curl, CURLOPT_POSTFIELDS, Fields.c_str());
+            curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, Fields.size());
+        }
         res = curl_easy_perform(curl);
         if (res != CURLE_OK) {
             error("GET to " + IP + " failed: " + std::string(curl_easy_strerror(res)));
@@ -119,12 +124,12 @@ std::string HTTP::Post(const std::string& IP, const std::string& Fields) {
     return Ret;
 }
 
-bool HTTP::Download(const std::string& IP, const std::string& Path) {
+bool HTTP::Download(const std::string& IP, const std::string& Fields, const std::string& Path) {
     static std::mutex Lock;
     std::scoped_lock Guard(Lock);
 
     info("Downloading an update (this may take a while)");
-    std::string Ret = Get(IP);
+    std::string Ret = Get(IP, Fields);
 
     if (Ret.empty()) {
         error("Download failed");
