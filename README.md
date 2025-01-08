@@ -49,7 +49,7 @@ In the root directory of the project,
 
 ## Running out of RAM while building
 
-Should you run out of RAM while building, you can ommit the `--parallel` intruction, it will then use less RAM due to building only on one CPU thread.
+Should you run out of RAM while building, you can ommit the `--parallel` instruction, it will then use less RAM due to building only on one CPU thread.
 
 You can also specify a number of threads to use, for example `--parallel 4` will use four CPU threads, but due to the small project size, you may be faster just omitting `--parallel` instead of trying to find the highest possible multithread number
 
