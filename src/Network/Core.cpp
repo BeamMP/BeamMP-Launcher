@@ -138,13 +138,8 @@ void GetServerInfo(std::string Data) {
     }
 
     std::string buffer;
-    buffer.resize(1024);
-
-    struct timeval timeout;
-    timeout.tv_sec = 10;
-    timeout.tv_usec = 0;
-    setsockopt(ISock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
-
+    buffer.resize(8192);
+    
     int bytesReceived = recv(ISock, &buffer[0], buffer.size() - 1, 0);
 
     if (bytesReceived > 0) {
