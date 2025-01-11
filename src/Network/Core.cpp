@@ -90,7 +90,7 @@ void StartSync(const std::string& Data) {
 }
 
 void GetServerInfo(std::string Data) {
-    debug("Fetching server info of " + Data);
+   debug("Fetching server info of " + Data.substr(1));
 
     std::string IP = GetAddr(Data.substr(1, Data.find(':') - 1));
     if (IP.find('.') == -1) {
