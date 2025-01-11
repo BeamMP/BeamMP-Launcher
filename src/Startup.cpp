@@ -164,9 +164,9 @@ void CheckName() {
 }
 
 void CheckForUpdates(const std::string& CV) {
-    std::string LatestHash = HTTP::Get("https://backend.beammp.com/sha/launcher?branch=" + Branch + "&pk=" + PublicKey);
-    std::string LatestVersion = HTTP::Get(
-        "https://backend.beammp.com/version/launcher?branch=" + Branch + "&pk=" + PublicKey);
+    std::string requestBody = R"({"branch": ")" + Branch + R"(","pk":")" + PublicKey + R"("})";
+    std::string LatestHash = HTTP::Get("https://backend.beammp.com/sha/launcher", requestBody);
+    std::string LatestVersion = HTTP::Get("https://backend.beammp.com/version/launcher", requestBody);
 
     transform(LatestHash.begin(), LatestHash.end(), LatestHash.begin(), ::tolower);
     std::string EP(GetEP() + GetEN()), Back(GetEP() + "BeamMP-Launcher.back");
@@ -182,11 +182,7 @@ void CheckForUpdates(const std::string& CV) {
             fs::remove(Back);
             fs::rename(EP, Back);
             info("Downloading Launcher update " + LatestHash);
-            HTTP::Download(
-                "https://backend.beammp.com/builds/launcher?download=true"
-                "&pk="
-                    + PublicKey + "&branch=" + Branch,
-                EP);
+            HTTP::Download("https://backend.beammp.com/builds/launcher?download=true", requestBody, EP);
             URelaunch();
 #endif
         } else {
@@ -307,7 +303,8 @@ void PreGame(const std::string& GamePath) {
     info("Game user path: " + GetGamePath());
 
     if (!options.no_download) {
-        std::string LatestHash = HTTP::Get("https://backend.beammp.com/sha/mod?branch=" + Branch + "&pk=" + PublicKey);
+        std::string requestBody = R"({"branch": ")" + Branch + R"(","pk":")" + PublicKey + R"("})";
+        std::string LatestHash = HTTP::Get("https://backend.beammp.com/sha/mod", requestBody);
         transform(LatestHash.begin(), LatestHash.end(), LatestHash.begin(), ::tolower);
         LatestHash.erase(std::remove_if(LatestHash.begin(), LatestHash.end(),
                              [](auto const& c) -> bool { return !std::isalnum(c); }),
@@ -332,10 +329,7 @@ void PreGame(const std::string& GamePath) {
 
         if (FileHash != LatestHash) {
             info("Downloading BeamMP Update " + LatestHash);
-            HTTP::Download("https://backend.beammp.com/builds/client?download=true"
-                           "&pk="
-                    + PublicKey + "&branch=" + Branch,
-                ZipPath);
+            HTTP::Download("https://backend.beammp.com/builds/client?download=true", requestBody, ZipPath);
         }
 
         std::string Target(GetGamePath() + "mods/unpacked/beammp");
