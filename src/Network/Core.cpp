@@ -111,7 +111,17 @@ void GetServerInfo(std::string Data) {
         return;
     }
     ServerAddr.sin_family = AF_INET;
-    ServerAddr.sin_port = htons(std::stoi(Data.substr(Data.find(':') + 1)));
+
+    int port = std::stoi(Data.substr(Data.find(':') + 1));
+
+    if (port < 1 || port > 65535) {
+        debug("Invalid port number: " + std::to_string(port));
+        KillSocket(ISock);
+        CoreSend("I" + Data + ";");
+        return;
+    }
+
+    ServerAddr.sin_port = htons(port);
     inet_pton(AF_INET, IP.c_str(), &ServerAddr.sin_addr);
     if (connect(ISock, (SOCKADDR*)&ServerAddr, sizeof(ServerAddr)) != 0) {
         debug("Connection to server failed with error: " + std::to_string(WSAGetLastError()));
@@ -129,6 +139,12 @@ void GetServerInfo(std::string Data) {
 
     std::string buffer;
     buffer.resize(1024);
+
+    struct timeval timeout;
+    timeout.tv_sec = 10;
+    timeout.tv_usec = 0;
+    setsockopt(ISock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
+
     int bytesReceived = recv(ISock, &buffer[0], buffer.size() - 1, 0);
 
     if (bytesReceived > 0) {
