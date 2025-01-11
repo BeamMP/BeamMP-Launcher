@@ -76,7 +76,7 @@ std::string HTTP::Get(const std::string& IP) {
         curl_easy_setopt(curl, CURLOPT_URL, IP.c_str());
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CurlWriteCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&Ret);
-        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10); // seconds
+        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 120); // seconds
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         res = curl_easy_perform(curl);
         if (res != CURLE_OK) {
