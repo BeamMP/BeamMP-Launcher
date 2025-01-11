@@ -77,7 +77,7 @@ std::string HTTP::Get(const std::string& IP) {
         curl_easy_setopt(curl, CURLOPT_URL, IP.c_str());
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CurlWriteCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&Ret);
-        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10); // seconds
+        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 120); // seconds
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errbuf);
         errbuf[0] = 0;
@@ -109,7 +109,7 @@ std::string HTTP::Post(const std::string& IP, const std::string& Fields) {
         struct curl_slist* list = nullptr;
         list = curl_slist_append(list, "Content-Type: application/json");
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
-        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10); // seconds
+        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 120); // seconds
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errbuf);
         errbuf[0] = 0;
