@@ -90,7 +90,7 @@ void StartSync(const std::string& Data) {
 }
 
 void GetServerInfo(std::string Data) {
-   debug("Fetching server info of " + Data.substr(1));
+    debug("Fetching server info of " + Data.substr(1));
 
     std::string IP = GetAddr(Data.substr(1, Data.find(':') - 1));
     if (IP.find('.') == -1) {
@@ -129,6 +129,7 @@ void GetServerInfo(std::string Data) {
         CoreSend("I" + Data + ";");
         return;
     }
+
     char Code[1] = { 'I' };
     if (send(ISock, Code, 1, 0) != 1) {
         debug("Sending data to server failed with error: " + std::to_string(WSAGetLastError()));
@@ -137,13 +138,38 @@ void GetServerInfo(std::string Data) {
         return;
     }
 
-    std::string buffer;
-    buffer.resize(8192);
-    
-    int bytesReceived = recv(ISock, &buffer[0], buffer.size() - 1, 0);
+    const std::string buffer = ([&]() -> std::string {
+        int32_t Header;
+        std::vector<char> data(sizeof(Header));
+        int32_t Temp = recv(ISock, data.data(), sizeof(Header), MSG_WAITALL);
 
-    if (bytesReceived > 0) {
-        buffer.resize(bytesReceived);
+        auto checkBytes = ([&](const int32_t bytes) -> bool {
+            if (bytes == 0) {
+                return false;
+            } else if (bytes < 0) {
+                return false;
+            }
+            return true;
+        });
+
+        if (!checkBytes(Temp)) {
+            return "";
+        }
+        memcpy(&Header, data.data(), sizeof(Header));
+
+        if (!checkBytes(Temp)) {
+            return "";
+        }
+
+        data.resize(Header, 0);
+        Temp = recv(ISock, data.data(), Header, MSG_WAITALL);
+        if (!checkBytes(Temp)) {
+            return "";
+        }
+        return std::string(data.data(), Header);
+    })();
+
+    if (!buffer.empty()) {
         debug("Server Info: " + buffer);
 
         CoreSend("I" + Data + ";" + buffer);
