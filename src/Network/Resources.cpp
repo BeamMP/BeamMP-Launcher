@@ -396,7 +396,18 @@ nlohmann::json modUsage = {};
 
 void UpdateModUsage(const std::string& fileName) {
     try {
-        std::fstream file(fs::path(CachingDirectory) / "mods.json", std::ios::in | std::ios::out);
+        fs::path usageFile = fs::path(CachingDirectory) / "mods.json";
+
+        if (!fs::exists(usageFile)) {
+            if (std::ofstream file(usageFile); !file.is_open()) {
+                error("Failed to create mods.json");
+                return;
+            } else {
+                file.close();
+            }
+        }
+
+        std::fstream file(usageFile, std::ios::in | std::ios::out);
         if (!file.is_open()) {
             error("Failed to open or create mods.json");
             return;
@@ -420,6 +431,7 @@ void UpdateModUsage(const std::string& fileName) {
         file.clear();
         file.seekp(0, std::ios::beg);
         file << modUsage.dump();
+        file.close();
     } catch (std::exception& e) {
         error("Failed to update mods.json: " + std::string(e.what()));
     }
