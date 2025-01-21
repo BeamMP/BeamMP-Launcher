@@ -81,10 +81,10 @@ std::string GetEN() {
 }
 
 std::string GetVer() {
-    return "2.3";
+    return "2.4";
 }
 std::string GetPatch() {
-    return ".2";
+    return ".0";
 }
 
 std::string GetEP(const char* P) {
