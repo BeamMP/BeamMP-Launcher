@@ -37,7 +37,7 @@ std::string getDate() {
 }
 void InitLog() {
     std::ofstream LFS;
-    LFS.open(GetEP() + L"Launcher.log");
+    LFS.open(GetEP() + beammp_wide("Launcher.log"));
     if (!LFS.is_open()) {
         error("logger file init failed!");
     } else
@@ -45,13 +45,13 @@ void InitLog() {
 }
 void addToLog(const std::string& Line) {
     std::ofstream LFS;
-    LFS.open(GetEP() + L"Launcher.log", std::ios_base::app);
+    LFS.open(GetEP() + beammp_wide("Launcher.log"), std::ios_base::app);
     LFS << Line.c_str();
     LFS.close();
 }
 void addToLog(const std::wstring& Line) {
     std::wofstream LFS;
-    LFS.open(GetEP() + L"Launcher.log", std::ios_base::app);
+    LFS.open(GetEP() + beammp_wide("Launcher.log"), std::ios_base::app);
     LFS << Line.c_str();
     LFS.close();
 }
@@ -91,6 +91,7 @@ void except(const std::string& toPrint) {
 }
 
 
+#ifdef _WIN32
 void info(const std::wstring& toPrint) {
     std::wstring Print = Utils::ToWString(getDate()) + L"[INFO] " + toPrint + L"\n";
     std::wcout << Print;
@@ -125,3 +126,4 @@ void except(const std::wstring& toPrint) {
     std::wcout << Print;
     addToLog(Print);
 }
+#endif
