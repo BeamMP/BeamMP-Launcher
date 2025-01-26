@@ -187,7 +187,7 @@ void StartGame(std::string Dir) {
 }
 #endif
 
-void InitGame(const std::wstring& Dir) {
+void InitGame(const beammp_fs_string& Dir) {
     if (!options.no_launch) {
         std::thread Game(StartGame, Dir);
         Game.detach();

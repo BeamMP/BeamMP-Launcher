@@ -5,14 +5,16 @@
 */
 
 #pragma once
+#include "Utils.h"
+
 #include <compare>
 #include <string>
 #include <vector>
 
 void InitLauncher();
-std::wstring GetEP(const wchar_t* P = nullptr);
-std::wstring GetGamePath();
+beammp_fs_string GetEP(const beammp_fs_char* P = nullptr);
+beammp_fs_string GetGamePath();
 std::string GetVer();
 std::string GetPatch();
-std::wstring GetEN();
+beammp_fs_string GetEN();
 void ConfigInit();

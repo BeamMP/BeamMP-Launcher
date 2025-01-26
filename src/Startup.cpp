@@ -73,12 +73,8 @@ Version::Version(const std::array<uint8_t, 3>& v)
     : Version(v[0], v[1], v[2]) {
 }
 
-std::wstring GetEN() {
-#if defined(_WIN32)
-    return L"BeamMP-Launcher.exe";
-#elif defined(__linux__)
-    return L"BeamMP-Launcher";
-#endif
+beammp_fs_string GetEN() {
+    return beammp_wide("BeamMP-Launcher.exe");
 }
 
 std::string GetVer() {
@@ -88,10 +84,10 @@ std::string GetPatch() {
     return ".1";
 }
 
-std::wstring GetEP(const wchar_t* P) {
-    static std::wstring Ret = [&]() {
-        std::wstring path(P);
-        return path.substr(0, path.find_last_of(L"\\/") + 1);
+beammp_fs_string GetEP(const beammp_fs_char* P) {
+    static beammp_fs_string Ret = [&]() {
+        beammp_fs_string path(P);
+        return path.substr(0, path.find_last_of(beammp_wide("\\/")) + 1);
     }();
     return Ret;
 }
@@ -152,14 +148,14 @@ void CheckName() {
 #if defined(_WIN32)
     std::wstring DN = GetEN(), CDir = Utils::ToWString(options.executable_name), FN = CDir.substr(CDir.find_last_of('\\') + 1);
 #elif defined(__linux__)
-    std::wstring DN = GetEN(), CDir = Utils::ToWString(options.executable_name), FN = CDir.substr(CDir.find_last_of('/') + 1);
+    std::string DN = GetEN(), CDir = options.executable_name, FN = CDir.substr(CDir.find_last_of('/') + 1);
 #endif
     if (FN != DN) {
         if (fs::exists(DN))
-            _wremove(DN.c_str());
+            fs::remove(DN.c_str());
         if (fs::exists(DN))
             ReLaunch();
-        _wrename(FN.c_str(), DN.c_str());
+        fs::rename(FN.c_str(), DN.c_str());
         URelaunch();
     }
 }
@@ -170,7 +166,7 @@ void CheckForUpdates(const std::string& CV) {
         "https://backend.beammp.com/version/launcher?branch=" + Branch + "&pk=" + PublicKey);
 
     transform(LatestHash.begin(), LatestHash.end(), LatestHash.begin(), ::tolower);
-    std::wstring EP(GetEP() + GetEN()), Back(GetEP() + L"BeamMP-Launcher.back");
+    beammp_fs_string EP(GetEP() + GetEN()), Back(GetEP() + beammp_wide("BeamMP-Launcher.back"));
 
     std::string FileHash = Utils::GetSha256HashReallyFast(EP);
 
@@ -252,7 +248,7 @@ size_t DirCount(const std::filesystem::path& path) {
     return (size_t)std::distance(std::filesystem::directory_iterator { path }, std::filesystem::directory_iterator {});
 }
 
-void CheckMP(const std::wstring& Path) {
+void CheckMP(const beammp_fs_string& Path) {
     if (!fs::exists(Path))
         return;
     size_t c = DirCount(fs::path(Path));
@@ -272,7 +268,7 @@ void CheckMP(const std::wstring& Path) {
 }
 
 void EnableMP() {
-    std::wstring File(GetGamePath() + L"mods/db.json");
+    beammp_fs_string File(GetGamePath() + beammp_wide("mods/db.json"));
     if (!fs::exists(File))
         return;
     auto Size = fs::file_size(File);
@@ -295,18 +291,18 @@ void EnableMP() {
                 ofs << d.dump();
                 ofs.close();
             } else {
-                error(L"Failed to write " + File);
+                error(beammp_wide("Failed to write ") + File);
             }
         }
     }
 }
 
-void PreGame(const std::wstring& GamePath) {
+void PreGame(const beammp_fs_string& GamePath) {
     std::string GameVer = CheckVer(GamePath);
     info("Game Version : " + GameVer);
 
-    CheckMP(GetGamePath() + L"mods/multiplayer");
-    info(L"Game user path: " + GetGamePath());
+    CheckMP(GetGamePath() + beammp_wide("mods/multiplayer"));
+    info(beammp_wide("Game user path: ") + GetGamePath());
 
     if (!options.no_download) {
         std::string LatestHash = HTTP::Get("https://backend.beammp.com/sha/mod?branch=" + Branch + "&pk=" + PublicKey);
@@ -316,8 +312,8 @@ void PreGame(const std::wstring& GamePath) {
             LatestHash.end());
 
         try {
-            if (!fs::exists(GetGamePath() + L"mods/multiplayer")) {
-                fs::create_directories(GetGamePath() + L"mods/multiplayer");
+            if (!fs::exists(GetGamePath() + beammp_wide("mods/multiplayer"))) {
+                fs::create_directories(GetGamePath() + beammp_wide("mods/multiplayer"));
             }
             EnableMP();
         } catch (std::exception& e) {
@@ -327,7 +323,7 @@ void PreGame(const std::wstring& GamePath) {
         std::wstring ZipPath(GetGamePath() + LR"(mods\multiplayer\BeamMP.zip)");
 #elif defined(__linux__)
         // Linux version of the game cant handle mods with uppercase names
-        std::wstring ZipPath(GetGamePath() + LR"(mods/multiplayer/beammp.zip)");
+        std::string ZipPath(GetGamePath() + R"(mods/multiplayer/beammp.zip)");
 #endif
 
         std::string FileHash = Utils::GetSha256HashReallyFast(ZipPath);
@@ -340,7 +336,7 @@ void PreGame(const std::wstring& GamePath) {
                 ZipPath);
         }
 
-        std::wstring Target(GetGamePath() + L"mods/unpacked/beammp");
+        beammp_fs_string Target(GetGamePath() + beammp_wide("mods/unpacked/beammp"));
 
         if (fs::is_directory(Target) && !fs::is_directory(Target + "/.git")) {
             fs::remove_all(Target);

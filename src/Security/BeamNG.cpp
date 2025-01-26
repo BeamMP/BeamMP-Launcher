@@ -15,6 +15,8 @@
 #include <vector>
 #endif
 #include "Logger.h"
+#include "Utils.h"
+
 #include <fstream>
 #include <string>
 #include <thread>
@@ -23,7 +25,7 @@
 #define MAX_VALUE_NAME 16383
 
 int TraceBack = 0;
-std::wstring GameDir;
+beammp_fs_string GameDir;
 
 void lowExit(int code) {
     TraceBack = 0;
@@ -33,7 +35,7 @@ void lowExit(int code) {
     exit(2);
 }
 
-std::wstring GetGameDir() {
+beammp_fs_string GetGameDir() {
 #if defined(_WIN32)
     return GameDir.substr(0, GameDir.find_last_of('\\'));
 #elif defined(__linux__)
@@ -231,13 +233,9 @@ void LegitimacyCheck() {
     }
 #endif
 }
-std::string CheckVer(const std::wstring& dir) {
+std::string CheckVer(const beammp_fs_string& dir) {
     std::string temp;
-#if defined(_WIN32)
-    std::wstring Path = dir + L"\\integrity.json";
-#elif defined(__linux__)
-    std::wstring Path = dir + L"/integrity.json";
-#endif
+    beammp_fs_string Path = dir + beammp_wide("\\integrity.json");
     std::ifstream f(Path.c_str(), std::ios::binary);
     int Size = int(std::filesystem::file_size(Path));
     std::string vec(Size, 0);

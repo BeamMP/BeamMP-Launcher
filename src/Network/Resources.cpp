@@ -444,14 +444,14 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
             return;
         }
         auto FileName = std::filesystem::path(ModInfoIter->FileName).stem().string() + "-" + ModInfoIter->Hash.substr(0, 8) + std::filesystem::path(ModInfoIter->FileName).extension().string();
-        auto PathToSaveTo = (fs::path(CachingDirectory) / FileName).string();
+        auto PathToSaveTo = (fs::path(CachingDirectory) / FileName);
         if (fs::exists(PathToSaveTo) && Utils::GetSha256HashReallyFast(PathToSaveTo) == ModInfoIter->Hash) {
             debug("Mod '" + FileName + "' found in cache");
             UpdateUl(false, std::to_string(ModNo) + "/" + std::to_string(TotalMods) + ": " + ModInfoIter->FileName);
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
             try {
-                if (!fs::exists(GetGamePath() + L"mods/multiplayer")) {
-                    fs::create_directories(GetGamePath() + L"mods/multiplayer");
+                if (!fs::exists(GetGamePath() + beammp_wide("mods/multiplayer"))) {
+                    fs::create_directories(GetGamePath() + beammp_wide("mods/multiplayer"));
                 }
                 auto modname = ModInfoIter->FileName;
 #if defined(__linux__)
@@ -476,15 +476,15 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
             WaitForConfirm();
             continue;
         } else if (auto OldCachedPath = fs::path(CachingDirectory) / std::filesystem::path(ModInfoIter->FileName).filename();
-                   fs::exists(OldCachedPath) && GetSha256HashReallyFast(OldCachedPath.string()) == ModInfoIter->Hash) {
+                   fs::exists(OldCachedPath) && Utils::GetSha256HashReallyFast(OldCachedPath) == ModInfoIter->Hash) {
             debug("Mod '" + FileName + "' found in old cache, copying it to the new cache");
             UpdateUl(false, std::to_string(ModNo) + "/" + std::to_string(TotalMods) + ": " + ModInfoIter->FileName);
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
             try {
                 fs::copy_file(OldCachedPath, PathToSaveTo, fs::copy_options::overwrite_existing);
 
-                if (!fs::exists(GetGamePath() + "mods/multiplayer")) {
-                    fs::create_directories(GetGamePath() + "mods/multiplayer");
+                if (!fs::exists(GetGamePath() + beammp_wide("mods/multiplayer"))) {
+                    fs::create_directories(GetGamePath() + beammp_wide("mods/multiplayer"));
                 }
 
                 auto modname = ModInfoIter->FileName;
@@ -525,7 +525,7 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
         CheckForDir();
         std::string FName = ModInfoIter->FileName;
         do {
-            debug("Loading file '" + FName + "' to '" + PathToSaveTo + "'");
+            debug("Loading file '" + FName + "' to '" + PathToSaveTo.string() + "'");
             TCPSend("f" + ModInfoIter->FileName, Sock);
 
             std::string Data = TCPRcv(Sock);
@@ -558,7 +558,7 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
             }
             // 2. verify size and hash
             if (std::filesystem::file_size(PathToSaveTo) != DownloadedFile.size()) {
-                error("Failed to write the entire file '" + PathToSaveTo + "' correctly (file size mismatch)");
+                error("Failed to write the entire file '" + PathToSaveTo.string() + "' correctly (file size mismatch)");
                 Terminate = true;
             }
 
@@ -568,8 +568,8 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
             }
         } while (fs::file_size(PathToSaveTo) != ModInfoIter->FileSize && !Terminate);
         if (!Terminate) {
-            if (!fs::exists(GetGamePath() + L"mods/multiplayer")) {
-                fs::create_directories(GetGamePath() + L"mods/multiplayer");
+            if (!fs::exists(GetGamePath() + beammp_wide("mods/multiplayer"))) {
+                fs::create_directories(GetGamePath() + beammp_wide("mods/multiplayer"));
             }
 
 // Linux version of the game doesnt support uppercase letters in mod names
@@ -667,8 +667,8 @@ void SyncResources(SOCKET Sock) {
                 UpdateUl(false, std::to_string(Pos) + "/" + std::to_string(Amount) + ": " + PathToSaveTo.substr(PathToSaveTo.find_last_of('/')));
                 std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 try {
-                    if (!fs::exists(GetGamePath() + L"mods/multiplayer")) {
-                        fs::create_directories(GetGamePath() + L"mods/multiplayer");
+                    if (!fs::exists(GetGamePath() + beammp_wide("mods/multiplayer"))) {
+                        fs::create_directories(GetGamePath() + beammp_wide("mods/multiplayer"));
                     }
                     auto modname = PathToSaveTo.substr(PathToSaveTo.find_last_of('/'));
 #if defined(__linux__)
@@ -677,8 +677,8 @@ void SyncResources(SOCKET Sock) {
                         c = ::tolower(c);
                     }
 #endif
-                    auto name = GetGamePath() + L"mods/multiplayer" + Utils::ToWString(modname);
-                    auto tmp_name = name + L".tmp";
+                    auto name = GetGamePath() + beammp_wide("mods/multiplayer") + Utils::ToWString(modname);
+                    auto tmp_name = name + beammp_wide(".tmp");
                     fs::copy_file(PathToSaveTo, tmp_name, fs::copy_options::overwrite_existing);
                     fs::rename(tmp_name, name);
                     UpdateModUsage(modname);
@@ -725,8 +725,8 @@ void SyncResources(SOCKET Sock) {
             }
         } while (fs::file_size(PathToSaveTo) != std::stoull(*FS) && !Terminate);
         if (!Terminate) {
-            if (!fs::exists(GetGamePath() + L"mods/multiplayer")) {
-                fs::create_directories(GetGamePath() + L"mods/multiplayer");
+            if (!fs::exists(GetGamePath() + beammp_wide("mods/multiplayer"))) {
+                fs::create_directories(GetGamePath() + beammp_wide("mods/multiplayer"));
             }
 
 // Linux version of the game doesnt support uppercase letters in mod names
@@ -736,7 +736,7 @@ void SyncResources(SOCKET Sock) {
             }
 #endif
 
-            fs::copy_file(PathToSaveTo, GetGamePath() + L"mods/multiplayer" + Utils::ToWString(FName), fs::copy_options::overwrite_existing);
+            fs::copy_file(PathToSaveTo, GetGamePath() + beammp_wide("mods/multiplayer") + Utils::ToWString(FName), fs::copy_options::overwrite_existing);
             UpdateModUsage(FN->substr(pos));
         }
         WaitForConfirm();
