@@ -29,7 +29,7 @@ if (WIN32)
     find_package(OpenSSL REQUIRED)
     target_link_libraries(${PROJECT_NAME} PRIVATE
             ZLIB::ZLIB OpenSSL::SSL OpenSSL::Crypto ws2_32 httplib::httplib nlohmann_json::nlohmann_json CURL::libcurl)
-elseif (LINUX)
+elseif (UNIX)
     find_package(ZLIB REQUIRED)
     find_package(OpenSSL REQUIRED)
     target_link_libraries(${PROJECT_NAME} PRIVATE

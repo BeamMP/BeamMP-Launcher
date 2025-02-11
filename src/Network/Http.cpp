@@ -1,10 +1,9 @@
-// Copyright (c) 2019-present Anonymous275.
-// BeamMP Launcher code is not in the public domain and is not free software.
-// One must be granted explicit permission by the copyright holder in order to modify or distribute any part of the source or binaries.
-// Anything else is prohibited. Modified works may not be published and have be upstreamed to the official repository.
-///
-/// Created by Anonymous275 on 7/18/2020
-///
+/*
+ Copyright (C) 2024 BeamMP Ltd., BeamMP team and contributors.
+ Licensed under AGPL-3.0 (or later), see <https://www.gnu.org/licenses/>.
+ SPDX-License-Identifier: AGPL-3.0-or-later
+*/
+
 
 #include "Http.h"
 #include <Logger.h>
@@ -74,14 +73,18 @@ std::string HTTP::Get(const std::string& IP) {
     static thread_local CURL* curl = curl_easy_init();
     if (curl) {
         CURLcode res;
+        char errbuf[CURL_ERROR_SIZE];
         curl_easy_setopt(curl, CURLOPT_URL, IP.c_str());
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CurlWriteCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&Ret);
-        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10); // seconds
+        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 120); // seconds
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+        curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errbuf);
+        errbuf[0] = 0;
         res = curl_easy_perform(curl);
         if (res != CURLE_OK) {
             error("GET to " + IP + " failed: " + std::string(curl_easy_strerror(res)));
+            error("Curl error: " + std::string(errbuf));
             return "";
         }
     } else {
@@ -96,6 +99,7 @@ std::string HTTP::Post(const std::string& IP, const std::string& Fields) {
     static thread_local CURL* curl = curl_easy_init();
     if (curl) {
         CURLcode res;
+        char errbuf[CURL_ERROR_SIZE];
         curl_easy_setopt(curl, CURLOPT_URL, IP.c_str());
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CurlWriteCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&Ret);
@@ -105,12 +109,15 @@ std::string HTTP::Post(const std::string& IP, const std::string& Fields) {
         struct curl_slist* list = nullptr;
         list = curl_slist_append(list, "Content-Type: application/json");
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
-        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10); // seconds
+        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 120); // seconds
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+        curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errbuf);
+        errbuf[0] = 0;
         res = curl_easy_perform(curl);
         curl_slist_free_all(list);
         if (res != CURLE_OK) {
             error("POST to " + IP + " failed: " + std::string(curl_easy_strerror(res)));
+            error("Curl error: " + std::string(errbuf));
             return "";
         }
     } else {

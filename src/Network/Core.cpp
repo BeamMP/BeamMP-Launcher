@@ -1,10 +1,9 @@
-// Copyright (c) 2019-present Anonymous275.
-// BeamMP Launcher code is not in the public domain and is not free software.
-// One must be granted explicit permission by the copyright holder in order to modify or distribute any part of the source or binaries.
-// Anything else is prohibited. Modified works may not be published and have be upstreamed to the official repository.
-///
-/// Created by Anonymous275 on 7/20/2020
-///
+/*
+ Copyright (C) 2024 BeamMP Ltd., BeamMP team and contributors.
+ Licensed under AGPL-3.0 (or later), see <https://www.gnu.org/licenses/>.
+ SPDX-License-Identifier: AGPL-3.0-or-later
+*/
+
 #include "Http.h"
 #include "Network/network.hpp"
 #include "Security/Init.h"
@@ -90,6 +89,98 @@ void StartSync(const std::string& Data) {
     info("Connecting to server");
 }
 
+void GetServerInfo(std::string Data) {
+    debug("Fetching server info of " + Data.substr(1));
+
+    std::string IP = GetAddr(Data.substr(1, Data.find(':') - 1));
+    if (IP.find('.') == -1) {
+        if (IP == "DNS")
+            warn("Connection Failed! (DNS Lookup Failed) for " + Data);
+        else
+            warn("Connection Failed! (WSA failed to start) for " + Data);
+        CoreSend("I" + Data + ";");
+        return;
+    }
+
+    SOCKET ISock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    SOCKADDR_IN ServerAddr;
+    if (ISock < 1) {
+        debug("Socket creation failed with error: " + std::to_string(WSAGetLastError()));
+        KillSocket(ISock);
+        CoreSend("I" + Data + ";");
+        return;
+    }
+    ServerAddr.sin_family = AF_INET;
+
+    int port = std::stoi(Data.substr(Data.find(':') + 1));
+
+    if (port < 1 || port > 65535) {
+        debug("Invalid port number: " + std::to_string(port));
+        KillSocket(ISock);
+        CoreSend("I" + Data + ";");
+        return;
+    }
+
+    ServerAddr.sin_port = htons(port);
+    inet_pton(AF_INET, IP.c_str(), &ServerAddr.sin_addr);
+    if (connect(ISock, (SOCKADDR*)&ServerAddr, sizeof(ServerAddr)) != 0) {
+        debug("Connection to server failed with error: " + std::to_string(WSAGetLastError()));
+        KillSocket(ISock);
+        CoreSend("I" + Data + ";");
+        return;
+    }
+
+    char Code[1] = { 'I' };
+    if (send(ISock, Code, 1, 0) != 1) {
+        debug("Sending data to server failed with error: " + std::to_string(WSAGetLastError()));
+        KillSocket(ISock);
+        CoreSend("I" + Data + ";");
+        return;
+    }
+
+    const std::string buffer = ([&]() -> std::string {
+        int32_t Header;
+        std::vector<char> data(sizeof(Header));
+        int32_t Temp = recv(ISock, data.data(), sizeof(Header), MSG_WAITALL);
+
+        auto checkBytes = ([&](const int32_t bytes) -> bool {
+            if (bytes == 0) {
+                return false;
+            } else if (bytes < 0) {
+                return false;
+            }
+            return true;
+        });
+
+        if (!checkBytes(Temp)) {
+            return "";
+        }
+        memcpy(&Header, data.data(), sizeof(Header));
+
+        if (!checkBytes(Temp)) {
+            return "";
+        }
+
+        data.resize(Header, 0);
+        Temp = recv(ISock, data.data(), Header, MSG_WAITALL);
+        if (!checkBytes(Temp)) {
+            return "";
+        }
+        return std::string(data.data(), Header);
+    })();
+
+    if (!buffer.empty()) {
+        debug("Server Info: " + buffer);
+
+        CoreSend("I" + Data + ";" + buffer);
+    } else {
+        debug("Receiving data from server failed with error: " + std::to_string(WSAGetLastError()));
+        debug("Failed to receive server info from " + Data);
+        CoreSend("I" + Data + ";");
+    }
+
+    KillSocket(ISock);
+}
 std::mutex sendMutex;
 
 void CoreSend(std::string data) {
@@ -236,6 +327,12 @@ void Parse(std::string Data, SOCKET CSocket) {
 
         Data.clear();
         break;
+    case 'I': {
+        auto future = std::async(std::launch::async, [data = std::move(Data)]() {
+            GetServerInfo(data);
+        });
+        break;
+    }
     default:
         Data.clear();
         break;
