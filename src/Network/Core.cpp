@@ -23,6 +23,10 @@
 #include <unistd.h>
 #endif
 
+#if defined(__APPLE__)
+#include <arpa/inet.h>
+#endif
+
 #include "Logger.h"
 #include "Startup.h"
 #include <charconv>
