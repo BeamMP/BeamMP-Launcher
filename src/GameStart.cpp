@@ -147,66 +147,96 @@ void StartGame(std::string Dir) {
 void StartGame(std::string Dir) {
     extern char **environ;
     int status;
-    
-    std::string executable = Dir + "/Bin64/BeamNG.drive.x64.exe";
+
+    std::filesystem::path executable = std::filesystem::path(Dir) / "Bin64" / "BeamNG.drive.x64.exe";
     if (!std::filesystem::exists(executable)) {
-        error("The executable BeamNG.drive.x64.exe doesn't exist in folder: " + Dir + "/Bin64/");
+        error("The executable BeamNG.drive.x64.exe does not exist in folder: " + executable.string());
+        std::this_thread::sleep_for(std::chrono::seconds(5));
         exit(1);
     }
-    std::pair<std::string, int> sharedCmd = Utils::runCommand("mdfind kMDItemCFBundleIdentifier = 'com.codeweavers.CrossOver'");
-    std::string sharedPath = sharedCmd.first;
-    int statusCode = sharedCmd.second;
-    if (statusCode != 0) {
-        error("Failed to detect SharedSupport folder, please make sure CrossOver is installed.");
-        exit(1);
-    } else {
-        std::istringstream stream(sharedPath);
+
+    std::vector<const char*> argv;
+    std::filesystem::path spawnWineExecutable;
+    std::filesystem::path bottlePath = std::filesystem::path(GetBottlePath());
+
+    if (options.wine_executable.empty()) {
+        auto mdfindCmd = Utils::runCommand("mdfind kMDItemCFBundleIdentifier = 'com.codeweavers.CrossOver'");
+        std::string mdfindPaths = mdfindCmd.first;
+        debug("Shared path: " + mdfindPaths);
+        if (mdfindCmd.second != 0) {
+            error("Failed to detect CrossOver directory. Please ensure CrossOver is installed on your Mac.");
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+            exit(1);
+        }
+        std::istringstream stream(mdfindPaths);
         std::string line;
         std::vector<std::string> paths;
         while (std::getline(stream, line)) {
-            if (line.find("CrossOver.app") != std::string::npos) {
-                paths.push_back(line);
-            }
+            debug("Line: " + line);
+            paths.push_back(line);
         }
         if (paths.empty()) {
-            error("No valid CrossOver.app found.");
+            error("No CrossOver.app found.");
+            std::this_thread::sleep_for(std::chrono::seconds(5));
             exit(1);
-        } else if (paths.size() > 1) {
-            debug("Multiple CrossOver.app found, using the first one.");
         }
-        sharedPath = paths[0];
-        sharedPath += "/";
+        if (paths.size() > 1) {
+            debug("Multiple paths found for CrossOver:");
+        }
+        std::filesystem::path crossoverPath;
+        int crossOverCount = 0;
+        for (const auto& p : paths) {
+            debug("Found path for CrossOver: " + p);
+            if (p.find("CrossOver.app") != std::string::npos) {
+                crossoverPath = std::filesystem::path(p);
+                crossOverCount++;
+                if (crossOverCount > 1) {
+                    error("Multiple CrossOver.app found. Please specify the path to the wine executable using the --wine option.");
+                    std::this_thread::sleep_for(std::chrono::seconds(5));
+                    exit(1);
+                }
+            }
+        }
+        if (crossoverPath.empty()) {
+            error("No valid CrossOver.app found.");
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+            exit(1);
+        }
+        debug("Selected CrossOver path: " + crossoverPath.string());
+
+        spawnWineExecutable = crossoverPath / "Contents" / "SharedSupport" / "CrossOver" / "bin" / "wine";
+        argv.push_back(spawnWineExecutable.c_str());
+        argv.push_back("--bottle");
+        argv.push_back(bottlePath.c_str());
+    } else {
+        spawnWineExecutable = options.wine_executable;
+        std::string wineprefix = "WINEPREFIX=" + bottlePath.string();
+        argv.push_back(wineprefix.c_str());
+        argv.push_back(spawnWineExecutable.c_str());
     }
 
-    std::string wineExecutable = sharedPath + "Contents/SharedSupport/CrossOver/bin/wine";
-    std::string bottlePath = GetBottlePath();
-    std::vector<const char*> argv;
-    argv.push_back(wineExecutable.c_str());
-    argv.push_back("--bottle");
-    argv.push_back(bottlePath.c_str());
     argv.push_back(executable.c_str());
-    
     for (int i = 0; i < options.game_arguments_length; i++) {
         argv.push_back(options.game_arguments[i]);
     }
     argv.push_back(nullptr);
-    
+
+    // Lancement du processus
     pid_t pid;
     posix_spawn_file_actions_t spawn_actions;
     posix_spawn_file_actions_init(&spawn_actions);
     posix_spawn_file_actions_addclose(&spawn_actions, STDOUT_FILENO);
     posix_spawn_file_actions_addclose(&spawn_actions, STDERR_FILENO);
-    
-    int result = posix_spawn(&pid, wineExecutable.c_str(), &spawn_actions, nullptr, const_cast<char**>(argv.data()), environ);
-    
+
+    int result = posix_spawn(&pid, spawnWineExecutable.c_str(), &spawn_actions, nullptr,
+                             const_cast<char**>(argv.data()), environ);
     if (result != 0) {
-        error("Failed to Launch the game! launcher closing soon");
+        error("Failed to launch the game! Launcher will now exit.");
         return;
-    } else {
-        waitpid(pid, &status, 0);
-        info("Game Closed! launcher closing soon");
     }
-    
+    waitpid(pid, &status, 0);
+    info("Game closed! Launcher will now exit.");
+
     std::this_thread::sleep_for(std::chrono::seconds(5));
     exit(2);
 }

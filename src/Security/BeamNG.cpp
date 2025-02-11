@@ -33,8 +33,8 @@
 #define MAX_VALUE_NAME 16383
 
 int TraceBack = 0;
-std::string GameDir;
-std::string BottlePath;
+std::filesystem::path GameDir;
+std::filesystem::path BottlePath;
 
 void lowExit(int code) {
     TraceBack = 0;
@@ -149,8 +149,6 @@ std::string QueryKey(HKEY hKey, int ID) {
 }
 #endif
 
-namespace fs = std::filesystem;
-
 bool NameValid(const std::string& N) {
     if (N == "config" || N == "librarycache") {
         return true;
@@ -161,7 +159,7 @@ bool NameValid(const std::string& N) {
     return false;
 }
 void FileList(std::vector<std::string>& a, const std::string& Path) {
-    for (const auto& entry : fs::directory_iterator(Path)) {
+    for (const auto& entry : std::filesystem::directory_iterator(Path)) {
         const auto& DPath = entry.path();
         if (!entry.is_directory()) {
             a.emplace_back(DPath.string());
@@ -182,9 +180,9 @@ std::string GetBottleName() {
     return bottlePath.filename().string();
 }
 
-std::map<char, std::string> GetDriveMappings(const std::string& bottlePath) {
-    std::map<char, std::string> driveMappings;
-    std::string dosDevicesPath = bottlePath + "/dosdevices/";
+std::map<char, std::filesystem::path> GetDriveMappings(const std::filesystem::path& bottlePath) {
+    std::map<char, std::filesystem::path> driveMappings;
+    std::filesystem::path dosDevicesPath = bottlePath / "dosdevices/";
 
     if (std::filesystem::exists(dosDevicesPath)) {
         for (const auto& entry : std::filesystem::directory_iterator(dosDevicesPath)) {
@@ -193,18 +191,19 @@ std::map<char, std::string> GetDriveMappings(const std::string& bottlePath) {
                 driveLetter = std::tolower(driveLetter);
                 std::string macPath = std::filesystem::read_symlink(entry.path()).string();
                 if (!std::filesystem::path(macPath).is_absolute()) {
-                    macPath = dosDevicesPath + macPath;
+                    macPath = dosDevicesPath / macPath;
                 }
                 driveMappings[driveLetter] = macPath;
+
             }
         }
     } else {
-        error("Failed to find dosdevices directory for bottle '" + bottlePath + "'");
+        error("Failed to find dosdevices directory for bottle '" + bottlePath.string() + "'");
     }
     return driveMappings;
 }
 
-bool CheckForGame(const std::string& libraryPath, const std::map<char, std::string>& driveMappings) {
+bool CheckForGame(const std::string& libraryPath, const std::map<char, std::filesystem::path>& driveMappings) {
     char driveLetter = std::tolower(libraryPath[0]);
 
     if (!driveMappings.contains(driveLetter)) {
@@ -230,27 +229,28 @@ bool CheckForGame(const std::string& libraryPath, const std::map<char, std::stri
 
     debug("Cleaned library path: " + cleanLibraryPath.string());
 
-    fs::path beamngPath = basePath / cleanLibraryPath / "steamapps/common/BeamNG.drive";
+    std::filesystem::path beamngPath = basePath / cleanLibraryPath / "steamapps/common/BeamNG.drive";
 
     beamngPath = beamngPath.lexically_normal();
 
     debug("Checking for BeamNG.drive at: " + beamngPath.string());
 
-    if (fs::exists(beamngPath)) {
-        GameDir = beamngPath.string();
-        info("BeamNG.drive found at: " + GameDir);
+    if (std::filesystem::exists(beamngPath)) {
+        GameDir = beamngPath;   
+        info("BeamNG.drive found at: " + GameDir.string());
         return true;
     }
+
 
     return false;
 }
 
-void ProcessBottle(const fs::path& bottlePath) {
+void ProcessBottle(const std::filesystem::path& bottlePath) {
     info("Checking bottle: " + bottlePath.filename().string());
-    auto driveMappings = GetDriveMappings(bottlePath.string());
+    auto driveMappings = GetDriveMappings(bottlePath);
 
-    const fs::path libraryFilePath = bottlePath / "drive_c/Program Files (x86)/Steam/config/libraryfolders.vdf";
-    if (!fs::exists(libraryFilePath)) {
+    const std::filesystem::path libraryFilePath = bottlePath / "drive_c/Program Files (x86)/Steam/config/libraryfolders.vdf";
+    if (!std::filesystem::exists(libraryFilePath)) {
         warn("Library file not found in bottle: " + bottlePath.filename().string());
         return;
     }
@@ -311,35 +311,57 @@ void LegitimacyCheck() {
 #elif defined(__APPLE__)
     if (options.bottle_path.empty()) {
         const char* homeDir = getpwuid(getuid())->pw_dir;
-        std::string crossoverBottlesPath;
+        std::filesystem::path crossoverBottlesPath;
 
         auto [output, status] = Utils::runCommand("defaults read com.codeweavers.CrossOver.plist BottleDir");
+
         if (status != 0) {
-            fs::path defaultBottlesPath = fs::path(homeDir) / "Library/Application Support/CrossOver/Bottles";
-            if (!fs::exists(defaultBottlesPath)) {
-                error("Failed to detect CrossOver installation.");
+            std::filesystem::path defaultBottlesPath = std::filesystem::path(homeDir) / "Library/Application Support/CrossOver/Bottles";
+            
+            defaultBottlesPath = std::filesystem::canonical(defaultBottlesPath);
+            
+            if (!std::filesystem::exists(defaultBottlesPath)) {                
+                error("Failed to detect CrossOver installation, make sure you have installed it and have a bottle created.");
+                std::this_thread::sleep_for(std::chrono::seconds(5));
                 exit(1);
             }
-            crossoverBottlesPath = defaultBottlesPath.string();
+            crossoverBottlesPath = defaultBottlesPath;
         } else {
-            crossoverBottlesPath = output;
-            crossoverBottlesPath.pop_back();
+            crossoverBottlesPath = std::filesystem::path(Utils::Trim(output));
         }
 
-        debug("Crossover bottles path: " + crossoverBottlesPath);
-
         if (options.bottle.empty()) {
-            for (const auto& bottle : fs::directory_iterator(crossoverBottlesPath)) {
+            debug("Checking all bottles in: " + crossoverBottlesPath.string());
+            //vérifier que le répertoire existe avant de continuer
+            try {
+                if (!std::filesystem::exists(crossoverBottlesPath) || !std::filesystem::is_directory(crossoverBottlesPath)) {
+                    error("Chemin des bouteilles invalide: " + crossoverBottlesPath.string() + 
+                        "\nExiste: " + std::to_string(std::filesystem::exists(crossoverBottlesPath)) +
+                        "\nEst un dossier: " + std::to_string(std::filesystem::is_directory(crossoverBottlesPath)));
+                    std::this_thread::sleep_for(std::chrono::seconds(5));
+                    exit(1);
+                }
+
+            } catch (const std::filesystem::filesystem_error& e) {
+                error("Erreur d'accès: " + std::string(e.what()));
+                std::this_thread::sleep_for(std::chrono::seconds(5));
+                exit(1);
+            }
+            for (const auto& bottle : std::filesystem::directory_iterator(crossoverBottlesPath)) {
+                debug("Checking bottle: " + bottle.path().filename().string());
                 if (bottle.is_directory()) {
-                    ProcessBottle(bottle.path());
+
+                    ProcessBottle(bottle);
                     if (!GameDir.empty()) {
                         return;
                     }
                 }
+
             }
         } else {
-            fs::path bottlePath = crossoverBottlesPath + "/" + options.bottle;
-            if (!fs::exists(bottlePath)) {
+            std::filesystem::path bottlePath = crossoverBottlesPath / options.bottle;
+            debug("Checking bottle: " + bottlePath.string());
+            if (!std::filesystem::exists(bottlePath)) {
                 error("Bottle does not exist: " + bottlePath.string());
                 exit(1);
             }
@@ -349,8 +371,8 @@ void LegitimacyCheck() {
             }
         }
     } else {
-        fs::path bottlePath = options.bottle_path;
-        if (!fs::exists(bottlePath)) {
+        std::filesystem::path bottlePath = options.bottle_path;
+        if (!std::filesystem::exists(bottlePath)) {
             error("Bottle path does not exist: " + bottlePath.string());
             exit(1);
         }

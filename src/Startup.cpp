@@ -177,7 +177,7 @@ void CheckForUpdates(const std::string& CV) {
     if (FileHash != LatestHash && IsOutdated(Version(VersionStrToInts(GetVer() + GetPatch())), Version(VersionStrToInts(LatestVersion)))) {
         if (!options.no_update) {
             info("Launcher update found!");
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__)
             error("Auto update is NOT implemented for the Linux version. Please update manually ASAP as updates contain security patches.");
 #else
             fs::remove(Back);

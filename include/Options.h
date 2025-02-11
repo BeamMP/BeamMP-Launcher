@@ -18,6 +18,7 @@ struct Options {
 #if defined(__APPLE__)
     std::string bottle;
     std::string bottle_path;
+    std::string wine_executable;
 #endif
     const char** argv = nullptr;
     int argc = 0;

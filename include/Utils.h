@@ -25,6 +25,12 @@ namespace Utils {
         return lowerStr;
     }
 
+    inline std::string Trim(const std::string& s) {
+        auto start = s.find_first_not_of(" \t\n\r");
+        auto end = s.find_last_not_of(" \t\n\r");
+        return (start == std::string::npos) ? "" : s.substr(start, end - start + 1);
+    }
+
     #if defined(__APPLE__)
         inline std::pair<std::string, int> runCommand(const char* cmd) {
             std::array<char, 128> buffer;
