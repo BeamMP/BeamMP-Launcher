@@ -16,6 +16,10 @@
 #include <arpa/inet.h>
 #endif
 
+#ifdef __APPLE__
+#include "linuxfixes.h"
+#endif
+
 void NetReset();
 extern bool Dev;
 extern int ping;
