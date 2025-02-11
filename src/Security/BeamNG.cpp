@@ -32,7 +32,12 @@
 #define MAX_VALUE_NAME 16383
 
 int TraceBack = 0;
-std::filesystem::path GameDir;
+#if defined(__APPLE__)
+    std::filesystem::path GameDir;
+#else
+    std::string GameDir;
+#endif
+
 std::filesystem::path BottlePath;
 
 void lowExit(int code) {
