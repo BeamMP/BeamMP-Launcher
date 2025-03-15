@@ -26,6 +26,7 @@
 #include <string>
 #include <thread>
 #include "Options.h"
+#include <chrono>
 
 std::chrono::time_point<std::chrono::high_resolution_clock> PingStart, PingEnd;
 bool GConnected = false;
