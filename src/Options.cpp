@@ -86,6 +86,17 @@ void InitOptions(int argc, const char *argv[], Options &options) {
             options.no_download = true;
             options.no_launch = true;
             options.no_update = true;
+        #if defined(__APPLE__)
+        } else if ((argument == "--bottle" && !options.bottle_path.empty()) || (argument == "--bottle-path" && !options.bottle.empty())) {
+            error("--bottle and --bottle-path cannot be used at the same time.");
+            exit(1);
+        } else if (argument == "--bottle") {
+            options.bottle = argv[i + 1];
+        } else if (argument == "--bottle-path") {
+            options.bottle_path = argv[i + 1];
+        } else if (argument == "--wine") {
+            options.wine_executable = argv[i + 1];
+        #endif
         } else if (argument == "--" || argument == "--game") {
             options.game_arguments = &argv[i + 1];
             options.game_arguments_length = argc - i - 1;
@@ -101,6 +112,12 @@ void InitOptions(int argc, const char *argv[], Options &options) {
                 "\t--no-update          Skip applying launcher updates (you must update manually)\n"
                 "\t--no-launch          Skip launching the game (you must launch the game manually)\n"
                 "\t--dev                Developer mode, same as --verbose --no-download --no-launch --no-update\n"
+                #if defined(__APPLE__)
+                "\t--bottle <bottle>        Name of the CrossOver Bottle where the game is located in. Only works for CrossOver Bottles.\n"
+                "\t--bottle-path <path>     Path to the Bottle where the game is located in.\n"
+                "\t--wine <path>            Path to the wine executable, by default the wine executable of CrossOver is used.\n"
+                "\tWARNING: The bottle-path and bottle options cannot be used at the same time.\n"
+                #endif
                 "\t--game <args...>     Passes ALL following arguments to the game, see also `--`\n"
                 << std::flush;
             exit(0);
