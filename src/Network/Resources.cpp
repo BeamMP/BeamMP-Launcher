@@ -164,9 +164,12 @@ std::vector<char> TCPRcvRaw(SOCKET Sock, uint64_t& GRcv, uint64_t Size) {
     do {
         // receive at most some MB at a time
         int Len = std::min(int(Size - Rcv), 1 * 1024 * 1024);
-        int32_t Temp = recv(Sock, &File[Rcv], Len, MSG_WAITALL);
-        if (Temp < 1) {
-            info(std::to_string(Temp));
+        int Temp = recv(Sock, &File[Rcv], Len, MSG_WAITALL);
+        if (Temp == -1 || Temp == 0) {
+            debug("Recv returned: " + std::to_string(Temp));
+            if (Temp == -1) {
+                error("Socket error during download: " + std::to_string(WSAGetLastError()));
+            }
             UUl("Socket Closed Code 1");
             KillSocket(Sock);
             Terminate = true;
@@ -177,8 +180,8 @@ std::vector<char> TCPRcvRaw(SOCKET Sock, uint64_t& GRcv, uint64_t Size) {
 
         auto end = std::chrono::high_resolution_clock::now();
         auto difference = end - start;
-        float bits_per_s = float(Rcv * 8) / float(std::chrono::duration_cast<std::chrono::milliseconds>(difference).count());
-        float megabits_per_s = bits_per_s / 1000;
+        double bits_per_s = double(Rcv * 8) / double(std::chrono::duration_cast<std::chrono::milliseconds>(difference).count());
+        double megabits_per_s = bits_per_s / 1000;
         DownloadSpeed = megabits_per_s;
         // every 8th iteration print the speed
         if (i % 8 == 0) {

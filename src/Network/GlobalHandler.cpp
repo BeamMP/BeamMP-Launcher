@@ -262,7 +262,8 @@ void TCPGameServer(const std::string& IP, int Port) {
             NetMainThread = std::make_unique<std::thread>(NetMain, IP, Port);
             CServer = false;
         }
-        int32_t Size, Temp, Rcv;
+        int32_t Size, Rcv;
+        int Temp;
         char Header[10] = { 0 };
 
         // Read byte by byte until '>' is rcved then get the size and read based on it
