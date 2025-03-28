@@ -90,6 +90,8 @@ void StartGame(std::string Dir) {
         gameArgs += options.game_arguments[i];
     }
 
+    debug("BeamNG executable path: " + Dir);
+
     bSuccess = CreateProcessA(nullptr, (LPSTR)(Dir + gameArgs).c_str(), nullptr, nullptr, TRUE, 0, nullptr, BaseDir.c_str(), &si, &pi);
     if (bSuccess) {
         info("Game Launched!");
@@ -97,7 +99,19 @@ void StartGame(std::string Dir) {
         WaitForSingleObject(pi.hProcess, INFINITE);
         error("Game Closed! launcher closing soon");
     } else {
-        error("Failed to Launch the game! launcher closing soon");
+        std::string err = "";
+
+        DWORD dw = GetLastError();
+        LPVOID lpMsgBuf;
+
+        if (FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, dw,
+            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&lpMsgBuf, 0, nullptr) == 0) {
+            err = "Unknown error code: " + std::to_string(dw);
+        } else {
+            err = "Error " + std::to_string(dw) + ": " + (char*)lpMsgBuf;
+        }
+
+        error("Failed to Launch the game! launcher closing soon. " + err);
     }
     std::this_thread::sleep_for(std::chrono::seconds(5));
     exit(2);
