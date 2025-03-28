@@ -164,9 +164,12 @@ std::vector<char> TCPRcvRaw(SOCKET Sock, uint64_t& GRcv, uint64_t Size) {
     do {
         // receive at most some MB at a time
         int Len = std::min(int(Size - Rcv), 1 * 1024 * 1024);
-        int32_t Temp = recv(Sock, &File[Rcv], Len, MSG_WAITALL);
+        int Temp = recv(Sock, &File[Rcv], Len, MSG_WAITALL);
         if (Temp < 1) {
-            info(std::to_string(Temp));
+            debug("Recv returned: " + std::to_string(Temp));
+            if (Temp == -1) {
+                error("Socket error during download: " + std::to_string(WSAGetLastError()));
+            }
             UUl("Socket Closed Code 1");
             KillSocket(Sock);
             Terminate = true;

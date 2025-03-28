@@ -141,7 +141,7 @@ void GetServerInfo(std::string Data) {
     const std::string buffer = ([&]() -> std::string {
         int32_t Header;
         std::vector<char> data(sizeof(Header));
-        int32_t Temp = recv(ISock, data.data(), sizeof(Header), MSG_WAITALL);
+        int Temp = recv(ISock, data.data(), sizeof(Header), MSG_WAITALL);
 
         auto checkBytes = ([&](const int32_t bytes) -> bool {
             if (bytes == 0) {
@@ -352,7 +352,8 @@ void Parse(std::string Data, SOCKET CSocket) {
 }
 void GameHandler(SOCKET Client) {
     CoreSocket = Client;
-    int32_t Size, Temp, Rcv;
+    int32_t Size, Rcv;
+    int Temp;
     char Header[10] = { 0 };
     do {
         Rcv = 0;
