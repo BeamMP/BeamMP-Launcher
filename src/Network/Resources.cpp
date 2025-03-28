@@ -180,8 +180,8 @@ std::vector<char> TCPRcvRaw(SOCKET Sock, uint64_t& GRcv, uint64_t Size) {
 
         auto end = std::chrono::high_resolution_clock::now();
         auto difference = end - start;
-        float bits_per_s = float(Rcv * 8) / float(std::chrono::duration_cast<std::chrono::milliseconds>(difference).count());
-        float megabits_per_s = bits_per_s / 1000;
+        double bits_per_s = double(Rcv * 8) / double(std::chrono::duration_cast<std::chrono::milliseconds>(difference).count());
+        double megabits_per_s = bits_per_s / 1000;
         DownloadSpeed = megabits_per_s;
         // every 8th iteration print the speed
         if (i % 8 == 0) {
