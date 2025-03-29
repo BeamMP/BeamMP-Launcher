@@ -81,7 +81,8 @@ std::string TCPRcv(SOCKET Sock) {
         UUl("Invalid Socket");
         return "";
     }
-    int32_t Header, Temp;
+    int32_t Header;
+    int Temp;
     std::vector<char> Data(sizeof(Header));
     Temp = recv(Sock, Data.data(), sizeof(Header), MSG_WAITALL);
     if (!CheckBytes(Temp)) {
