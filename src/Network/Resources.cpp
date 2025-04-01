@@ -380,6 +380,11 @@ struct ModInfo {
                     .Hash = entry["hash"],
                     .HashAlgorithm = entry["hash_algorithm"],
                 };
+
+                if (entry.contains("protected")) {
+                    modInfo.Protected = entry["protected"];
+                }
+
                 modInfos.push_back(modInfo);
                 success = true;
             }
@@ -393,6 +398,7 @@ struct ModInfo {
     size_t FileSize;
     std::string Hash;
     std::string HashAlgorithm;
+    bool Protected = false;
 };
 
 nlohmann::json modUsage = {};
@@ -544,6 +550,16 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
             WaitForConfirm();
             continue;
         }
+
+        if (ModInfoIter->Protected && false) {
+            std::string message = "Mod '" + ModInfoIter->FileName + "' is protected and therefore must be placed in the Resources/Caching folder manually here: " + fs::absolute(CachingDirectory).string();
+
+            error(message);
+            UUl(message);
+            Terminate = true;
+            return;
+        }
+
         CheckForDir();
         std::string FName = ModInfoIter->FileName;
         do {
