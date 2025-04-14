@@ -71,6 +71,7 @@ void UDPRcv() {
     ZeroMemory(&FromServer, clientLength);
     static thread_local std::array<char, 10240> Ret {};
     if (UDPSock == -1)
+        debug("UDPSock == -1");
         return;
     int32_t Rcv = recvfrom(UDPSock, Ret.data(), Ret.size() - 1, 0, (sockaddr*)&FromServer, &clientLength);
     if (Rcv == SOCKET_ERROR)
