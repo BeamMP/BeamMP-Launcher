@@ -127,7 +127,7 @@ std::string HTTP::Post(const std::string& IP, const std::string& Fields) {
     return Ret;
 }
 
-bool HTTP::Download(const std::string& IP, const std::string& Path) {
+bool HTTP::Download(const std::string& IP, const beammp_fs_string& Path) {
     static std::mutex Lock;
     std::scoped_lock Guard(Lock);
 
@@ -145,7 +145,7 @@ bool HTTP::Download(const std::string& IP, const std::string& Path) {
         File.close();
         info("Download Complete!");
     } else {
-        error("Failed to open file directory: " + Path);
+        error(beammp_wide("Failed to open file directory: ") + Path);
         return false;
     }
 

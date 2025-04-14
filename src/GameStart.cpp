@@ -19,6 +19,7 @@
 
 #include "Logger.h"
 #include "Startup.h"
+#include "Utils.h"
 #include <Security/Init.h>
 #include <filesystem>
 #include <thread>
@@ -26,9 +27,9 @@
 
 unsigned long GamePID = 0;
 #if defined(_WIN32)
-std::string QueryKey(HKEY hKey, int ID);
-std::string GetGamePath() {
-    static std::string Path;
+std::wstring QueryKey(HKEY hKey, int ID);
+std::wstring GetGamePath() {
+    static std::wstring Path;
     if (!Path.empty())
         return Path;
 
@@ -41,23 +42,25 @@ std::string GetGamePath() {
     Path = QueryKey(hKey, 4);
 
     if (Path.empty()) {
-        Path = "";
-        char appDataPath[MAX_PATH];
-        HRESULT result = SHGetFolderPathA(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, appDataPath);
+        Path = L"";
+        wchar_t* appDataPath = new wchar_t[MAX_PATH];
+        HRESULT result = SHGetFolderPathW(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, appDataPath);
         if (SUCCEEDED(result)) {
             Path = appDataPath;
         }
+
+        delete[] appDataPath;
 
         if (Path.empty()) {
             fatal("Cannot get Local Appdata directory");
         }
 
-        Path += "\\BeamNG.drive\\";
+        Path += L"\\BeamNG.drive\\";
     }
 
     std::string Ver = CheckVer(GetGameDir());
     Ver = Ver.substr(0, Ver.find('.', Ver.find('.') + 1));
-    Path += Ver + "\\";
+    Path += Utils::ToWString(Ver) + L"\\";
     return Path;
 }
 #elif defined(__linux__)
@@ -75,22 +78,22 @@ std::string GetGamePath() {
 #endif
 
 #if defined(_WIN32)
-void StartGame(std::string Dir) {
+void StartGame(std::wstring Dir) {
     BOOL bSuccess = FALSE;
     PROCESS_INFORMATION pi;
-    STARTUPINFO si = { 0 };
+    STARTUPINFOW si = { 0 };
     si.cb = sizeof(si);
-    std::string BaseDir = Dir; //+"\\Bin64";
+    std::wstring BaseDir = Dir; //+"\\Bin64";
     // Dir += R"(\Bin64\BeamNG.drive.x64.exe)";
-    Dir += "\\BeamNG.drive.exe";
-    std::string gameArgs = "";
+    Dir += L"\\BeamNG.drive.exe";
+    std::wstring gameArgs = L"";
 
     for (int i = 0; i < options.game_arguments_length; i++) {
-        gameArgs += " ";
-        gameArgs += options.game_arguments[i];
+        gameArgs += L" ";
+        gameArgs += Utils::ToWString(options.game_arguments[i]);
     }
 
-    bSuccess = CreateProcessA(nullptr, (LPSTR)(Dir + gameArgs).c_str(), nullptr, nullptr, TRUE, 0, nullptr, BaseDir.c_str(), &si, &pi);
+    bSuccess = CreateProcessW(nullptr, (wchar_t*)(Dir + gameArgs).c_str(), nullptr, nullptr, TRUE, 0, nullptr, BaseDir.c_str(), &si, &pi);
     if (bSuccess) {
         info("Game Launched!");
         GamePID = pi.dwProcessId;
@@ -133,7 +136,7 @@ void StartGame(std::string Dir) {
 }
 #endif
 
-void InitGame(const std::string& Dir) {
+void InitGame(const beammp_fs_string& Dir) {
     if (!options.no_launch) {
         std::thread Game(StartGame, Dir);
         Game.detach();
