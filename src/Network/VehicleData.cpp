@@ -10,7 +10,7 @@
 
 #if defined(_WIN32)
 #include <ws2tcpip.h>
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 #include "linuxfixes.h"
 #include <arpa/inet.h>
 #include <cstring>
@@ -65,7 +65,7 @@ void UDPRcv() {
     sockaddr_in FromServer {};
 #if defined(_WIN32)
     int clientLength = sizeof(FromServer);
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
     socklen_t clientLength = sizeof(FromServer);
 #endif
     ZeroMemory(&FromServer, clientLength);
