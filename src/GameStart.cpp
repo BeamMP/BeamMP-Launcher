@@ -102,13 +102,13 @@ void StartGame(std::string Dir) {
         std::string err = "";
 
         DWORD dw = GetLastError();
-        LPVOID lpMsgBuf;
+        LPVOID lpErrorMsgBuffer;
 
         if (FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, dw,
-            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&lpMsgBuf, 0, nullptr) == 0) {
+            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&lpErrorMsgBuffer, 0, nullptr) == 0) {
             err = "Unknown error code: " + std::to_string(dw);
         } else {
-            err = "Error " + std::to_string(dw) + ": " + (char*)lpMsgBuf;
+            err = "Error " + std::to_string(dw) + ": " + (char*)lpErrorMsgBuffer;
         }
 
         error("Failed to Launch the game! launcher closing soon. " + err);
