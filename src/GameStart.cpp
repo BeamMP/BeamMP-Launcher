@@ -41,7 +41,7 @@ std::string GetGamePath() {
             warn("Invalid or non-existent path (" + std::string(options.user_path) + ") specified using --user-path, skipping");
     }
 
-    if (std::string startupIniPath = GetGameDir() + "\\startup.ini"; std::filesystem::exists(startupIniPath)) {
+    if (const auto startupIniPath = std::filesystem::path(GetGameDir()) / "startup.ini"; exists(startupIniPath)) {
 
         std::ifstream startupIni(startupIniPath);
         std::string line;
