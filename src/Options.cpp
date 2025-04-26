@@ -88,7 +88,7 @@ void InitOptions(int argc, const char *argv[], Options &options) {
             options.no_update = true;
         } else if (argument == "--user-path") {
             if (i + 1 >= argc) {
-                error("No user path specified after flag");
+                error("You must specify a path after the `--user-path` argument");
             }
             options.user_path = argv[i + 1];
             i++;
