@@ -18,11 +18,13 @@
 #endif
 
 #include "Logger.h"
+#include "Options.h"
 #include "Startup.h"
+#include "Utils.h"
 #include <Security/Init.h>
 #include <filesystem>
 #include <thread>
-#include "Options.h"
+
 #include <fstream>
 
 unsigned long GamePID = 0;
@@ -43,19 +45,32 @@ std::string GetGamePath() {
 
     if (const auto startupIniPath = std::filesystem::path(GetGameDir()) / "startup.ini"; exists(startupIniPath)) {
 
-        std::ifstream startupIni(startupIniPath);
-        std::string line;
-        while (std::getline(startupIni, line))
-            if (line.find("UserPath = ") == 0) {
-                std::string userPath = line.substr(11);
+        if (std::ifstream startupIni(startupIniPath); startupIni.is_open()) {
+            std::string contents((std::istreambuf_iterator(startupIni)), std::istreambuf_iterator<char>());
+            startupIni.close();
+
+            if (contents.size() > 3) {
+                contents.erase(0, 3);
+            }
+
+            auto ini = Utils::ParseINI(contents);
+                if (ini.empty()) {
+                    warn("Failed to parse startup.ini");
+                } else
+                    debug("Successfully parsed startup.ini");
+
+
+                std::string userPath;
+                if (ini.contains("filesystem") && ini["filesystem"].contains("UserPath"))
+                    userPath = ini["filesystem"]["UserPath"];
+
                 if (!userPath.empty())
-                    if (std::filesystem::exists(userPath)) {
+                    if (userPath = Utils::ExpandEnvVars(userPath); std::filesystem::exists(userPath)) {
                         Path = userPath;
                         debug("Using custom user folder path from startup.ini: " + Path.string());
                     } else
                         warn("Found custom user folder path ("+ userPath + ") in startup.ini but it doesn't exist, skipping");
-
-            }
+        }
 
         if (Path.empty()) {
             HKEY hKey;
