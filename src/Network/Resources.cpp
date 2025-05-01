@@ -557,6 +557,12 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
                 break;
             }
 
+            if (Data != "AG") {
+                UUl("Received corrupted download confirmation, aborting download.");
+                Terminate = true;
+                break;
+            }
+
             std::string Name = std::to_string(ModNo) + "/" + std::to_string(TotalMods) + ": " + FName;
 
             std::vector<char> DownloadedFile = SingleNormalDownload(Sock, ModInfoIter->FileSize, Name);
