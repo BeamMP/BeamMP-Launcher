@@ -559,6 +559,7 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
 
             if (Data != "AG") {
                 UUl("Received corrupted download confirmation, aborting download.");
+                debug("Corrupted download confirmation: " + Data);
                 Terminate = true;
                 break;
             }
