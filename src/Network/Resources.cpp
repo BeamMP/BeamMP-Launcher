@@ -571,9 +571,14 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
                 OutFile.write(DownloadedFile.data(), DownloadedFile.size());
                 OutFile.flush();
             }
-            // 2. verify size
+            // 2. verify size and hash
             if (std::filesystem::file_size(PathToSaveTo) != DownloadedFile.size()) {
                 error("Failed to write the entire file '" + PathToSaveTo + "' correctly (file size mismatch)");
+                Terminate = true;
+            }
+
+            if (GetSha256HashReallyFast(PathToSaveTo) != ModInfoIter->Hash) {
+                error("Failed to write or download the entire file '" + PathToSaveTo + "' correctly (hash mismatch)");
                 Terminate = true;
             }
         } while (fs::file_size(PathToSaveTo) != ModInfoIter->FileSize && !Terminate);
