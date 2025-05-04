@@ -11,7 +11,7 @@
 struct Options {
 #if defined(_WIN32)
     std::string executable_name = "BeamMP-Launcher.exe";
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
     std::string executable_name = "BeamMP-Launcher";
 #endif
     unsigned int port = 4444;
@@ -21,6 +21,11 @@ struct Options {
     bool no_launch = false;
     const char **game_arguments = nullptr;
     int game_arguments_length = 0;
+#if defined(__APPLE__)
+    std::string bottle;
+    std::string bottle_path;
+    std::string wine_executable;
+#endif
     const char** argv = nullptr;
     int argc = 0;
 };

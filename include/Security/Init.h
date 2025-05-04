@@ -10,5 +10,9 @@ void PreGame(const std::string& GamePath);
 std::string CheckVer(const std::string& path);
 void InitGame(const std::string& Dir);
 std::string GetGameDir();
+#if defined(__APPLE__) 
+std::string GetBottlePath();
+std::string GetBottleName();
+#endif
 void LegitimacyCheck();
 void CheckLocalKey();

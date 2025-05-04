@@ -13,7 +13,7 @@
 #include <string>
 #if defined(_WIN32)
 #include <windows.h>
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 #include <unistd.h>
 #endif
 #include "Http.h"
@@ -75,7 +75,7 @@ Version::Version(const std::array<uint8_t, 3>& v)
 std::string GetEN() {
 #if defined(_WIN32)
     return "BeamMP-Launcher.exe";
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
     return "BeamMP-Launcher";
 #endif
 }
@@ -119,7 +119,7 @@ void URelaunch() {
     std::this_thread::sleep_for(std::chrono::seconds(1));
     exit(1);
 }
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 void ReLaunch() {
     std::string Arg;
     for (int c = 2; c <= options.argc; c++) {
@@ -150,7 +150,7 @@ void URelaunch() {
 void CheckName() {
 #if defined(_WIN32)
     std::string DN = GetEN(), CDir = options.executable_name, FN = CDir.substr(CDir.find_last_of('\\') + 1);
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
     std::string DN = GetEN(), CDir = options.executable_name, FN = CDir.substr(CDir.find_last_of('/') + 1);
 #endif
     if (FN != DN) {
@@ -175,8 +175,8 @@ void CheckForUpdates(const std::string& CV) {
 
     if (FileHash != LatestHash && IsOutdated(Version(VersionStrToInts(GetVer() + GetPatch())), Version(VersionStrToInts(LatestVersion)))) {
         if (!options.no_update) {
-            info("Launcher update " + LatestVersion + " found!");
-#if defined(__linux__)
+            info("Launcher update found!");
+#if defined(__linux__) || defined(__APPLE__)
             error("Auto update is NOT implemented for the Linux version. Please update manually ASAP as updates contain security patches.");
 #else
             fs::remove(Back);
@@ -237,7 +237,7 @@ void InitLauncher() {
     CheckLocalKey();
     CheckForUpdates(std::string(GetVer()) + GetPatch());
 }
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 
 void InitLauncher() {
     info("BeamMP Launcher v" + GetVer() + GetPatch());
@@ -324,7 +324,7 @@ void PreGame(const std::string& GamePath) {
         }
 #if defined(_WIN32)
         std::string ZipPath(GetGamePath() + R"(mods\multiplayer\BeamMP.zip)");
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
         // Linux version of the game cant handle mods with uppercase names
         std::string ZipPath(GetGamePath() + R"(mods/multiplayer/beammp.zip)");
 #endif
