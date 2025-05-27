@@ -554,7 +554,7 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
             continue;
         }
 
-        if (ModInfoIter->Protected && false) {
+        if (ModInfoIter->Protected) {
             std::string message = "Mod '" + ModInfoIter->FileName + "' is protected and therefore must be placed in the Resources/Caching folder manually here: " + fs::absolute(CachingDirectory).string();
 
             error(message);
