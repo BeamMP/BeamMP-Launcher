@@ -30,6 +30,7 @@ extern uint64_t UDPSock;
 extern uint64_t TCPSock;
 extern std::string Branch;
 extern std::string CachingDirectory;
+extern bool deleteDuplicateMods;
 extern bool TCPTerminate;
 extern std::string LastIP;
 extern std::string MStatus;

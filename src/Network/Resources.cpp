@@ -475,10 +475,28 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
 
     info("Syncing...");
 
+    std::vector<std::pair<std::string, std::filesystem::path>> CachedMods = {};
+    if (deleteDuplicateMods) {
+        for (const auto& entry : fs::directory_iterator(CachingDirectory)) {
+            if (entry.is_regular_file() && entry.path().extension() == ".zip" && entry.path().filename().string().length() > 10) {
+                CachedMods.push_back(std::make_pair(entry.path().filename().string().substr(0, entry.path().filename().string().length() - 13) + ".zip", entry.path()));
+            }
+        }
+    }
+
     int ModNo = 0;
     int TotalMods = ModInfos.size();
     for (auto ModInfoIter = ModInfos.begin(), AlsoModInfoIter = ModInfos.begin(); ModInfoIter != ModInfos.end() && !Terminate; ++ModInfoIter, ++AlsoModInfoIter) {
         ++ModNo;
+        if (deleteDuplicateMods) {
+            for (auto& CachedMod : CachedMods) {
+                if (CachedMod.first == ModInfoIter->FileName && CachedMod.second.stem().string() + ".zip" != std::filesystem::path(ModInfoIter->FileName).stem().string() + "-" + ModInfoIter->Hash.substr(0, 8) + ".zip") {
+                    debug("Found duplicate mod '" + CachedMod.second.stem().string() + ".zip" + "' in cache, removing it");
+                    std::filesystem::remove(CachedMod.second);
+                    break;
+                }
+            }
+        }
         if (ModInfoIter->Hash.length() < 8 || ModInfoIter->HashAlgorithm != "sha256") {
             error("Unsupported hash algorithm or invalid hash for '" + ModInfoIter->FileName + "'");
             Terminate = true;
