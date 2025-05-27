@@ -488,6 +488,7 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
         auto PathToSaveTo = (fs::path(CachingDirectory) / FileName).string();
         if (fs::exists(PathToSaveTo) && GetSha256HashReallyFast(PathToSaveTo) == ModInfoIter->Hash) {
             debug("Mod '" + FileName + "' found in cache");
+            UpdateUl(false, std::to_string(ModNo) + "/" + std::to_string(TotalMods) + ": " + ModInfoIter->FileName);
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
             try {
                 if (!fs::exists(GetGamePath() + "mods/multiplayer")) {
@@ -518,6 +519,7 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
         } else if (auto OldCachedPath = fs::path(CachingDirectory) / std::filesystem::path(ModInfoIter->FileName).filename();
                    fs::exists(OldCachedPath) && GetSha256HashReallyFast(OldCachedPath.string()) == ModInfoIter->Hash) {
             debug("Mod '" + FileName + "' found in old cache, copying it to the new cache");
+            UpdateUl(false, std::to_string(ModNo) + "/" + std::to_string(TotalMods) + ": " + ModInfoIter->FileName);
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
             try {
                 fs::copy_file(OldCachedPath, PathToSaveTo, fs::copy_options::overwrite_existing);
