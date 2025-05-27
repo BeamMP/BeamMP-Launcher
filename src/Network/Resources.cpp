@@ -475,9 +475,10 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
 
     info("Syncing...");
 
-    int ModNo = 1;
+    int ModNo = 0;
     int TotalMods = ModInfos.size();
     for (auto ModInfoIter = ModInfos.begin(), AlsoModInfoIter = ModInfos.begin(); ModInfoIter != ModInfos.end() && !Terminate; ++ModInfoIter, ++AlsoModInfoIter) {
+        ++ModNo;
         if (ModInfoIter->Hash.length() < 8 || ModInfoIter->HashAlgorithm != "sha256") {
             error("Unsupported hash algorithm or invalid hash for '" + ModInfoIter->FileName + "'");
             Terminate = true;
@@ -621,7 +622,6 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
             UpdateModUsage(FName);
         }
         WaitForConfirm();
-        ++ModNo;
     }
 
     if (!Terminate) {
