@@ -7,7 +7,6 @@
 
 #include <filesystem>
 #if defined(_WIN32)
-#include <windows.h>
 #elif defined(__linux__)
 #include "vdf_parser.hpp"
 #include <pwd.h>

@@ -525,7 +525,7 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
         CheckForDir();
         std::string FName = ModInfoIter->FileName;
         do {
-            debug("Loading file '" + FName + "' to '" + PathToSaveTo.string() + "'");
+            debug(L"Loading file '" + Utils::ToWString(FName) + L"' to '" + PathToSaveTo.wstring() + L"'");
             TCPSend("f" + ModInfoIter->FileName, Sock);
 
             std::string Data = TCPRcv(Sock);
@@ -562,8 +562,8 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
                 Terminate = true;
             }
 
-            if (GetSha256HashReallyFast(PathToSaveTo) != ModInfoIter->Hash) {
-                error("Failed to write or download the entire file '" + PathToSaveTo + "' correctly (hash mismatch)");
+            if (Utils::GetSha256HashReallyFast(PathToSaveTo) != ModInfoIter->Hash) {
+                error(L"Failed to write or download the entire file '" + PathToSaveTo.wstring() + L"' correctly (hash mismatch)");
                 Terminate = true;
             }
         } while (fs::file_size(PathToSaveTo) != ModInfoIter->FileSize && !Terminate);

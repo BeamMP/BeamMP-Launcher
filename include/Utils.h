@@ -19,6 +19,8 @@
 #define beammp_fs_string std::wstring
 #define beammp_fs_char wchar_t
 #define beammp_wide(str) L##str
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 #else
 #define beammp_fs_string std::string
 #define beammp_fs_char char
@@ -71,6 +73,38 @@ namespace Utils {
 
         return result;
     }
+#ifdef _WIN32
+    inline std::wstring ExpandEnvVars(const std::wstring& input) {
+        std::wstring result;
+        std::wregex envPattern(LR"(%([^%]+)%|\$([A-Za-z_][A-Za-z0-9_]*)|\$\{([^}]+)\})");
+
+        std::wsregex_iterator begin(input.begin(), input.end(), envPattern);
+        std::wsregex_iterator end;
+
+        size_t lastPos = 0;
+
+        for (auto it = begin; it != end; ++it) {
+            const auto& match = *it;
+
+            result.append(input, lastPos, match.position() - lastPos);
+
+            std::wstring varName;
+            if (match[1].matched) varName = match[1].str(); // %VAR%
+            else if (match[2].matched) varName = match[2].str(); // $VAR
+            else if (match[3].matched) varName = match[3].str(); // ${VAR}
+
+            if (const wchar_t* envValue = _wgetenv(varName.c_str())) {
+                result.append(envValue);
+            }
+
+            lastPos = match.position() + match.length();
+        }
+
+        result.append(input, lastPos, input.length() - lastPos);
+
+        return result;
+    }
+#endif
     inline std::map<std::string, std::map<std::string, std::string>> ParseINI(const std::string& contents) {
         std::map<std::string, std::map<std::string, std::string>> ini;
 
@@ -127,12 +161,20 @@ namespace Utils {
         return ini;
     }
 
-    inline std::string ToString(const std::wstring& w) {
-        return std::wstring_convert<std::codecvt<wchar_t, char, std::mbstate_t>>().to_bytes(w);
-    }
 #ifdef _WIN32
-    inline std::wstring ToWString(const std::string& s) {
-        return std::wstring_convert<std::codecvt<wchar_t, char, std::mbstate_t>>().from_bytes(s);
+inline std::wstring ToWString(const std::string& s) {
+        if (s.empty()) return std::wstring();
+
+        int size_needed = MultiByteToWideChar(CP_UTF8, 0, s.c_str(), (int)s.size(), nullptr, 0);
+        if (size_needed <= 0) {
+            return L"";
+        }
+
+        std::wstring result(size_needed, 0);
+
+        MultiByteToWideChar(CP_UTF8, 0, s.c_str(), (int)s.size(), &result[0], size_needed);
+
+        return result;
     }
 #else
     inline std::string ToWString(const std::string& s) {

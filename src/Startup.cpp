@@ -12,7 +12,6 @@
 #include <nlohmann/json.hpp>
 #include <string>
 #if defined(_WIN32)
-#include <windows.h>
 #elif defined(__linux__)
 #include <unistd.h>
 #endif

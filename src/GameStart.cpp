@@ -6,7 +6,6 @@
 
 #if defined(_WIN32)
 #include <shlobj.h>
-#include <windows.h>
 #elif defined(__linux__)
 #include "vdf_parser.hpp"
 #include <pwd.h>
@@ -32,14 +31,14 @@ std::wstring QueryKey(HKEY hKey, int ID);
 std::wstring GetGamePath() {
     static std::filesystem::path Path;
     if (!Path.empty())
-        return Path.string();
+        return Path.wstring();
 
     if (options.user_path) {
         if (std::filesystem::exists(options.user_path)) {
             Path = options.user_path;
-            debug("Using custom user folder path: " + Path.string());
+            debug(L"Using custom user folder path: " + Path.wstring());
         } else
-            warn("Invalid or non-existent path (" + std::string(options.user_path) + ") specified using --user-path, skipping");
+            warn(L"Invalid or non-existent path (" + Utils::ToWString(options.user_path) + L") specified using --user-path, skipping");
     }
 
     if (const auto startupIniPath = std::filesystem::path(GetGameDir()) / "startup.ini"; exists(startupIniPath)) {
@@ -58,16 +57,16 @@ std::wstring GetGamePath() {
             } else
                 debug("Successfully parsed startup.ini");
 
-            std::string userPath;
+            std::wstring userPath;
             if (ini.contains("filesystem") && ini["filesystem"].contains("UserPath"))
-                userPath = ini["filesystem"]["UserPath"];
+                userPath = Utils::ToWString(ini["filesystem"]["UserPath"]);
 
             if (!userPath.empty())
                 if (userPath = Utils::ExpandEnvVars(userPath); std::filesystem::exists(userPath)) {
                     Path = userPath;
-                    debug("Using custom user folder path from startup.ini: " + Path.string());
+                    debug(L"Using custom user folder path from startup.ini: " + Path.wstring());
                 } else
-                    warn("Found custom user folder path (" + userPath + ") in startup.ini but it doesn't exist, skipping");
+                    warn(L"Found custom user folder path (" + userPath + L") in startup.ini but it doesn't exist, skipping");
         }
 
         if (Path.empty()) {
@@ -129,7 +128,7 @@ void StartGame(std::wstring Dir) {
         gameArgs += Utils::ToWString(options.game_arguments[i]);
     }
 
-    debug("BeamNG executable path: " + Dir);
+    debug(L"BeamNG executable path: " + Dir);
 
     bSuccess = CreateProcessW(nullptr, (wchar_t*)(Dir + gameArgs).c_str(), nullptr, nullptr, TRUE, 0, nullptr, BaseDir.c_str(), &si, &pi);
     if (bSuccess) {
