@@ -478,8 +478,9 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
     std::vector<std::pair<std::string, std::filesystem::path>> CachedMods = {};
     if (deleteDuplicateMods) {
         for (const auto& entry : fs::directory_iterator(CachingDirectory)) {
-            if (entry.is_regular_file() && entry.path().extension() == ".zip" && entry.path().filename().string().length() > 10) {
-                CachedMods.push_back(std::make_pair(entry.path().filename().string().substr(0, entry.path().filename().string().length() - 13) + ".zip", entry.path()));
+            const std::string filename = entry.path().filename().string();
+            if (entry.is_regular_file() && entry.path().extension() == ".zip" && filename.length() > 10) {
+                CachedMods.push_back(std::make_pair(filename.substr(0, filename.length() - 13) + ".zip", entry.path()));
             }
         }
     }
@@ -490,7 +491,9 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
         ++ModNo;
         if (deleteDuplicateMods) {
             for (auto& CachedMod : CachedMods) {
-                if (CachedMod.first == ModInfoIter->FileName && CachedMod.second.stem().string() + ".zip" != std::filesystem::path(ModInfoIter->FileName).stem().string() + "-" + ModInfoIter->Hash.substr(0, 8) + ".zip") {
+                const bool cachedModExists = CachedMod.first == ModInfoIter->FileName;
+                const bool cachedModIsNotNewestVersion = CachedMod.second.stem().string() + ".zip" != std::filesystem::path(ModInfoIter->FileName).stem().string() + "-" + ModInfoIter->Hash.substr(0, 8) + ".zip";
+                if (cachedModExists && cachedModIsNotNewestVersion) {
                     debug("Found duplicate mod '" + CachedMod.second.stem().string() + ".zip" + "' in cache, removing it");
                     std::filesystem::remove(CachedMod.second);
                     break;
