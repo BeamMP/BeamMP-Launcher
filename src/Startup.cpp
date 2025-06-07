@@ -341,7 +341,7 @@ void PreGame(const std::string& GamePath) {
 
         std::string Target(GetGamePath() + "mods/unpacked/beammp");
 
-        if (fs::is_directory(Target)) {
+        if (fs::is_directory(Target) && !fs::is_directory(Target + "/.git")) {
             fs::remove_all(Target);
         }
     }
