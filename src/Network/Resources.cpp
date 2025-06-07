@@ -475,9 +475,10 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
 
     info("Syncing...");
 
-    int ModNo = 1;
+    int ModNo = 0;
     int TotalMods = ModInfos.size();
     for (auto ModInfoIter = ModInfos.begin(), AlsoModInfoIter = ModInfos.begin(); ModInfoIter != ModInfos.end() && !Terminate; ++ModInfoIter, ++AlsoModInfoIter) {
+        ++ModNo;
         if (ModInfoIter->Hash.length() < 8 || ModInfoIter->HashAlgorithm != "sha256") {
             error("Unsupported hash algorithm or invalid hash for '" + ModInfoIter->FileName + "'");
             Terminate = true;
@@ -487,6 +488,7 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
         auto PathToSaveTo = (fs::path(CachingDirectory) / FileName).string();
         if (fs::exists(PathToSaveTo) && GetSha256HashReallyFast(PathToSaveTo) == ModInfoIter->Hash) {
             debug("Mod '" + FileName + "' found in cache");
+            UpdateUl(false, std::to_string(ModNo) + "/" + std::to_string(TotalMods) + ": " + ModInfoIter->FileName);
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
             try {
                 if (!fs::exists(GetGamePath() + "mods/multiplayer")) {
@@ -517,6 +519,7 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
         } else if (auto OldCachedPath = fs::path(CachingDirectory) / std::filesystem::path(ModInfoIter->FileName).filename();
                    fs::exists(OldCachedPath) && GetSha256HashReallyFast(OldCachedPath.string()) == ModInfoIter->Hash) {
             debug("Mod '" + FileName + "' found in old cache, copying it to the new cache");
+            UpdateUl(false, std::to_string(ModNo) + "/" + std::to_string(TotalMods) + ": " + ModInfoIter->FileName);
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
             try {
                 fs::copy_file(OldCachedPath, PathToSaveTo, fs::copy_options::overwrite_existing);
@@ -551,7 +554,7 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
             continue;
         }
 
-        if (ModInfoIter->Protected && false) {
+        if (ModInfoIter->Protected) {
             std::string message = "Mod '" + ModInfoIter->FileName + "' is protected and therefore must be placed in the Resources/Caching folder manually here: " + fs::absolute(CachingDirectory).string();
 
             error(message);
@@ -621,7 +624,6 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
             UpdateModUsage(FName);
         }
         WaitForConfirm();
-        ++ModNo;
     }
 
     if (!Terminate) {
