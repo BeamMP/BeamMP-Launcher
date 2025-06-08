@@ -267,7 +267,7 @@ void CheckMP(const beammp_fs_string& Path) {
 }
 
 void EnableMP() {
-    beammp_fs_string File(GetGamePath() + beammp_wide("mods/db.json"));
+    beammp_fs_string File(GetGamePath() / beammp_wide("mods/db.json"));
     if (!fs::exists(File))
         return;
     auto Size = fs::file_size(File);
@@ -300,8 +300,8 @@ void PreGame(const beammp_fs_string& GamePath) {
     std::string GameVer = CheckVer(GamePath);
     info("Game Version : " + GameVer);
 
-    CheckMP(GetGamePath() + beammp_wide("mods/multiplayer"));
-    info(beammp_wide("Game user path: ") + GetGamePath());
+    CheckMP(GetGamePath() / beammp_wide("mods/multiplayer"));
+    info(beammp_wide("Game user path: ") + beammp_fs_string(GetGamePath()));
 
     if (!options.no_download) {
         std::string LatestHash = HTTP::Get("https://backend.beammp.com/sha/mod?branch=" + Branch + "&pk=" + PublicKey);
@@ -311,18 +311,18 @@ void PreGame(const beammp_fs_string& GamePath) {
             LatestHash.end());
 
         try {
-            if (!fs::exists(GetGamePath() + beammp_wide("mods/multiplayer"))) {
-                fs::create_directories(GetGamePath() + beammp_wide("mods/multiplayer"));
+            if (!fs::exists(GetGamePath() / beammp_wide("mods/multiplayer"))) {
+                fs::create_directories(GetGamePath() / beammp_wide("mods/multiplayer"));
             }
             EnableMP();
         } catch (std::exception& e) {
             fatal(e.what());
         }
 #if defined(_WIN32)
-        std::wstring ZipPath(GetGamePath() + LR"(mods\multiplayer\BeamMP.zip)");
+        std::wstring ZipPath(GetGamePath() / LR"(mods\multiplayer\BeamMP.zip)");
 #elif defined(__linux__)
         // Linux version of the game cant handle mods with uppercase names
-        std::string ZipPath(GetGamePath() + R"(mods/multiplayer/beammp.zip)");
+        std::string ZipPath(GetGamePath() / R"(mods/multiplayer/beammp.zip)");
 #endif
 
         std::string FileHash = Utils::GetSha256HashReallyFast(ZipPath);
@@ -335,7 +335,7 @@ void PreGame(const beammp_fs_string& GamePath) {
                 ZipPath);
         }
 
-        beammp_fs_string Target(GetGamePath() + beammp_wide("mods/unpacked/beammp"));
+        beammp_fs_string Target(GetGamePath() / beammp_wide("mods/unpacked/beammp"));
 
         if (fs::is_directory(Target) && !fs::is_directory(Target + beammp_wide("/.git"))) {
             fs::remove_all(Target);

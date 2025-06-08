@@ -28,7 +28,7 @@
 unsigned long GamePID = 0;
 #if defined(_WIN32)
 std::wstring QueryKey(HKEY hKey, int ID);
-std::wstring GetGamePath() {
+std::filesystem::path GetGamePath() {
     static std::filesystem::path Path;
     if (!Path.empty())
         return Path.wstring();
@@ -95,11 +95,11 @@ std::wstring GetGamePath() {
 
     std::string Ver = CheckVer(GetGameDir());
     Ver = Ver.substr(0, Ver.find('.', Ver.find('.') + 1));
-    (Path /= Utils::ToWString(Ver)) /= L"\\";
+    Path /= Utils::ToWString(Ver);
     return Path;
 }
 #elif defined(__linux__)
-std::string GetGamePath() {
+std::filesystem::path GetGamePath() {
     // Right now only steam is supported
     struct passwd* pw = getpwuid(getuid());
     std::string homeDir = pw->pw_dir;
