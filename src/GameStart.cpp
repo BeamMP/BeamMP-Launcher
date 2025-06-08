@@ -95,7 +95,7 @@ std::wstring GetGamePath() {
 
     std::string Ver = CheckVer(GetGameDir());
     Ver = Ver.substr(0, Ver.find('.', Ver.find('.') + 1));
-    Path += Utils::ToWString(Ver) + L"\\";
+    (Path /= Utils::ToWString(Ver)) /= L"\\";
     return Path;
 }
 #elif defined(__linux__)

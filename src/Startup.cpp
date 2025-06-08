@@ -337,7 +337,7 @@ void PreGame(const beammp_fs_string& GamePath) {
 
         beammp_fs_string Target(GetGamePath() + beammp_wide("mods/unpacked/beammp"));
 
-        if (fs::is_directory(Target) && !fs::is_directory(Target + "/.git")) {
+        if (fs::is_directory(Target) && !fs::is_directory(Target + beammp_wide("/.git"))) {
             fs::remove_all(Target);
         }
     }
