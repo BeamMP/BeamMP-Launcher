@@ -325,7 +325,7 @@ void PreGame(const beammp_fs_string& GamePath) {
         std::string ZipPath(GetGamePath() / R"(mods/multiplayer/beammp.zip)");
 #endif
 
-        std::string FileHash = Utils::GetSha256HashReallyFast(ZipPath);
+        std::string FileHash = fs::exists(ZipPath) ? Utils::GetSha256HashReallyFast(ZipPath) : "";
 
         if (FileHash != LatestHash) {
             info("Downloading BeamMP Update " + LatestHash);
