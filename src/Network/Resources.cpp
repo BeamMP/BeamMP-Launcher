@@ -525,7 +525,7 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
         CheckForDir();
         std::string FName = ModInfoIter->FileName;
         do {
-            debug(L"Loading file '" + Utils::ToWString(FName) + L"' to '" + PathToSaveTo.wstring() + L"'");
+            debug(beammp_wide("Loading file '") + Utils::ToWString(FName) + beammp_wide("' to '") + beammp_fs_string(PathToSaveTo) + beammp_wide("'"));
             TCPSend("f" + ModInfoIter->FileName, Sock);
 
             std::string Data = TCPRcv(Sock);
@@ -558,12 +558,12 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
             }
             // 2. verify size and hash
             if (std::filesystem::file_size(PathToSaveTo) != DownloadedFile.size()) {
-                error("Failed to write the entire file '" + PathToSaveTo.string() + "' correctly (file size mismatch)");
+                error(beammp_wide("Failed to write the entire file '") + beammp_fs_string(PathToSaveTo) + beammp_wide("' correctly (file size mismatch)"));
                 Terminate = true;
             }
 
             if (Utils::GetSha256HashReallyFast(PathToSaveTo) != ModInfoIter->Hash) {
-                error(L"Failed to write or download the entire file '" + PathToSaveTo.wstring() + L"' correctly (hash mismatch)");
+                error(beammp_wide("Failed to write or download the entire file '") + beammp_fs_string(PathToSaveTo) + beammp_wide("' correctly (hash mismatch)"));
                 Terminate = true;
             }
         } while (fs::file_size(PathToSaveTo) != ModInfoIter->FileSize && !Terminate);
