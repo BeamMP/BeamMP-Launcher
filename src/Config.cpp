@@ -15,6 +15,7 @@ namespace fs = std::filesystem;
 
 std::string Branch;
 std::string CachingDirectory = "./Resources";
+bool deleteDuplicateMods = false;
 
 void ParseConfig(const nlohmann::json& d) {
     if (d["Port"].is_number()) {
@@ -42,6 +43,11 @@ void ParseConfig(const nlohmann::json& d) {
         options.no_launch = dev;
         options.no_update = dev;
     }
+
+    if (d.contains(("DeleteDuplicateMods")) && d["DeleteDuplicateMods"].is_boolean()) {
+        deleteDuplicateMods = d["DeleteDuplicateMods"].get<bool>();
+    }
+
 }
 
 void ConfigInit() {
