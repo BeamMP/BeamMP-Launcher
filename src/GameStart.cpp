@@ -47,10 +47,6 @@ std::filesystem::path GetGamePath() {
             std::string contents((std::istreambuf_iterator(startupIni)), std::istreambuf_iterator<char>());
             startupIni.close();
 
-            if (contents.size() > 3) {
-                contents.erase(0, 3);
-            }
-
             auto ini = Utils::ParseINI(contents);
             if (ini.empty()) {
                 warn("Failed to parse startup.ini");

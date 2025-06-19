@@ -14,7 +14,7 @@
 namespace fs = std::filesystem;
 
 std::string Branch;
-std::string CachingDirectory = "./Resources";
+std::filesystem::path CachingDirectory = std::filesystem::path("./Resources");
 bool deleteDuplicateMods = false;
 
 void ParseConfig(const nlohmann::json& d) {
@@ -32,8 +32,8 @@ void ParseConfig(const nlohmann::json& d) {
             c = char(tolower(c));
     }
     if (d.contains("CachingDirectory") && d["CachingDirectory"].is_string()) {
-        CachingDirectory = d["CachingDirectory"].get<std::string>();
-        info("Mod caching directory: " + CachingDirectory);
+        CachingDirectory = std::filesystem::path(d["CachingDirectory"].get<std::string>());
+        info(L"Mod caching directory: " + CachingDirectory.relative_path().wstring());
     }
 
     if (d.contains("Dev") && d["Dev"].is_boolean()) {

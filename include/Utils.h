@@ -200,11 +200,11 @@ inline std::wstring ToWString(const std::string& s) {
                 throw std::runtime_error("EVP_DigestInit_ex2() failed");
             }
 
-            std::wifstream stream(filename, std::ios::binary);
+            std::ifstream stream(filename, std::ios::binary);
 
             const size_t FileSize = std::filesystem::file_size(filename);
             size_t Read = 0;
-            std::vector<wchar_t> Data;
+            std::vector<char> Data;
             while (Read < FileSize) {
                 Data.resize(size_t(std::min<size_t>(FileSize - Read, 4096)));
                 size_t RealDataSize = Data.size();

@@ -343,7 +343,7 @@ nlohmann::json modUsage = {};
 
 void UpdateModUsage(const std::string& fileName) {
     try {
-        fs::path usageFile = fs::path(CachingDirectory) / "mods.json";
+        fs::path usageFile = CachingDirectory / "mods.json";
 
         if (!fs::exists(usageFile)) {
             if (std::ofstream file(usageFile); !file.is_open()) {
@@ -361,7 +361,7 @@ void UpdateModUsage(const std::string& fileName) {
         }
 
         if (modUsage.empty()) {
-            auto Size = fs::file_size(fs::path(CachingDirectory) / "mods.json");
+            auto Size = fs::file_size(CachingDirectory / "mods.json");
             std::string modsJson(Size, 0);
             file.read(&modsJson[0], Size);
 
@@ -444,7 +444,7 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
             return;
         }
         auto FileName = std::filesystem::path(ModInfoIter->FileName).stem().string() + "-" + ModInfoIter->Hash.substr(0, 8) + std::filesystem::path(ModInfoIter->FileName).extension().string();
-        auto PathToSaveTo = (fs::path(CachingDirectory) / FileName);
+        auto PathToSaveTo = (CachingDirectory / FileName);
         if (fs::exists(PathToSaveTo) && Utils::GetSha256HashReallyFast(PathToSaveTo) == ModInfoIter->Hash) {
             debug("Mod '" + FileName + "' found in cache");
             UpdateUl(false, std::to_string(ModNo) + "/" + std::to_string(TotalMods) + ": " + ModInfoIter->FileName);
@@ -475,7 +475,7 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
             }
             WaitForConfirm();
             continue;
-        } else if (auto OldCachedPath = fs::path(CachingDirectory) / std::filesystem::path(ModInfoIter->FileName).filename();
+        } else if (auto OldCachedPath = CachingDirectory / std::filesystem::path(ModInfoIter->FileName).filename();
                    fs::exists(OldCachedPath) && Utils::GetSha256HashReallyFast(OldCachedPath) == ModInfoIter->Hash) {
             debug("Mod '" + FileName + "' found in old cache, copying it to the new cache");
             UpdateUl(false, std::to_string(ModNo) + "/" + std::to_string(TotalMods) + ": " + ModInfoIter->FileName);
@@ -514,7 +514,7 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
         }
 
         if (ModInfoIter->Protected) {
-            std::string message = "Mod '" + ModInfoIter->FileName + "' is protected and therefore must be placed in the Resources/Caching folder manually here: " + fs::absolute(CachingDirectory).string();
+            std::string message = "Mod '" + ModInfoIter->FileName + "' is protected and therefore must be placed in the Resources/Caching folder manually here: " + absolute(CachingDirectory).string();
 
             error(message);
             UUl(message);
@@ -626,7 +626,8 @@ void SyncResources(SOCKET Sock) {
     Ret.clear();
 
     int Amount = 0, Pos = 0;
-    std::string PathToSaveTo, t;
+    std::filesystem::path PathToSaveTo;
+    std::string t;
     for (const std::string& name : FNames) {
         if (!name.empty()) {
             t += name.substr(name.find_last_of('/') + 1) + ";";
@@ -654,7 +655,7 @@ void SyncResources(SOCKET Sock) {
     for (auto FN = FNames.begin(), FS = FSizes.begin(); FN != FNames.end() && !Terminate; ++FN, ++FS) {
         auto pos = FN->find_last_of('/');
         if (pos != std::string::npos) {
-            PathToSaveTo = CachingDirectory + FN->substr(pos);
+            PathToSaveTo = CachingDirectory / std::filesystem::path(*FN).filename();
         } else {
             continue;
         }
@@ -664,13 +665,13 @@ void SyncResources(SOCKET Sock) {
             if (FS->find_first_not_of("0123456789") != std::string::npos)
                 continue;
             if (fs::file_size(PathToSaveTo) == FileSize) {
-                UpdateUl(false, std::to_string(Pos) + "/" + std::to_string(Amount) + ": " + PathToSaveTo.substr(PathToSaveTo.find_last_of('/')));
+                UpdateUl(false, std::to_string(Pos) + "/" + std::to_string(Amount) + ": " + PathToSaveTo.filename().string());
                 std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 try {
                     if (!fs::exists(GetGamePath() / beammp_wide("mods/multiplayer"))) {
                         fs::create_directories(GetGamePath() / beammp_wide("mods/multiplayer"));
                     }
-                    auto modname = PathToSaveTo.substr(PathToSaveTo.find_last_of('/'));
+                    auto modname = PathToSaveTo.filename().string();
 #if defined(__linux__)
                     // Linux version of the game doesnt support uppercase letters in mod names
                     for (char& c : modname) {
@@ -678,7 +679,8 @@ void SyncResources(SOCKET Sock) {
                     }
 #endif
                     auto name = GetGamePath() / beammp_wide("mods/multiplayer") / Utils::ToWString(modname);
-                    auto tmp_name = name / beammp_wide(".tmp");
+                    auto tmp_name = name;
+                    tmp_name += L".tmp";
                     fs::copy_file(PathToSaveTo, tmp_name, fs::copy_options::overwrite_existing);
                     fs::rename(tmp_name, name);
                     UpdateModUsage(modname);
@@ -690,12 +692,12 @@ void SyncResources(SOCKET Sock) {
                 WaitForConfirm();
                 continue;
             } else
-                remove(PathToSaveTo.c_str());
+                fs::remove(PathToSaveTo.wstring());
         }
         CheckForDir();
-        std::string FName = PathToSaveTo.substr(PathToSaveTo.find_last_of('/'));
+        std::string FName = PathToSaveTo.filename().string();
         do {
-            debug("Loading file '" + FName + "' to '" + PathToSaveTo + "'");
+            debug("Loading file '" + FName + "' to '" + PathToSaveTo.string() + "'");
             TCPSend("f" + *FN, Sock);
 
             std::string Data = TCPRcv(Sock);
@@ -720,7 +722,7 @@ void SyncResources(SOCKET Sock) {
             }
             // 2. verify size
             if (std::filesystem::file_size(PathToSaveTo) != DownloadedFile.size()) {
-                error("Failed to write the entire file '" + PathToSaveTo + "' correctly (file size mismatch)");
+                error(beammp_wide("Failed to write the entire file '") + beammp_fs_string(PathToSaveTo) + beammp_wide("' correctly (file size mismatch)"));
                 Terminate = true;
             }
         } while (fs::file_size(PathToSaveTo) != std::stoull(*FS) && !Terminate);
