@@ -6,11 +6,12 @@
 
 #include "Logger.h"
 #include "Network/network.hpp"
+#include "Options.h"
+#include "Utils.h"
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <nlohmann/json.hpp>
-#include "Options.h"
 namespace fs = std::filesystem;
 
 std::string Branch;
@@ -33,7 +34,7 @@ void ParseConfig(const nlohmann::json& d) {
     }
     if (d.contains("CachingDirectory") && d["CachingDirectory"].is_string()) {
         CachingDirectory = std::filesystem::path(d["CachingDirectory"].get<std::string>());
-        info(L"Mod caching directory: " + CachingDirectory.relative_path().wstring());
+        info(beammp_wide("Mod caching directory: ") + beammp_fs_string(CachingDirectory.relative_path());
     }
 
     if (d.contains("Dev") && d["Dev"].is_boolean()) {
