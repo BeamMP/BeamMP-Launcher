@@ -34,7 +34,7 @@ void ParseConfig(const nlohmann::json& d) {
     }
     if (d.contains("CachingDirectory") && d["CachingDirectory"].is_string()) {
         CachingDirectory = std::filesystem::path(d["CachingDirectory"].get<std::string>());
-        info(beammp_wide("Mod caching directory: ") + beammp_fs_string(CachingDirectory.relative_path());
+        info(beammp_wide("Mod caching directory: ") + beammp_fs_string(CachingDirectory.relative_path()));
     }
 
     if (d.contains("Dev") && d["Dev"].is_boolean()) {
