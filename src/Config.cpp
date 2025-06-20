@@ -6,15 +6,16 @@
 
 #include "Logger.h"
 #include "Network/network.hpp"
+#include "Options.h"
+#include "Utils.h"
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <nlohmann/json.hpp>
-#include "Options.h"
 namespace fs = std::filesystem;
 
 std::string Branch;
-std::string CachingDirectory = "./Resources";
+std::filesystem::path CachingDirectory = std::filesystem::path("./Resources");
 bool deleteDuplicateMods = false;
 
 void ParseConfig(const nlohmann::json& d) {
@@ -32,8 +33,8 @@ void ParseConfig(const nlohmann::json& d) {
             c = char(tolower(c));
     }
     if (d.contains("CachingDirectory") && d["CachingDirectory"].is_string()) {
-        CachingDirectory = d["CachingDirectory"].get<std::string>();
-        info("Mod caching directory: " + CachingDirectory);
+        CachingDirectory = std::filesystem::path(d["CachingDirectory"].get<std::string>());
+        info(beammp_wide("Mod caching directory: ") + beammp_fs_string(CachingDirectory.relative_path()));
     }
 
     if (d.contains("Dev") && d["Dev"].is_boolean()) {

@@ -6,6 +6,7 @@
 
 
 #pragma once
+#include <filesystem>
 #include <string>
 
 #ifdef __linux__
@@ -29,7 +30,7 @@ extern bool Terminate;
 extern uint64_t UDPSock;
 extern uint64_t TCPSock;
 extern std::string Branch;
-extern std::string CachingDirectory;
+extern std::filesystem::path CachingDirectory;
 extern bool deleteDuplicateMods;
 extern bool TCPTerminate;
 extern std::string LastIP;

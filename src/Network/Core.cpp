@@ -12,6 +12,7 @@
 #if defined(_WIN32)
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <shellapi.h>
 #elif defined(__linux__)
 #include <cstring>
 #include <errno.h>
