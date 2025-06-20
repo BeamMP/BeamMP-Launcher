@@ -48,9 +48,9 @@ std::filesystem::path GetGamePath() {
             startupIni.close();
 
             auto ini = Utils::ParseINI(contents);
-            if (ini.empty()) {
+            if (ini.empty()) 
                 warn("Failed to parse startup.ini");
-            } else
+            else
                 debug("Successfully parsed startup.ini");
 
             std::wstring userPath;
