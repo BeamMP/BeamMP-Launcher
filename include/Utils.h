@@ -89,6 +89,7 @@ namespace Utils {
             result.append(input, lastPos, match.position() - lastPos);
 
             std::wstring varName;
+            assert(match.size() == 4 && "Input regex has incorrect amount of capturing groups");
             if (match[1].matched) varName = match[1].str(); // %VAR%
             else if (match[2].matched) varName = match[2].str(); // $VAR
             else if (match[3].matched) varName = match[3].str(); // ${VAR}
