@@ -95,7 +95,9 @@ namespace Utils {
             else if (match[3].matched) varName = match[3].str(); // ${VAR}
 
             if (const wchar_t* envValue = _wgetenv(varName.c_str())) {
-                result.append(envValue);
+                if (envValue != nullptr) {
+                    result.append(envValue);
+                }
             }
 
             lastPos = match.position() + match.length();
