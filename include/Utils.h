@@ -5,13 +5,14 @@
 */
 
 #pragma once
-#include <map>
-#include <regex>
+#include <cassert>
 #include <filesystem>
 #include <fstream>
 #include <locale>
+#include <map>
 #include <openssl/err.h>
 #include <openssl/evp.h>
+#include <regex>
 #include <string>
 #include <vector>
 
