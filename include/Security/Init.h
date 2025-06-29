@@ -7,7 +7,7 @@
 #pragma once
 #include <string>
 void PreGame(const beammp_fs_string& GamePath);
-std::string CheckVer(const beammp_fs_string& path);
+std::string CheckVer(const std::filesystem::path& path);
 void InitGame(const beammp_fs_string& Dir);
 beammp_fs_string GetGameDir();
 void LegitimacyCheck();
