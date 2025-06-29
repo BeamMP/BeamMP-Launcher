@@ -128,8 +128,8 @@ namespace Utils {
             }
 
             auto invalidLineLog = [&]{
-                warn("Invalid INI line: " + line);
-                warn("Surrounding lines: \n" +
+                debug("Invalid INI line: " + line);
+                debug("Surrounding lines: \n" +
                     (i > 0 ? sections[i - 1] : "") + "\n" +
                     (i < sections.size() - 1 ? sections[i + 1] : ""));
             };
