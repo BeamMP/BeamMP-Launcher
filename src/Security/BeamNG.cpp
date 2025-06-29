@@ -232,9 +232,9 @@ void LegitimacyCheck() {
     }
 #endif
 }
-std::string CheckVer(const beammp_fs_string& dir) {
+std::string CheckVer(const std::filesystem::path& dir) {
     std::string temp;
-    beammp_fs_string Path = dir + beammp_wide("\\integrity.json");
+    std::filesystem::path Path = dir / beammp_wide("integrity.json");
     std::ifstream f(Path.c_str(), std::ios::binary);
     int Size = int(std::filesystem::file_size(Path));
     std::string vec(Size, 0);

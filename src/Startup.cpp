@@ -73,7 +73,11 @@ Version::Version(const std::array<uint8_t, 3>& v)
 }
 
 beammp_fs_string GetEN() {
-    return beammp_wide("BeamMP-Launcher.exe");
+#if defined(_WIN32)
+    return L"BeamMP-Launcher.exe";
+#elif defined(__linux__)
+    return "BeamMP-Launcher";
+#endif
 }
 
 std::string GetVer() {
