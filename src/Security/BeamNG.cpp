@@ -187,6 +187,7 @@ void LegitimacyCheck() {
     // Right now only steam is supported
     std::vector<std::filesystem::path> steamappsCommonPaths = {
         ".steam/root/steamapps", // default
+        ".steam/steam/steamapps", // Legacy Steam installations
         ".var/app/com.valvesoftware.Steam/.steam/root/steamapps", // flatpak
         "snap/steam/common/.local/share/Steam/steamapps" // snap
     };
