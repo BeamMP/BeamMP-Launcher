@@ -179,14 +179,15 @@ void CheckForUpdates(const std::string& CV) {
 #if defined(__linux__)
             error("Auto update is NOT implemented for the Linux version. Please update manually ASAP as updates contain security patches.");
 #else
-            fs::remove(Back);
-            fs::rename(EP, Back);
             info("Downloading Launcher update " + LatestHash);
             HTTP::Download(
                 "https://backend.beammp.com/builds/launcher?download=true"
                 "&pk="
                     + PublicKey + "&branch=" + Branch,
-                EP);
+                beammp_wide("new_") + EP);
+            fs::remove(Back, ec);
+                fs::rename(EP, Back);
+            fs::rename(beammp_wide("new_") + EP, EP);
             URelaunch();
 #endif
         } else {
