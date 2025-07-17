@@ -185,8 +185,14 @@ void CheckForUpdates(const std::string& CV) {
                 "&pk="
                     + PublicKey + "&branch=" + Branch,
                 beammp_wide("new_") + EP);
+            std::error_code ec;
             fs::remove(Back, ec);
+            if (ec == std::errc::permission_denied) {
+                error("Failed to remove old backup file: " + ec.message() + ". Using alternative name.");
+                fs::rename(EP, Back + beammp_wide(".") + Utils::ToWString(FileHash.substr(0, 8)));
+            } else {
                 fs::rename(EP, Back);
+            }
             fs::rename(beammp_wide("new_") + EP, EP);
             URelaunch();
 #endif
