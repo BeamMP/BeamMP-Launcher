@@ -171,7 +171,7 @@ void CheckForUpdates(const std::string& CV) {
     transform(LatestHash.begin(), LatestHash.end(), LatestHash.begin(), ::tolower);
     beammp_fs_string EP(GetEP() + GetEN()), Back(GetEP() + beammp_wide("BeamMP-Launcher.back"));
 
-    std::string FileHash = Utils::GetSha256HashReallyFast(EP);
+    std::string FileHash = Utils::GetSha256HashReallyFastFile(EP);
 
     if (FileHash != LatestHash && IsOutdated(Version(VersionStrToInts(GetVer() + GetPatch())), Version(VersionStrToInts(LatestVersion)))) {
         if (!options.no_update) {
@@ -184,7 +184,7 @@ void CheckForUpdates(const std::string& CV) {
                 "https://backend.beammp.com/builds/launcher?download=true"
                 "&pk="
                     + PublicKey + "&branch=" + Branch,
-                beammp_wide("new_") + EP);
+                beammp_wide("new_") + EP, LatestHash);
             std::error_code ec;
             fs::remove(Back, ec);
             if (ec == std::errc::permission_denied) {
@@ -336,14 +336,14 @@ void PreGame(const beammp_fs_string& GamePath) {
         std::string ZipPath(GetGamePath() / R"(mods/multiplayer/beammp.zip)");
 #endif
 
-        std::string FileHash = fs::exists(ZipPath) ? Utils::GetSha256HashReallyFast(ZipPath) : "";
+        std::string FileHash = fs::exists(ZipPath) ? Utils::GetSha256HashReallyFastFile(ZipPath) : "";
 
         if (FileHash != LatestHash) {
             info("Downloading BeamMP Update " + LatestHash);
             HTTP::Download("https://backend.beammp.com/builds/client?download=true"
                            "&pk="
                     + PublicKey + "&branch=" + Branch,
-                ZipPath);
+                ZipPath, LatestHash);
         }
 
         beammp_fs_string Target(GetGamePath() / beammp_wide("mods/unpacked/beammp"));
