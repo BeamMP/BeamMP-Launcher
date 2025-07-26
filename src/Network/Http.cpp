@@ -127,7 +127,7 @@ std::string HTTP::Post(const std::string& IP, const std::string& Fields) {
     return Ret;
 }
 
-bool HTTP::Download(const std::string& IP, const beammp_fs_string& Path) {
+bool HTTP::Download(const std::string& IP, const beammp_fs_string& Path, const std::string& Hash) {
     static std::mutex Lock;
     std::scoped_lock Guard(Lock);
 
@@ -136,6 +136,16 @@ bool HTTP::Download(const std::string& IP, const beammp_fs_string& Path) {
 
     if (Ret.empty()) {
         error("Download failed");
+        return false;
+    }
+
+    std::string RetHash = Utils::GetSha256HashReallyFast(Ret, Path);
+
+    debug("Return hash: " + RetHash);
+    debug("Expected hash: " + Hash);
+
+    if (RetHash != Hash) {
+        error("Downloaded file hash does not match expected hash");
         return false;
     }
 

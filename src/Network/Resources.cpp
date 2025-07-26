@@ -445,7 +445,7 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
         }
         auto FileName = std::filesystem::path(ModInfoIter->FileName).stem().string() + "-" + ModInfoIter->Hash.substr(0, 8) + std::filesystem::path(ModInfoIter->FileName).extension().string();
         auto PathToSaveTo = (CachingDirectory / FileName);
-        if (fs::exists(PathToSaveTo) && Utils::GetSha256HashReallyFast(PathToSaveTo) == ModInfoIter->Hash) {
+        if (fs::exists(PathToSaveTo) && Utils::GetSha256HashReallyFastFile(PathToSaveTo) == ModInfoIter->Hash) {
             debug("Mod '" + FileName + "' found in cache");
             UpdateUl(false, std::to_string(ModNo) + "/" + std::to_string(TotalMods) + ": " + ModInfoIter->FileName);
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
@@ -476,7 +476,7 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
             WaitForConfirm();
             continue;
         } else if (auto OldCachedPath = CachingDirectory / std::filesystem::path(ModInfoIter->FileName).filename();
-                   fs::exists(OldCachedPath) && Utils::GetSha256HashReallyFast(OldCachedPath) == ModInfoIter->Hash) {
+                   fs::exists(OldCachedPath) && Utils::GetSha256HashReallyFastFile(OldCachedPath) == ModInfoIter->Hash) {
             debug("Mod '" + FileName + "' found in old cache, copying it to the new cache");
             UpdateUl(false, std::to_string(ModNo) + "/" + std::to_string(TotalMods) + ": " + ModInfoIter->FileName);
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
@@ -562,7 +562,7 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
                 Terminate = true;
             }
 
-            if (Utils::GetSha256HashReallyFast(PathToSaveTo) != ModInfoIter->Hash) {
+            if (Utils::GetSha256HashReallyFastFile(PathToSaveTo) != ModInfoIter->Hash) {
                 error(beammp_wide("Failed to write or download the entire file '") + beammp_fs_string(PathToSaveTo) + beammp_wide("' correctly (hash mismatch)"));
                 Terminate = true;
             }

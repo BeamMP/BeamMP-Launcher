@@ -29,7 +29,6 @@
 #endif
 
 namespace Utils {
-
     inline std::vector<std::string> Split(const std::string& String, const std::string& delimiter) {
         std::vector<std::string> Val;
         size_t pos;
@@ -166,7 +165,7 @@ namespace Utils {
     }
 
 #ifdef _WIN32
-inline std::wstring ToWString(const std::string& s) {
+    inline std::wstring ToWString(const std::string& s) {
         if (s.empty()) return std::wstring();
 
         int size_needed = MultiByteToWideChar(CP_UTF8, 0, s.c_str(), (int)s.size(), nullptr, 0);
@@ -185,7 +184,7 @@ inline std::wstring ToWString(const std::string& s) {
         return s;
     }
 #endif
-    inline std::string GetSha256HashReallyFast(const beammp_fs_string& filename) {
+    inline std::string GetSha256HashReallyFastFile(const beammp_fs_string& filename) {
         try {
             EVP_MD_CTX* mdctx;
             const EVP_MD* md;
@@ -237,7 +236,51 @@ inline std::wstring ToWString(const std::string& s) {
             for (size_t i = 0; i < sha256_len; i++) {
                 char buf[3];
                 sprintf(buf, "%02x", sha256_value[i]);
-                buf[2] = 0;
+                buf[2] = NULL;
+                result += buf;
+            }
+            return result;
+        } catch (const std::exception& e) {
+            error(beammp_wide("Sha256 hashing of '") + filename + beammp_wide("' failed: ") + ToWString(e.what()));
+            return "";
+        }
+    }
+    inline std::string GetSha256HashReallyFast(const std::string& text, const beammp_fs_string& filename) {
+        try {
+            EVP_MD_CTX* mdctx;
+            const EVP_MD* md;
+            uint8_t sha256_value[EVP_MAX_MD_SIZE];
+            md = EVP_sha256();
+            if (md == nullptr) {
+                throw std::runtime_error("EVP_sha256() failed");
+            }
+
+            mdctx = EVP_MD_CTX_new();
+            if (mdctx == nullptr) {
+                throw std::runtime_error("EVP_MD_CTX_new() failed");
+            }
+            if (!EVP_DigestInit_ex2(mdctx, md, NULL)) {
+                EVP_MD_CTX_free(mdctx);
+                throw std::runtime_error("EVP_DigestInit_ex2() failed");
+            }
+
+            if (!EVP_DigestUpdate(mdctx, text.data(), text.size())) {
+                EVP_MD_CTX_free(mdctx);
+                throw std::runtime_error("EVP_DigestUpdate() failed");
+            }
+
+            unsigned int sha256_len = 0;
+            if (!EVP_DigestFinal_ex(mdctx, sha256_value, &sha256_len)) {
+                EVP_MD_CTX_free(mdctx);
+                throw std::runtime_error("EVP_DigestFinal_ex() failed");
+            }
+            EVP_MD_CTX_free(mdctx);
+
+            std::string result;
+            for (size_t i = 0; i < sha256_len; i++) {
+                char buf[3];
+                sprintf(buf, "%02x", sha256_value[i]);
+                buf[2] = NULL;
                 result += buf;
             }
             return result;
