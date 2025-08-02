@@ -236,7 +236,7 @@ namespace Utils {
             for (size_t i = 0; i < sha256_len; i++) {
                 char buf[3];
                 sprintf(buf, "%02x", sha256_value[i]);
-                buf[2] = NULL;
+                buf[2] = '\0';
                 result += buf;
             }
             return result;
@@ -280,7 +280,7 @@ namespace Utils {
             for (size_t i = 0; i < sha256_len; i++) {
                 char buf[3];
                 sprintf(buf, "%02x", sha256_value[i]);
-                buf[2] = NULL;
+                buf[2] = '\0';
                 result += buf;
             }
             return result;
