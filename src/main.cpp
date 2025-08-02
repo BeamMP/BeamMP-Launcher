@@ -39,7 +39,6 @@ int main(int argc, const char** argv) try {
     curl_global_init(CURL_GLOBAL_ALL);
 
     GetEP(Utils::ToWString(std::string(argv[0])).c_str());
-    info("BP Path: " + GetBP(Utils::ToWString(std::string(argv[0])).c_str()));
 
     InitLog();
     ConfigInit();

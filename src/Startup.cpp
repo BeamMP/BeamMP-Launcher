@@ -98,7 +98,7 @@ beammp_fs_string GetEP(const beammp_fs_char* P) {
     return Ret;
 }
 
-beammp_fs_string GetBP(const beammp_fs_char* P) {
+fs::path GetBP(const beammp_fs_char* P) {
     fs::path fspath = {};
 #if defined(_WIN32)
     beammp_fs_char path[256];
@@ -202,7 +202,7 @@ void CheckForUpdates(const std::string& CV) {
     transform(LatestHash.begin(), LatestHash.end(), LatestHash.begin(), ::tolower);
     beammp_fs_string BP(GetBP() / GetEN()), Back(GetBP() / beammp_wide("BeamMP-Launcher.back"));
 
-    std::string FileHash = Utils::GetSha256HashReallyFastFile(EP);
+    std::string FileHash = Utils::GetSha256HashReallyFastFile(BP);
 
     if (FileHash != LatestHash && IsOutdated(Version(VersionStrToInts(GetVer() + GetPatch())), Version(VersionStrToInts(LatestVersion)))) {
         if (!options.no_update) {
@@ -215,16 +215,16 @@ void CheckForUpdates(const std::string& CV) {
                 "https://backend.beammp.com/builds/launcher?download=true"
                 "&pk="
                     + PublicKey + "&branch=" + Branch,
-                beammp_wide("new_") + EP, LatestHash);
+                beammp_wide("new_") + BP, LatestHash);
             std::error_code ec;
             fs::remove(Back, ec);
             if (ec == std::errc::permission_denied) {
                 error("Failed to remove old backup file: " + ec.message() + ". Using alternative name.");
-                fs::rename(EP, Back + beammp_wide(".") + Utils::ToWString(FileHash.substr(0, 8)));
+                fs::rename(BP, Back + beammp_wide(".") + Utils::ToWString(FileHash.substr(0, 8)));
             } else {
-                fs::rename(EP, Back);
+                fs::rename(BP, Back);
             }
-            fs::rename(beammp_wide("new_") + EP, EP);
+            fs::rename(beammp_wide("new_") + BP, BP);
             URelaunch();
 #endif
         } else {
