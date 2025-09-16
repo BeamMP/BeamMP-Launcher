@@ -54,10 +54,10 @@ std::filesystem::path GetGamePath() {
                 debug("Successfully parsed startup.ini");
 
             std::wstring userPath;
-            if (ini.contains("filesystem") && ini["filesystem"].contains("UserPath"))
-                userPath = Utils::ToWString(ini["filesystem"]["UserPath"]);
+            if (ini.contains("filesystem") && std::get<std::map<std::string, std::string>>(ini["filesystem"]).contains("UserPath"))
+                userPath = Utils::ToWString(std::get<std::map<std::string, std::string>>(ini["filesystem"])["UserPath"]);
 
-            if (!userPath.empty())
+            if (!userPath.empty() && Path.empty())
                 if (userPath = Utils::ExpandEnvVars(userPath); std::filesystem::exists(userPath)) {
                     Path = userPath;
                     debug(L"Using custom user folder path from startup.ini: " + Path.wstring());
@@ -66,32 +66,54 @@ std::filesystem::path GetGamePath() {
         }
 
         if (Path.empty()) {
-            HKEY hKey;
-            LPCTSTR sk = "Software\\BeamNG\\BeamNG.drive";
-            LONG openRes = RegOpenKeyEx(HKEY_CURRENT_USER, sk, 0, KEY_ALL_ACCESS, &hKey);
-            if (openRes != ERROR_SUCCESS) {
-                fatal("Please launch the game at least once!");
+            wchar_t* appDataPath = new wchar_t[MAX_PATH];
+            HRESULT result = SHGetFolderPathW(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, appDataPath);
+
+            if (!SUCCEEDED(result)) {
+                fatal("Cannot get Local Appdata directory");
             }
-            Path = QueryKey(hKey, 4);
+
+            auto BeamNGAppdataPath = std::filesystem::path(appDataPath) / "BeamNG";
+
+            if (const auto beamngIniPath = BeamNGAppdataPath / "BeamNG.Drive.ini"; exists(beamngIniPath)) {
+                if (std::ifstream beamngIni(beamngIniPath); beamngIni.is_open()) {
+                    std::string contents((std::istreambuf_iterator(beamngIni)), std::istreambuf_iterator<char>());
+                    beamngIni.close();
+
+                    auto ini = Utils::ParseINI(contents);
+                    if (ini.empty())
+                        warn("Failed to parse BeamNG.Drive.ini");
+                    else
+                        debug("Successfully parsed BeamNG.Drive.ini");
+
+                    std::wstring userPath;
+
+                    if (ini.contains("userFolder")) {
+                        userPath = Utils::ToWString(std::get<std::string>(ini["userFolder"]));
+                        userPath.erase(0, userPath.find_first_not_of(L" \t"));
+
+                    }
+
+                    if (!userPath.empty() && Path.empty())
+                        if (userPath = std::filesystem::path(Utils::ExpandEnvVars(userPath)); std::filesystem::exists(userPath)) {
+                            Path = userPath;
+                            debug(L"Using custom user folder path from BeamNG.Drive.ini: " + Path.wstring());
+                        } else
+                            warn(L"Found custom user folder path (" + userPath + L") in BeamNG.Drive.ini but it doesn't exist, skipping");
+                }
+            }
 
             if (Path.empty()) {
-                wchar_t* appDataPath = new wchar_t[MAX_PATH];
-                HRESULT result = SHGetFolderPathW(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, appDataPath);
-
-                if (!SUCCEEDED(result)) {
-                    fatal("Cannot get Local Appdata directory");
-                }
-
-                Path = std::filesystem::path(appDataPath) / "BeamNG.drive";
-
-                delete[] appDataPath;
+                Path = BeamNGAppdataPath / "BeamNG.drive";
             }
+
+            delete[] appDataPath;
         }
     }
 
     std::string Ver = CheckVer(GetGameDir());
     Ver = Ver.substr(0, Ver.find('.', Ver.find('.') + 1));
-    Path /= Utils::ToWString(Ver);
+    Path /= Utils::ToWString("current");
     return Path;
 }
 #elif defined(__linux__)
