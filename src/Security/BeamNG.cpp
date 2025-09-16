@@ -7,6 +7,7 @@
 
 #include <filesystem>
 #if defined(_WIN32)
+#include <shlobj_core.h>
 #elif defined(__linux__)
 #include "vdf_parser.hpp"
 #include <pwd.h>
@@ -17,7 +18,6 @@
 #include "Utils.h"
 
 #include <fstream>
-#include <shlobj_core.h>
 #include <string>
 #include <thread>
 
