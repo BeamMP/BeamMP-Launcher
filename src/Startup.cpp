@@ -87,7 +87,7 @@ std::string GetVer() {
     return "2.6";
 }
 std::string GetPatch() {
-    return ".1";
+    return ".2";
 }
 
 beammp_fs_string GetEP(const beammp_fs_char* P) {
