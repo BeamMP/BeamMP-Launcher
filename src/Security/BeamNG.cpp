@@ -17,6 +17,7 @@
 #include "Utils.h"
 
 #include <fstream>
+#include <shlobj_core.h>
 #include <string>
 #include <thread>
 
@@ -162,24 +163,43 @@ void FileList(std::vector<std::string>& a, const std::string& Path) {
 }
 void LegitimacyCheck() {
 #if defined(_WIN32)
-    std::wstring Result;
-    std::string K3 = R"(Software\BeamNG\BeamNG.drive)";
-    HKEY hKey;
-    LONG dwRegOPenKey = OpenKey(HKEY_CURRENT_USER, K3.c_str(), &hKey);
-    if (dwRegOPenKey == ERROR_SUCCESS) {
-        Result = QueryKey(hKey, 3);
-        if (Result.empty()) {
-            debug("Failed to QUERY key HKEY_CURRENT_USER\\Software\\BeamNG\\BeamNG.drive");
-            lowExit(3);
-        }
-        GameDir = Result;
-    } else {
-        debug("Failed to OPEN key HKEY_CURRENT_USER\\Software\\BeamNG\\BeamNG.drive");
-        lowExit(4);
+    wchar_t* appDataPath = new wchar_t[MAX_PATH];
+    HRESULT result = SHGetFolderPathW(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, appDataPath);
+
+    if (!SUCCEEDED(result)) {
+        fatal("Cannot get Local Appdata directory");
     }
-    K3.clear();
-    Result.clear();
-    RegCloseKey(hKey);
+
+    auto BeamNGAppdataPath = std::filesystem::path(appDataPath) / "BeamNG";
+
+    if (const auto beamngIniPath = BeamNGAppdataPath / "BeamNG.Drive.ini"; exists(beamngIniPath)) {
+        if (std::ifstream beamngIni(beamngIniPath); beamngIni.is_open()) {
+            std::string contents((std::istreambuf_iterator(beamngIni)), std::istreambuf_iterator<char>());
+            beamngIni.close();
+
+            auto ini = Utils::ParseINI(contents);
+            if (ini.empty())
+                lowExit(3);
+            else
+                debug("Successfully parsed BeamNG.Drive.ini");
+
+            if (ini.contains("installPath")) {
+                std::wstring installPath = Utils::ToWString(std::get<std::string>(ini["installPath"]));
+                installPath.erase(0, installPath.find_first_not_of(L" \t"));
+
+                if (installPath = std::filesystem::path(Utils::ExpandEnvVars(installPath)); std::filesystem::exists(installPath)) {
+                    GameDir = installPath;
+                    debug(L"GameDir from BeamNG.Drive.ini: " + installPath);
+                } else {
+                    lowExit(4);
+                }
+            } else {
+                lowExit(5);
+            }
+        }
+    }
+
+    delete[] appDataPath;
 #elif defined(__linux__)
     struct passwd* pw = getpwuid(getuid());
     std::filesystem::path homeDir = pw->pw_dir;
