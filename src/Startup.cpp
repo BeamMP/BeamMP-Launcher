@@ -215,7 +215,7 @@ void CheckForUpdates(const std::string& CV) {
                 "https://backend.beammp.com/builds/launcher?download=true"
                 "&pk="
                     + PublicKey + "&branch=" + Branch,
-                beammp_wide("new_") + BP, LatestHash);
+                GetBP() / (beammp_wide("new_") + GetEN()), LatestHash);
             std::error_code ec;
             fs::remove(Back, ec);
             if (ec == std::errc::permission_denied) {
@@ -224,7 +224,7 @@ void CheckForUpdates(const std::string& CV) {
             } else {
                 fs::rename(BP, Back);
             }
-            fs::rename(beammp_wide("new_") + BP, BP);
+            fs::rename(GetBP() / (beammp_wide("new_") + GetEN()), BP);
             URelaunch();
 #endif
         } else {
