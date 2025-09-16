@@ -122,10 +122,10 @@ std::filesystem::path GetGamePath() {
     struct passwd* pw = getpwuid(getuid());
     std::string homeDir = pw->pw_dir;
 
-    std::string Path = homeDir + "/.local/share/BeamNG.drive/";
+    std::string Path = homeDir + "/.local/share/BeamNG/BeamNG.drive/";
     std::string Ver = CheckVer(GetGameDir());
     Ver = Ver.substr(0, Ver.find('.', Ver.find('.') + 1));
-    Path += Ver + "/";
+    Path += "current/";
     return Path;
 }
 #endif
