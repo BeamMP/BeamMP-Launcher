@@ -197,6 +197,29 @@ void LegitimacyCheck() {
                 lowExit(5);
             }
         }
+    } else {
+        std::wstring Result;
+
+        std::string K3 = R"(Software\BeamNG\BeamNG.drive)";
+
+        HKEY hKey;
+
+        LONG dwRegOPenKey = OpenKey(HKEY_CURRENT_USER, K3.c_str(), &hKey);
+        if (dwRegOPenKey == ERROR_SUCCESS) {
+            Result = QueryKey(hKey, 3);
+            if (Result.empty()) {
+                debug("Failed to QUERY key HKEY_CURRENT_USER\\Software\\BeamNG\\BeamNG.drive");
+                lowExit(6);
+            }
+            GameDir = Result;
+            debug(L"GameDir from registry: " + Result);
+        } else {
+            debug("Failed to OPEN key HKEY_CURRENT_USER\\Software\\BeamNG\\BeamNG.drive");
+            lowExit(7);
+        }
+        K3.clear();
+        Result.clear();
+        RegCloseKey(hKey);
     }
 
     delete[] appDataPath;
