@@ -183,6 +183,10 @@ void CheckName() {
     std::wstring DN = GetEN(), CDir = Utils::ToWString(options.executable_name), FN = CDir.substr(CDir.find_last_of('\\') + 1);
 #elif defined(__linux__)
     std::string DN = GetEN(), CDir = options.executable_name, FN = CDir.substr(CDir.find_last_of('/') + 1);
+	if (DN.find_last_of(".AppImage") != std::string::npos) { 
+		warn("Looks like launcher is an AppImage. Skipping name check");
+		return;
+	}
 #endif
     if (FN != DN) {
         if (fs::exists(DN))
