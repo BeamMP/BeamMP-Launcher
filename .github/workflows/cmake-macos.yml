@@ -14,6 +14,11 @@ jobs:
         with:
             submodules: 'true'
       
+      - name: Configure macOS SDK
+        run: |
+          echo "SDKROOT=$(xcrun --show-sdk-path)" >> $GITHUB_ENV
+          echo "MACOSX_DEPLOYMENT_TARGET=11.0" >> $GITHUB_ENV
+      
       - name: Restore artifacts, or run vcpkg, build and cache artifacts
         uses: lukka/run-vcpkg@v7
         id: runvcpkg
