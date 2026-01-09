@@ -158,11 +158,7 @@ void ReLaunch() {
         Arg += " ";
     }
     info("Relaunch!");
-#if defined(__linux__)
     system("clear");
-#elif defined(__APPLE__)
-    system("clear");
-#endif
     int ret = execv((GetBP() / GetEN()).c_str(), const_cast<char**>(options.argv));
     if (ret < 0) {
         error(std::string("execv() failed with: ") + strerror(errno) + ". Failed to relaunch");
