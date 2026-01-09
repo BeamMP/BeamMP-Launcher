@@ -6,7 +6,7 @@
 
 #if defined(_WIN32)
 #include <shlobj.h>
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 #include "vdf_parser.hpp"
 #include <pwd.h>
 #include <spawn.h>
@@ -128,6 +128,18 @@ std::filesystem::path GetGamePath() {
     Path += "current/";
     return Path;
 }
+#elif defined(__APPLE__)
+std::filesystem::path GetGamePath() {
+    // Right now only steam is supported
+    struct passwd* pw = getpwuid(getuid());
+    std::string homeDir = pw->pw_dir;
+
+    std::string Path = homeDir + "/Library/Application Support/BeamNG/BeamNG.drive/";
+    std::string Ver = CheckVer(GetGameDir());
+    Ver = Ver.substr(0, Ver.find('.', Ver.find('.') + 1));
+    Path += "current/";
+    return Path;
+}
 #endif
 
 #if defined(_WIN32)
@@ -202,11 +214,22 @@ void StartGame(std::string Dir) {
     std::this_thread::sleep_for(std::chrono::seconds(5));
     exit(2);
 }
+#elif defined(__APPLE__)
+// macOS does not support game launching - StartGame is never called
+void StartGame(std::string Dir) {
+    // This function should never be called on macOS
+    error("Game launching is not supported on macOS");
+}
 #endif
 
 void InitGame(const beammp_fs_string& Dir) {
+#if defined(__APPLE__)
+    // macOS does not support game launching
+    return;
+#else
     if (!options.no_launch) {
         std::thread Game(StartGame, Dir);
         Game.detach();
     }
+#endif
 }
