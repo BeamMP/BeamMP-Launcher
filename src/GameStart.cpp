@@ -222,14 +222,12 @@ void StartGame(std::string Dir) {
 }
 #endif
 
+#if !defined(__APPLE__)
 void InitGame(const beammp_fs_string& Dir) {
-#if defined(__APPLE__)
-    // macOS does not support game launching
-    return;
-#else
+
     if (!options.no_launch) {
         std::thread Game(StartGame, Dir);
         Game.detach();
     }
-#endif
 }
+#endif
