@@ -60,9 +60,9 @@ int main(int argc, const char** argv) try {
         error(std::string("Failed to start HTTP proxy: Some in-game functions may not work. Error: ") + e.what());
     }
     PreGame(GetGameDir());
-    if (!defined(__APPLE__)) {
+    #if !defined(__APPLE__)
         InitGame(GetGameDir());
-    }
+    #endif
     CoreNetwork();
 } catch (const std::exception& e) {
     error(std::string("Exception in main(): ") + e.what());
