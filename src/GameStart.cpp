@@ -214,12 +214,6 @@ void StartGame(std::string Dir) {
     std::this_thread::sleep_for(std::chrono::seconds(5));
     exit(2);
 }
-#elif defined(__APPLE__)
-// macOS does not support game launching - StartGame is never called
-void StartGame(std::string Dir) {
-    // This function should never be called on macOS
-    error("Game launching is not supported on macOS");
-}
 #endif
 
 #if !defined(__APPLE__)
