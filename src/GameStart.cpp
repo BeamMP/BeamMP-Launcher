@@ -118,14 +118,29 @@ std::filesystem::path GetGamePath() {
 }
 #elif defined(__linux__)
 std::filesystem::path GetGamePath() {
-    // Right now only steam is supported
-    struct passwd* pw = getpwuid(getuid());
-    std::string homeDir = pw->pw_dir;
+    static std::filesystem::path Path;
+    if (!Path.empty())
+        return Path;
 
-    std::string Path = homeDir + "/.local/share/BeamNG/BeamNG.drive/";
+    if (options.user_path) {
+        if (std::filesystem::exists(options.user_path)) {
+            Path = options.user_path;
+            debug("Using custom user folder path: " + Path.string());
+        } else
+            warn("Invalid or non-existent path (" + std::string(options.user_path) + ") specified using --user-path, skipping");
+    }
+
+    if (Path.empty()) {
+        // Right now only steam is supported
+        struct passwd* pw = getpwuid(getuid());
+        std::string homeDir = pw->pw_dir;
+
+        Path = homeDir + "/.local/share/BeamNG/BeamNG.drive/";
+    }
+
     std::string Ver = CheckVer(GetGameDir());
     Ver = Ver.substr(0, Ver.find('.', Ver.find('.') + 1));
-    Path += "current/";
+    Path /= "current/";
     return Path;
 }
 #endif
