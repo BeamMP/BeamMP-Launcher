@@ -4,7 +4,6 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 */
 
-
 #include <filesystem>
 #include "Utils.h"
 #if defined(_WIN32)
@@ -257,7 +256,38 @@ void LegitimacyCheck() {
     }
 
     if (!steamappsFolderFound) {
-        error("Unsupported Steam installation.");
+        warn("Unsupported Steam installation.");
+        auto userfolderIniPath = homeDir / "/.local/share/BeamNG/BeamNG.drive.ini";
+        if (std::filesystem::exists(userfolderIniPath)) {
+            if (std::ifstream beamngIni(userfolderIniPath); beamngIni.is_open()) {
+                std::string contents((std::istreambuf_iterator(beamngIni)), std::istreambuf_iterator<char>());
+                beamngIni.close();
+
+                if (contents.size() >= 3 && (unsigned char)contents[0] == 0xEF && (unsigned char)contents[1] == 0xBB && (unsigned char)contents[2] == 0xBF) {
+                    contents = contents.substr(3);
+                }
+
+                auto ini = Utils::ParseINI(contents);
+                if (ini.empty())
+                    lowExit(3);
+                else
+                    debug("Successfully parsed BeamNG.Drive.ini");
+
+                if (ini.contains("installPath")) {
+                    std::string installPath = std::get<std::string>(ini["installPath"]);
+                    installPath.erase(0, installPath.find_first_not_of(" \t"));
+
+                    if (installPath = std::filesystem::path(Utils::ExpandEnvVars(installPath)).string(); std::filesystem::exists(installPath)) {
+                        GameDir = installPath;
+                        debug("GameDir from BeamNG.Drive.ini: " + installPath);
+                    } else {
+                        lowExit(4);
+                    }
+                } else {
+                    lowExit(5);
+                }
+            }
+        }
         return;
     }
     if (!libraryFoldersFound) {
