@@ -175,6 +175,13 @@ SOCKET SetupListener() {
         WSACleanup();
         return -1;
     }
+#ifdef __linux__
+    // On linux the old socket can get stuck in time wait
+    const int reuse_addr = 1;
+    if (setsockopt(GSocket, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(int)) < 0) {
+        warn("(Proxy) setsockopt(SO_REUSEADDR) failed" + std::to_string(WSAGetLastError()));
+    }
+#endif
     iRes = bind(GSocket, result->ai_addr, (int)result->ai_addrlen);
     if (iRes == SOCKET_ERROR) {
         error("(Proxy) bind failed with error: " + std::to_string(WSAGetLastError()));
