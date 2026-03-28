@@ -195,47 +195,44 @@ void CheckName() {
 }
 
 void CheckForUpdates(const std::string& CV) {
-    std::string LatestHash = HTTP::Get("https://backend.beammp.com/sha/launcher?branch=" + Branch + "&pk=" + PublicKey);
-    std::string LatestVersion = HTTP::Get(
-        "https://backend.beammp.com/version/launcher?branch=" + Branch + "&pk=" + PublicKey);
+//     std::string LatestHash = HTTP::Get("https://backend.beammp.com/sha/launcher?branch=" + Branch + "&pk=" + PublicKey);
+//     std::string LatestVersion = HTTP::Get(
+//         "https://backend.beammp.com/version/launcher?branch=" + Branch + "&pk=" + PublicKey);
 
-    transform(LatestHash.begin(), LatestHash.end(), LatestHash.begin(), ::tolower);
-    beammp_fs_string BP(GetBP() / GetEN()), Back(GetBP() / beammp_wide("BeamMP-Launcher.back"));
+//     transform(LatestHash.begin(), LatestHash.end(), LatestHash.begin(), ::tolower);
+//     beammp_fs_string BP(GetBP() / GetEN()), Back(GetBP() / beammp_wide("BeamMP-Launcher.back"));
 
-    std::string FileHash = Utils::GetSha256HashReallyFastFile(BP);
+//     std::string FileHash = Utils::GetSha256HashReallyFastFile(BP);
 
-    if (FileHash != LatestHash && IsOutdated(Version(VersionStrToInts(GetVer() + GetPatch())), Version(VersionStrToInts(LatestVersion)))) {
-        if (!options.no_update) {
-            info("Launcher update " + LatestVersion + " found!");
-#if defined(__linux__)
-            error("Auto update is NOT implemented for the Linux version. Please update manually ASAP as updates contain security patches.");
-#else
-            info("Downloading Launcher update " + LatestHash);
-            if (HTTP::Download(
-                "https://backend.beammp.com/builds/launcher?download=true"
-                "&pk="
-                    + PublicKey + "&branch=" + Branch,
-                GetBP() / (beammp_wide("new_") + GetEN()), LatestHash)) {
-                std::error_code ec;
-                fs::remove(Back, ec);
-                if (ec == std::errc::permission_denied) {
-                    error("Failed to remove old backup file: " + ec.message() + ". Using alternative name.");
-                    fs::rename(BP, Back + beammp_wide(".") + Utils::ToWString(FileHash.substr(0, 8)));
-                } else {
-                    fs::rename(BP, Back);
-                }
-                fs::rename(GetBP() / (beammp_wide("new_") + GetEN()), BP);
-                URelaunch();
-            } else {
-                throw std::runtime_error("Failed to download the launcher update! Please try manually updating it, https://docs.beammp.com/FAQ/Update-launcher/");
-            }
-#endif
-        } else {
-            warn("Launcher update was found, but not updating because --no-update or --dev was specified.");
-        }
-    } else
-        info("Launcher version is up to date. Latest version: " + LatestVersion);
-    TraceBack++;
+//     if (FileHash != LatestHash && IsOutdated(Version(VersionStrToInts(GetVer() + GetPatch())), Version(VersionStrToInts(LatestVersion)))) {
+//         if (!options.no_update) {
+//             info("Launcher update " + LatestVersion + " found!");
+// #if defined(__linux__)
+//             error("Auto update is NOT implemented for the Linux version. Please update manually ASAP as updates contain security patches.");
+// #else
+//             info("Downloading Launcher update " + LatestHash);
+//             HTTP::Download(
+//                 "https://backend.beammp.com/builds/launcher?download=true"
+//                 "&pk="
+//                     + PublicKey + "&branch=" + Branch,
+//                 GetBP() / (beammp_wide("new_") + GetEN()), LatestHash);
+//             std::error_code ec;
+//             fs::remove(Back, ec);
+//             if (ec == std::errc::permission_denied) {
+//                 error("Failed to remove old backup file: " + ec.message() + ". Using alternative name.");
+//                 fs::rename(BP, Back + beammp_wide(".") + Utils::ToWString(FileHash.substr(0, 8)));
+//             } else {
+//                 fs::rename(BP, Back);
+//             }
+//             fs::rename(GetBP() / (beammp_wide("new_") + GetEN()), BP);
+//             URelaunch();
+// #endif
+//         } else {
+//             warn("Launcher update was found, but not updating because --no-update or --dev was specified.");
+//         }
+//     } else
+//         info("Launcher version is up to date. Latest version: " + LatestVersion);
+//     TraceBack++;
 }
 
 
@@ -350,42 +347,42 @@ void PreGame(const beammp_fs_string& GamePath) {
     CheckMP(GetGamePath() / beammp_wide("mods/multiplayer"));
     info(beammp_wide("Game user path: ") + beammp_fs_string(GetGamePath()));
 
-    if (!options.no_download) {
-        std::string LatestHash = HTTP::Get("https://backend.beammp.com/sha/mod?branch=" + Branch + "&pk=" + PublicKey);
-        transform(LatestHash.begin(), LatestHash.end(), LatestHash.begin(), ::tolower);
-        LatestHash.erase(std::remove_if(LatestHash.begin(), LatestHash.end(),
-                             [](auto const& c) -> bool { return !std::isalnum(c); }),
-            LatestHash.end());
+//     if (!options.no_download) {
+//         std::string LatestHash = HTTP::Get("https://backend.beammp.com/sha/mod?branch=" + Branch + "&pk=" + PublicKey);
+//         transform(LatestHash.begin(), LatestHash.end(), LatestHash.begin(), ::tolower);
+//         LatestHash.erase(std::remove_if(LatestHash.begin(), LatestHash.end(),
+//                              [](auto const& c) -> bool { return !std::isalnum(c); }),
+//             LatestHash.end());
 
-        try {
-            if (!fs::exists(GetGamePath() / beammp_wide("mods/multiplayer"))) {
-                fs::create_directories(GetGamePath() / beammp_wide("mods/multiplayer"));
-            }
-            EnableMP();
-        } catch (std::exception& e) {
-            fatal(e.what());
-        }
-#if defined(_WIN32)
-        std::wstring ZipPath(GetGamePath() / LR"(mods\multiplayer\BeamMP.zip)");
-#elif defined(__linux__)
-        // Linux version of the game cant handle mods with uppercase names
-        std::string ZipPath(GetGamePath() / R"(mods/multiplayer/beammp.zip)");
-#endif
+//         try {
+//             if (!fs::exists(GetGamePath() / beammp_wide("mods/multiplayer"))) {
+//                 fs::create_directories(GetGamePath() / beammp_wide("mods/multiplayer"));
+//             }
+//             EnableMP();
+//         } catch (std::exception& e) {
+//             fatal(e.what());
+//         }
+// #if defined(_WIN32)
+//         std::wstring ZipPath(GetGamePath() / LR"(mods\multiplayer\BeamMP.zip)");
+// #elif defined(__linux__)
+//         // Linux version of the game cant handle mods with uppercase names
+//         std::string ZipPath(GetGamePath() / R"(mods/multiplayer/beammp.zip)");
+// #endif
 
-        std::string FileHash = fs::exists(ZipPath) ? Utils::GetSha256HashReallyFastFile(ZipPath) : "";
+//         std::string FileHash = fs::exists(ZipPath) ? Utils::GetSha256HashReallyFastFile(ZipPath) : "";
 
-        if (FileHash != LatestHash) {
-            info("Downloading BeamMP Update " + LatestHash);
-            HTTP::Download("https://backend.beammp.com/builds/client?download=true"
-                           "&pk="
-                    + PublicKey + "&branch=" + Branch,
-                ZipPath, LatestHash);
-        }
+//         if (FileHash != LatestHash) {
+//             info("Downloading BeamMP Update " + LatestHash);
+//             HTTP::Download("https://backend.beammp.com/builds/client?download=true"
+//                            "&pk="
+//                     + PublicKey + "&branch=" + Branch,
+//                 ZipPath, LatestHash);
+//         }
 
-        beammp_fs_string Target(GetGamePath() / beammp_wide("mods/unpacked/beammp"));
+//         beammp_fs_string Target(GetGamePath() / beammp_wide("mods/unpacked/beammp"));
 
-        if (fs::is_directory(Target) && !fs::is_directory(Target + beammp_wide("/.git"))) {
-            fs::remove_all(Target);
-        }
-    }
+//         if (fs::is_directory(Target) && !fs::is_directory(Target + beammp_wide("/.git"))) {
+//             fs::remove_all(Target);
+//         }
+//     }
 }
