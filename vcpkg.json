@@ -4,6 +4,8 @@
     "nlohmann-json",
     "zlib",
     "openssl",
-    "curl"
+    "curl",
+    "opus",
+    "portaudio"
   ]
 }

@@ -21,13 +21,13 @@
 #include <unistd.h>
 #endif
 
+#include "Audio/VoiceChat.h"
 #include "Logger.h"
 #include "Options.h"
 #include <charconv>
 #include <mutex>
 #include <string>
 #include <thread>
-#include "Options.h"
 #include <chrono>
 
 std::chrono::time_point<std::chrono::high_resolution_clock> PingStart, PingEnd;
@@ -106,6 +106,7 @@ void ServerSend(std::string Data, bool Rel) {
 }
 
 void NetReset() {
+    VoiceChat::Instance().Shutdown();
     TCPTerminate = false;
     GConnected = false;
     Terminate = false;
@@ -204,6 +205,9 @@ void ParserAsync(std::string_view Data) {
         MStatus = Data;
         UlStatus = "Uldone";
         return;
+    case 'F': // Voice chat packet from server
+        VoiceChat::Instance().ProcessIncomingVoice(Data.data(), Data.size());
+        return;
     case 'U':
         magic = Data.substr(1);
     default:
@@ -223,6 +227,15 @@ void NetMain(const std::string& IP, int Port) {
     info("Connection Terminated!");
 }
 void TCPGameServer(const std::string& IP, int Port) {
+    // Initialize voice chat and wire send callback to ServerSend
+    VoiceChat::Instance().Init();
+    VoiceChat::Instance().SetSendCallback([](const std::string& data, bool rel) {
+        ServerSend(data, rel);
+    });
+    VoiceChat::Instance().SetGameSendCallback([](const std::string& data) {
+        CoreSend(data);
+    });
+
     GSocket = SetupListener();
     std::unique_ptr<std::thread> ClientThread {};
     std::unique_ptr<std::thread> NetMainThread {};

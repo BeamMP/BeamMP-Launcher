@@ -25,6 +25,7 @@
 #include <unistd.h>
 #endif
 
+#include "Audio/VoiceChat.h"
 #include "Logger.h"
 #include "Startup.h"
 #include <charconv>
@@ -35,6 +36,23 @@
 #include "Options.h"
 
 #include <future>
+
+namespace {
+    // Parse a "x,y,z" float triple produced by the game engine.
+    // Returns true and fills x/y/z on success; false otherwise.
+    bool parseVec3(const std::string& s, float& x, float& y, float& z) {
+        try {
+            size_t p1 = s.find(',');
+            if (p1 == std::string::npos) return false;
+            size_t p2 = s.find(',', p1 + 1);
+            if (p2 == std::string::npos) return false;
+            x = std::stof(s.substr(0, p1));
+            y = std::stof(s.substr(p1 + 1, p2 - p1 - 1));
+            z = std::stof(s.substr(p2 + 1));
+            return true;
+        } catch (...) { return false; }
+    }
+} // namespace
 
 extern int TraceBack;
 std::set<std::string>* ConfList = nullptr;
@@ -346,6 +364,47 @@ void Parse(std::string Data, SOCKET CSocket) {
         });
         break;
     }
+    case 'F': { // Voice chat commands from game
+        if (SubCode == 's') {
+            VoiceChat::Instance().StartRecording();
+        } else if (SubCode == 'e') {
+            VoiceChat::Instance().StopRecording();
+        } else if (SubCode == 'p' && Data.size() > 2) {
+            float x = 0, y = 0, z = 0;
+            if (parseVec3(Data.substr(2), x, y, z)) {
+                VoiceChat::Instance().UpdateListenerPosition(x, y, z);
+            }
+        } else if (SubCode == 'v' && Data.size() > 2) {
+            int vol = std::atoi(Data.substr(2).c_str());
+            VoiceChat::Instance().SetVolume(vol);
+        } else if (SubCode == 'm' && Data.size() > 2) {
+            VoiceChat::Instance().SetMuted(Data[2] == '1');
+        } else if (SubCode == 'd') {
+            std::string json = VoiceChat::Instance().EnumerateDevicesJson();
+            CoreSend("Fd" + json);
+        } else if (SubCode == 'i' && Data.size() > 2) {
+            auto devStr = Data.substr(2);
+            int devId = (devStr == "default") ? -1 : std::atoi(devStr.c_str());
+            VoiceChat::Instance().SetInputDevice(devId);
+        } else if (SubCode == 'o' && Data.size() > 2) {
+            auto devStr = Data.substr(2);
+            int devId = (devStr == "default") ? -1 : std::atoi(devStr.c_str());
+            VoiceChat::Instance().SetOutputDevice(devId);
+        } else if (SubCode == 'f' && Data.size() > 2) {
+            float fx = 0, fy = 0, fz = 0;
+            if (parseVec3(Data.substr(2), fx, fy, fz)) {
+                VoiceChat::Instance().UpdateListenerOrientation(fx, fy, fz);
+            }
+        } else if (SubCode == 'n' && Data.size() > 2) {
+            int vol = std::atoi(Data.substr(2).c_str());
+            VoiceChat::Instance().SetMusicVolume(vol);
+        } else if (SubCode == 'g' && Data.size() > 2) {
+            int pct = std::atoi(Data.substr(2).c_str());
+            VoiceChat::Instance().SetMicGain(pct);
+        }
+        Data.clear();
+        break;
+    } // end case 'F'
     default:
         Data.clear();
         break;
@@ -366,7 +425,8 @@ void GameHandler(SOCKET Client) {
     do {
         try {
             Utils::ReceiveFromGame(Client, data);
-            Parse(std::string(data.data(), data.size()), Client);
+            std::string raw(data.data(), data.size());
+            Parse(raw, Client);
         } catch (const std::exception& e) {
             error(std::string("Error while receiving from game on core: ") + e.what());
             break;
