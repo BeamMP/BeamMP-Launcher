@@ -345,6 +345,27 @@ void Parse(std::string Data, SOCKET CSocket) {
         });
         break;
     }
+    case 'V': //register active vehicles for direct vehicle sockets
+        if (Data.length() < 3) {
+            debug("(Core) Failed to parse serverVehicleID from data: " + Data);
+            Data.clear();
+            break;
+        }
+        
+        if (SubCode == 'a') {
+            std::string serverVehicleID = Data.substr(3);
+            debug("(Core) Registering vehicle: " + serverVehicleID);
+            activeVehicles.insert(serverVehicleID);
+        } else if (SubCode == 'd') {
+            std::string serverVehicleID = Data.substr(3);
+            debug("(Core) Unregistering vehicle: " + serverVehicleID);
+            activeVehicles.erase(serverVehicleID);
+            vehiclePortMap.erase(serverVehicleID);
+        } else {
+            debug("(Core) Invalid V packet SubCode: " + SubCode);
+        }
+        Data.clear();
+        break;
     default:
         Data.clear();
         break;
