@@ -18,9 +18,8 @@
 #include "Logger.h"
 
 std::string GetAddr(const std::string& IP) {
-    if (IP.find_first_not_of("0123456789.") == -1)
-        return IP;
-    hostent* host;
+    struct addrinfo* res = nullptr;
+    struct addrinfo hints {0};
 #ifdef _WIN32
     WSADATA wsaData;
     if (WSAStartup(514, &wsaData) != 0) {
@@ -30,13 +29,17 @@ std::string GetAddr(const std::string& IP) {
     }
 #endif
 
-    host = gethostbyname(IP.c_str());
-    if (!host) {
+    hints.ai_family = AF_INET6;
+    hints.ai_flags = AI_V4MAPPED | AI_ADDRCONFIG;
+    if (getaddrinfo(IP.c_str(), NULL, &hints, &res) != 0) {
         error("DNS lookup failed! on " + IP);
         WSACleanup();
         return "DNS";
     }
-    std::string Ret = inet_ntoa(*((struct in_addr*)host->h_addr));
+    char ipstr[INET6_ADDRSTRLEN];
+    inet_ntop(AF_INET6, &((struct sockaddr_in6 *)res->ai_addr)->sin6_addr, ipstr, sizeof(ipstr));
+    std::string Ret = ipstr;
+    freeaddrinfo(res);
     WSACleanup();
     return Ret;
 }

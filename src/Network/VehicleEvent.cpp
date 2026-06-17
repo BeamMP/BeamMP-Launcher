@@ -151,13 +151,13 @@ std::string TCPRcv(SOCKET Sock) {
 void TCPClientMain(const std::string& IP, int Port) {
     LastIP = IP;
     LastPort = Port;
-    SOCKADDR_IN ServerAddr;
+    SOCKADDR_IN6 ServerAddr;
     int RetCode;
 #ifdef _WIN32
     WSADATA wsaData;
     WSAStartup(514, &wsaData); // 2.2
 #endif
-    TCPSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    TCPSock = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
 
     if (TCPSock == -1) {
         printf("Client: socket failed! Error code: %d\n", WSAGetLastError());
@@ -165,9 +165,9 @@ void TCPClientMain(const std::string& IP, int Port) {
         return;
     }
 
-    ServerAddr.sin_family = AF_INET;
-    ServerAddr.sin_port = htons(Port);
-    inet_pton(AF_INET, IP.c_str(), &ServerAddr.sin_addr);
+    ServerAddr.sin6_family = AF_INET6;
+    ServerAddr.sin6_port = htons(Port);
+    inet_pton(AF_INET6, IP.c_str(), &ServerAddr.sin6_addr);
     RetCode = connect(TCPSock, (SOCKADDR*)&ServerAddr, sizeof(ServerAddr));
     if (RetCode != 0) {
         UlStatus = "UlConnection Failed!";
