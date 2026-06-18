@@ -63,7 +63,7 @@ void GameSend(std::string_view Data) {
 void ServerSend(std::string Data, bool Rel) {
     if (Terminate || Data.empty())
         return;
-    if (Data.compare(0, 2, "Zp") == 0 && Data.size() > 500) {
+    if (Data.starts_with("Zp") && Data.size() > 500) {
         abort();
     }
     char C = 0;
