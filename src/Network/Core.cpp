@@ -226,7 +226,7 @@ void Parse(std::string Data, SOCKET CSocket) {
             TCPTerminate = true;
             Data.clear();
             futures.push_back(std::async(std::launch::async, []() {
-                CoreSend("B" + HTTP::Get("https://backend.beammp.com/servers-info"));
+                CoreSend("B" + HTTP::Get("https://backend." + Utils::RegionToTopLevelDomain(options.region) + "/servers-info"));
             }));
         }
         break;

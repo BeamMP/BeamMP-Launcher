@@ -331,9 +331,9 @@ bool VerifySignature(const std::filesystem::path& filePath)
 #endif
 
 void CheckForUpdates(const std::string& CV) {
-    std::string LatestHash = HTTP::Get("https://backend.beammp.com/sha/launcher?branch=" + Branch + "&pk=" + PublicKey);
+    std::string LatestHash = HTTP::Get("https://backend." + Utils::RegionToTopLevelDomain(options.region) + "/sha/launcher?branch=" + Branch + "&pk=" + PublicKey);
     std::string LatestVersion = HTTP::Get(
-        "https://backend.beammp.com/version/launcher?branch=" + Branch + "&pk=" + PublicKey);
+        "https://backend." + Utils::RegionToTopLevelDomain(options.region) + "/version/launcher?branch=" + Branch + "&pk=" + PublicKey);
 
     std::regex sha256_pattern(R"(^[a-fA-F0-9]{64}$)");
     std::smatch match;
@@ -358,7 +358,7 @@ void CheckForUpdates(const std::string& CV) {
             info("Downloading Launcher update " + LatestHash);
             std::wstring DownloadLocation = GetBP() / (beammp_wide("new_") + GetEN());
             if (HTTP::Download(
-                    "https://backend.beammp.com/builds/launcher?download=true"
+                    "https://backend." + Utils::RegionToTopLevelDomain(options.region) + "/builds/launcher?download=true"
                     "&pk="
                         + PublicKey + "&branch=" + Branch,
                     DownloadLocation, LatestHash)) {
@@ -514,7 +514,7 @@ void PreGame(const beammp_fs_string& GamePath) {
     info(beammp_wide("Game user path: ") + beammp_fs_string(GetGamePath()));
 
     if (!options.no_download) {
-        std::string LatestHash = HTTP::Get("https://backend.beammp.com/sha/mod?branch=" + Branch + "&pk=" + PublicKey);
+        std::string LatestHash = HTTP::Get("https://backend." + Utils::RegionToTopLevelDomain(options.region) + "/sha/mod?branch=" + Branch + "&pk=" + PublicKey);
         transform(LatestHash.begin(), LatestHash.end(), LatestHash.begin(), ::tolower);
         LatestHash.erase(std::remove_if(LatestHash.begin(), LatestHash.end(),
                              [](auto const& c) -> bool { return !std::isalnum(c); }),
@@ -548,7 +548,7 @@ void PreGame(const beammp_fs_string& GamePath) {
 
         if (FileHash != LatestHash) {
             info("Downloading BeamMP Update " + LatestHash);
-            HTTP::Download("https://backend.beammp.com/builds/client?download=true"
+            HTTP::Download("https://backend." + Utils::RegionToTopLevelDomain(options.region) + "/builds/client?download=true"
                            "&pk="
                     + PublicKey + "&branch=" + Branch,
                 ZipPath, LatestHash);

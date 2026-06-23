@@ -6,6 +6,7 @@
 
 
 #include "Http.h"
+#include "Options.h"
 #include <Logger.h>
 #include <Network/network.hpp>
 #include <Startup.h>
@@ -136,8 +137,8 @@ void HTTP::StartProxy() {
             { "User-Agent", "BeamMP-Launcher/" + GetVer() + GetPatch() },
             { "Accept", "*/*" }
         };
-        httplib::Client backend("https://backend.beammp.com");
-        httplib::Client forum("https://forum.beammp.com");
+        httplib::Client backend("https://backend." + Utils::RegionToTopLevelDomain(options.region));
+        httplib::Client forum("https://forum." + Utils::RegionToTopLevelDomain(options.region));
 
         const std::string pattern = ".*";
 
@@ -216,7 +217,7 @@ void HTTP::StartProxy() {
                 }
 
                 if (error) {
-                    cli_res = forum.Get("/user_avatar/forum.beammp.com/user/0/0.png", headers);
+                    cli_res = forum.Get("/user_avatar/forum." + Utils::RegionToTopLevelDomain(options.region) + "/user/0/0.png", headers);
                 }
 
             } else {
