@@ -7,6 +7,7 @@
 
 #include "Http.h"
 #include "Options.h"
+#include "RegionHandler.h"
 #include "Logger.h"
 #include <filesystem>
 #include <fstream>
@@ -56,7 +57,11 @@ std::string Login(const std::string& fields) {
     }
     info("Attempting to authenticate...");
     try {
-        std::string Buffer = HTTP::Post("https://auth." + Utils::RegionToTopLevelDomain(options.region) + "/userlogin", fields);
+        std::string Buffer = HTTP::Post("https://auth." + RegionHandler::RegionToTopLevelDomain(options.region) + "/userlogin", fields);
+        if (Buffer == "") {
+            RegionHandler::TopLevelDomainFailed(true);
+            Buffer = HTTP::Post("https://auth." + RegionHandler::RegionToTopLevelDomain(options.region) + "/userlogin", fields);
+        }
 
         if (Buffer.empty()) {
             return GetFail("Failed to communicate with the auth system!");
@@ -116,7 +121,11 @@ void CheckLocalKey() {
                 }
             }
 
-            Buffer = HTTP::Post("https://auth." + Utils::RegionToTopLevelDomain(options.region) + "/userlogin", R"({"pk":")" + Buffer + "\"}");
+            Buffer = HTTP::Post("https://auth." + RegionHandler::RegionToTopLevelDomain(options.region) + "/userlogin", R"({"pk":")" + Buffer + "\"}");
+            if (Buffer == "") {
+                RegionHandler::TopLevelDomainFailed(true);
+                Buffer = HTTP::Post("https://auth." + RegionHandler::RegionToTopLevelDomain(options.region) + "/userlogin", R"({"pk":")" + Buffer + "\"}");
+            }
 
             nlohmann::json d = nlohmann::json::parse(Buffer, nullptr, false);
 

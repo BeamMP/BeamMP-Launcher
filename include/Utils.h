@@ -336,14 +336,4 @@ namespace Utils {
             throw std::runtime_error("Game disconnected");
         }
     }
-
-    inline std::string RegionToTopLevelDomain(const std::string region) {
-        if (region == "Restricted") {
-            return "beammp.ru";
-        }
-        else if (region == "Developer") {
-            return "beammp.dev";
-        }
-        return "beammp.com"; // Global
-    }
     };
