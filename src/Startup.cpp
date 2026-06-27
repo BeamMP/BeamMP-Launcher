@@ -332,15 +332,15 @@ bool VerifySignature(const std::filesystem::path& filePath)
 #endif
 
 void CheckForUpdates(const std::string& CV) {
-    std::string LatestHash = HTTP::Get("https://backend." + RegionHandler::RegionToTopLevelDomain(options.region) + "/sha/launcher?branch=" + Branch + "&pk=" + PublicKey);
+    std::string LatestHash = HTTP::Get("https://backend." + RegionHandler::RegionToTopLevelDomain() + "/sha/launcher?branch=" + Branch + "&pk=" + PublicKey);
     if (LatestHash == "") {
-        RegionHandler::TopLevelDomainFailed(true);
-        LatestHash = HTTP::Get("https://backend." + RegionHandler::RegionToTopLevelDomain(options.region) + "/sha/launcher?branch=" + Branch + "&pk=" + PublicKey);
+        RegionHandler::TopLevelDomainFailed();
+        LatestHash = HTTP::Get("https://backend." + RegionHandler::RegionToTopLevelDomain() + "/sha/launcher?branch=" + Branch + "&pk=" + PublicKey);
     }
-    std::string LatestVersion = HTTP::Get("https://backend." + RegionHandler::RegionToTopLevelDomain(options.region) + "/version/launcher?branch=" + Branch + "&pk=" + PublicKey);
+    std::string LatestVersion = HTTP::Get("https://backend." + RegionHandler::RegionToTopLevelDomain() + "/version/launcher?branch=" + Branch + "&pk=" + PublicKey);
     if (LatestVersion == "") {
-        RegionHandler::TopLevelDomainFailed(true);
-        LatestVersion = HTTP::Get("https://backend." + RegionHandler::RegionToTopLevelDomain(options.region) + "/version/launcher?branch=" + Branch + "&pk=" + PublicKey);
+        RegionHandler::TopLevelDomainFailed();
+        LatestVersion = HTTP::Get("https://backend." + RegionHandler::RegionToTopLevelDomain() + "/version/launcher?branch=" + Branch + "&pk=" + PublicKey);
     }
 
     std::regex sha256_pattern(R"(^[a-fA-F0-9]{64}$)");
@@ -367,14 +367,14 @@ void CheckForUpdates(const std::string& CV) {
             std::wstring DownloadLocation = GetBP() / (beammp_wide("new_") + GetEN());
             bool downloadSuccess = false;
             downloadSuccess = HTTP::Download(
-                    "https://backend." + RegionHandler::RegionToTopLevelDomain(options.region) + "/builds/launcher?download=true"
+                    "https://backend." + RegionHandler::RegionToTopLevelDomain() + "/builds/launcher?download=true"
                     "&pk="
                         + PublicKey + "&branch=" + Branch,
                 DownloadLocation, LatestHash);
             if (!downloadSuccess) {
-                RegionHandler::TopLevelDomainFailed(true);
+                RegionHandler::TopLevelDomainFailed();
                 downloadSuccess = HTTP::Download(
-                    "https://backend." + RegionHandler::RegionToTopLevelDomain(options.region) + "/builds/launcher?download=true"
+                    "https://backend." + RegionHandler::RegionToTopLevelDomain() + "/builds/launcher?download=true"
                     "&pk="
                     + PublicKey + "&branch=" + Branch,
                 DownloadLocation, LatestHash);
@@ -532,10 +532,10 @@ void PreGame(const beammp_fs_string& GamePath) {
     info(beammp_wide("Game user path: ") + beammp_fs_string(GetGamePath()));
 
     if (!options.no_download) {
-        std::string LatestHash = HTTP::Get("https://backend." + RegionHandler::RegionToTopLevelDomain(options.region) + "/sha/mod?branch=" + Branch + "&pk=" + PublicKey);
+        std::string LatestHash = HTTP::Get("https://backend." + RegionHandler::RegionToTopLevelDomain() + "/sha/mod?branch=" + Branch + "&pk=" + PublicKey);
         if (LatestHash == "") {
-            RegionHandler::TopLevelDomainFailed(true);
-            LatestHash = HTTP::Get("https://backend." + RegionHandler::RegionToTopLevelDomain(options.region) + "/sha/mod?branch=" + Branch + "&pk=" + PublicKey);
+            RegionHandler::TopLevelDomainFailed();
+            LatestHash = HTTP::Get("https://backend." + RegionHandler::RegionToTopLevelDomain() + "/sha/mod?branch=" + Branch + "&pk=" + PublicKey);
         }
         transform(LatestHash.begin(), LatestHash.end(), LatestHash.begin(), ::tolower);
         LatestHash.erase(std::remove_if(LatestHash.begin(), LatestHash.end(),
@@ -570,12 +570,12 @@ void PreGame(const beammp_fs_string& GamePath) {
 
         if (FileHash != LatestHash) {
             info("Downloading BeamMP Update " + LatestHash);
-            if (!HTTP::Download("https://backend." + RegionHandler::RegionToTopLevelDomain(options.region) + "/builds/client?download=true"
+            if (!HTTP::Download("https://backend." + RegionHandler::RegionToTopLevelDomain() + "/builds/client?download=true"
                            "&pk="
                     + PublicKey + "&branch=" + Branch,
                     ZipPath, LatestHash)) {
-                RegionHandler::TopLevelDomainFailed(true);
-                HTTP::Download("https://backend." + RegionHandler::RegionToTopLevelDomain(options.region) + "/builds/client?download=true"
+                RegionHandler::TopLevelDomainFailed();
+                HTTP::Download("https://backend." + RegionHandler::RegionToTopLevelDomain() + "/builds/client?download=true"
                     "&pk="
                     + PublicKey + "&branch=" + Branch,
                     ZipPath, LatestHash);

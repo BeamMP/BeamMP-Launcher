@@ -227,10 +227,10 @@ void Parse(std::string Data, SOCKET CSocket) {
             TCPTerminate = true;
             Data.clear();
             futures.push_back(std::async(std::launch::async, []() {
-                std::string resp = HTTP::Get("https://backend." + RegionHandler::RegionToTopLevelDomain(options.region) + "/servers-info");
+                std::string resp = HTTP::Get("https://backend." + RegionHandler::RegionToTopLevelDomain() + "/servers-info");
                 if (resp == "") {
-                    RegionHandler::TopLevelDomainFailed(true);
-                    resp = HTTP::Get("https://backend." + RegionHandler::RegionToTopLevelDomain(options.region) + "/servers-info");
+                    RegionHandler::TopLevelDomainFailed();
+                    resp = HTTP::Get("https://backend." + RegionHandler::RegionToTopLevelDomain() + "/servers-info");
                 }
                 CoreSend("B" + resp);
             }));

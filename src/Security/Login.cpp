@@ -57,10 +57,10 @@ std::string Login(const std::string& fields) {
     }
     info("Attempting to authenticate...");
     try {
-        std::string Buffer = HTTP::Post("https://auth." + RegionHandler::RegionToTopLevelDomain(options.region) + "/userlogin", fields);
+        std::string Buffer = HTTP::Post("https://auth." + RegionHandler::RegionToTopLevelDomain() + "/userlogin", fields);
         if (Buffer == "") {
-            RegionHandler::TopLevelDomainFailed(true);
-            Buffer = HTTP::Post("https://auth." + RegionHandler::RegionToTopLevelDomain(options.region) + "/userlogin", fields);
+            RegionHandler::TopLevelDomainFailed();
+            Buffer = HTTP::Post("https://auth." + RegionHandler::RegionToTopLevelDomain() + "/userlogin", fields);
         }
 
         if (Buffer.empty()) {
@@ -121,10 +121,10 @@ void CheckLocalKey() {
                 }
             }
 
-            Buffer = HTTP::Post("https://auth." + RegionHandler::RegionToTopLevelDomain(options.region) + "/userlogin", R"({"pk":")" + Buffer + "\"}");
+            Buffer = HTTP::Post("https://auth." + RegionHandler::RegionToTopLevelDomain() + "/userlogin", R"({"pk":")" + Buffer + "\"}");
             if (Buffer == "") {
-                RegionHandler::TopLevelDomainFailed(true);
-                Buffer = HTTP::Post("https://auth." + RegionHandler::RegionToTopLevelDomain(options.region) + "/userlogin", R"({"pk":")" + Buffer + "\"}");
+                RegionHandler::TopLevelDomainFailed();
+                Buffer = HTTP::Post("https://auth." + RegionHandler::RegionToTopLevelDomain() + "/userlogin", R"({"pk":")" + Buffer + "\"}");
             }
 
             nlohmann::json d = nlohmann::json::parse(Buffer, nullptr, false);

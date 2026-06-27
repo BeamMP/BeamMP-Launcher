@@ -115,7 +115,6 @@ void InitOptions(int argc, const char *argv[], Options &options) {
                 "\t--no-launch          Skip launching the game (you must launch the game manually)\n"
                 "\t--dev                Developer mode, same as --verbose --no-download --no-launch --no-update\n"
                 "\t--user-path <path>   Path to BeamNG's User Path\n"
-                "\t--region <region>    Sets a custom region, options are 'Global', and 'Restricted'\n"
                 "\t--game <args...>     Passes ALL following arguments to the game, see also `--`\n"
                 << std::flush;
             exit(0);

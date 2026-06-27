@@ -138,8 +138,8 @@ void HTTP::StartProxy() {
             { "User-Agent", "BeamMP-Launcher/" + GetVer() + GetPatch() },
             { "Accept", "*/*" }
         };
-        httplib::Client backend("https://backend." + RegionHandler::RegionToTopLevelDomain(options.region));
-        httplib::Client forum("https://forum." + RegionHandler::RegionToTopLevelDomain(options.region));
+        httplib::Client backend("https://backend." + RegionHandler::RegionToTopLevelDomain());
+        httplib::Client forum("https://forum." + RegionHandler::RegionToTopLevelDomain());
 
         const std::string pattern = ".*";
 
@@ -218,7 +218,7 @@ void HTTP::StartProxy() {
                 }
 
                 if (error) {
-                    cli_res = forum.Get("/user_avatar/forum." + RegionHandler::RegionToTopLevelDomain(options.region) + "/user/0/0.png", headers);
+                    cli_res = forum.Get("/user_avatar/forum." + RegionHandler::RegionToTopLevelDomain() + "/user/0/0.png", headers);
                 }
 
             } else {

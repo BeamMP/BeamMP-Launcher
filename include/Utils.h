@@ -336,4 +336,4 @@ namespace Utils {
             throw std::runtime_error("Game disconnected");
         }
     }
-    };
+};

@@ -6,17 +6,18 @@
 
 #include "RegionHandler.h"
 #include "Logger.h"
+#include "Options.h"
 
-void RegionHandler::TopLevelDomainFailed(bool failed)
+void RegionHandler::TopLevelDomainFailed()
 {
-    if (!failed) return;
     info("Top level domain of " + mValidTLDs[mRegionIndex % mValidTLDs.size()] + " didn't respond correctly , changing domain to " + mValidTLDs[(mRegionIndex + 1) % mValidTLDs.size()]);
     mRegionIndex++;
 }
 
-std::string RegionHandler::RegionToTopLevelDomain(const std::string region)
+std::string RegionHandler::RegionToTopLevelDomain()
 {
-    if (region == "Developer") {
+    static bool isDeveloperRegion = options.region == "Developer";
+    if (isDeveloperRegion) {
         return "beammp.dev";
     }
     return mValidTLDs[mRegionIndex % mValidTLDs.size()]; // Global
