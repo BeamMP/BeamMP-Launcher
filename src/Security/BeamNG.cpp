@@ -284,7 +284,6 @@ void LegitimacyCheck() {
     std::vector<std::filesystem::path> steamappsCommonPaths = {
         ".steam/root/steamapps", // default
         ".steam/steam/steamapps", // Legacy Steam installations
-        ".local/share/Steam/steamapps", // Arch Linux, Fedora, and other distros~
         ".var/app/com.valvesoftware.Steam/.steam/root/steamapps", // flatpak
         "snap/steam/common/.local/share/Steam/steamapps" // snap
     };
@@ -299,7 +298,6 @@ void LegitimacyCheck() {
         if (std::filesystem::exists(steamappsPath)) {
             steamappsFolderFound = true;
             libraryFoldersPath = steamappsPath / "libraryfolders.vdf";
-            info("Found Steam installation at: " + steamappsPath.string());
             if (std::filesystem::exists(libraryFoldersPath)) {
                 libraryFoldersPath = libraryFoldersPath;
                 libraryFoldersFound = true;
@@ -324,7 +322,6 @@ void LegitimacyCheck() {
             continue;
         }
         const std::string& libraryPath = folderInfo.second->attribs["path"];
-        info("Checking folder: " + libraryPath);
 
         auto appsChild = folderInfo.second->childs.find("apps");
         if (appsChild == folderInfo.second->childs.end() || !appsChild->second) {
