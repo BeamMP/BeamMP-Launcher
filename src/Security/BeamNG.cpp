@@ -11,6 +11,8 @@
 #include <shlobj_core.h>
 #elif defined(__linux__)
 #include "vdf_parser.hpp"
+#include <algorithm>
+#include <cctype>
 #include <pwd.h>
 #include <unistd.h>
 #include <vector>
@@ -160,6 +162,54 @@ void FileList(std::vector<std::string>& a, const std::string& Path) {
         }
     }
 }
+#if defined(__linux__)
+bool TryResolveGameDir(const std::string& libraryPath, std::string& outGameDir) {
+    namespace fs = std::filesystem;
+
+    std::vector<fs::path> components;
+    for (const auto& part : fs::path(libraryPath)) {
+        components.push_back(part);
+    }
+
+    auto buildAndCheck = [&](const std::vector<fs::path>& parts) -> bool {
+        fs::path candidate;
+        for (const auto& part : parts) {
+            candidate /= part;
+        }
+        std::string gameDir = candidate.string() + "/steamapps/common/BeamNG.drive/";
+        if (fs::exists(gameDir + "integrity.json")) {
+            outGameDir = gameDir;
+            return true;
+        }
+        return false;
+    };
+
+    if (buildAndCheck(components)) {
+        return true;
+    }
+
+    for (size_t i = 0; i < components.size(); ++i) {
+        std::string original = components[i].string();
+        std::string upper = original;
+        std::string lower = original;
+        std::transform(upper.begin(), upper.end(), upper.begin(), [](unsigned char c) { return std::toupper(c); });
+        std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char c) { return std::tolower(c); });
+
+        for (const auto& variant : { upper, lower }) {
+            if (variant == original) {
+                continue;
+            }
+            auto modified = components;
+            modified[i] = variant;
+            if (buildAndCheck(modified)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+#endif
+
 void LegitimacyCheck() {
 #if defined(_WIN32)
     wchar_t* appDataPath = new wchar_t[MAX_PATH];
@@ -234,6 +284,7 @@ void LegitimacyCheck() {
     std::vector<std::filesystem::path> steamappsCommonPaths = {
         ".steam/root/steamapps", // default
         ".steam/steam/steamapps", // Legacy Steam installations
+        ".local/share/Steam/steamapps", // Arch Linux, Fedora, and other distros~
         ".var/app/com.valvesoftware.Steam/.steam/root/steamapps", // flatpak
         "snap/steam/common/.local/share/Steam/steamapps" // snap
     };
@@ -248,6 +299,7 @@ void LegitimacyCheck() {
         if (std::filesystem::exists(steamappsPath)) {
             steamappsFolderFound = true;
             libraryFoldersPath = steamappsPath / "libraryfolders.vdf";
+            info("Found Steam installation at: " + steamappsPath.string());
             if (std::filesystem::exists(libraryFoldersPath)) {
                 libraryFoldersPath = libraryFoldersPath;
                 libraryFoldersFound = true;
@@ -267,9 +319,26 @@ void LegitimacyCheck() {
 
     std::ifstream libraryFolders(libraryFoldersPath);
     auto root = tyti::vdf::read(libraryFolders);
-    for (auto folderInfo : root.childs) {
-        if ((folderInfo.second->childs["apps"]->attribs).contains("284160") && std::filesystem::exists(folderInfo.second->attribs["path"] + "/steamapps/common/BeamNG.drive/integrity.json")){
-            GameDir = folderInfo.second->attribs["path"] + "/steamapps/common/BeamNG.drive/";
+    for (const auto& folderInfo : root.childs) {
+        if (!folderInfo.second) {
+            continue;
+        }
+        const std::string& libraryPath = folderInfo.second->attribs["path"];
+        info("Checking folder: " + libraryPath);
+
+        auto appsChild = folderInfo.second->childs.find("apps");
+        if (appsChild == folderInfo.second->childs.end() || !appsChild->second) {
+            continue;
+        }
+
+        const auto& apps = appsChild->second->attribs;
+        if (apps.find("284160") == apps.end()) {
+            continue;
+        }
+
+        std::string resolvedGameDir;
+        if (TryResolveGameDir(libraryPath, resolvedGameDir)) {
+            GameDir = resolvedGameDir;
             break;
         }
     }
