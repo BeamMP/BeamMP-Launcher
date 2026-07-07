@@ -163,48 +163,60 @@ void FileList(std::vector<std::string>& a, const std::string& Path) {
     }
 }
 #if defined(__linux__)
-bool TryResolveGameDir(const std::string& libraryPath, std::string& outGameDir) {
-    namespace fs = std::filesystem;
-
-    std::vector<fs::path> components;
-    for (const auto& part : fs::path(libraryPath)) {
-        components.push_back(part);
-    }
-
-    auto buildAndCheck = [&](const std::vector<fs::path>& parts) -> bool {
-        fs::path candidate;
-        for (const auto& part : parts) {
-            candidate /= part;
-        }
-        std::string gameDir = candidate.string() + "/steamapps/common/BeamNG.drive/";
-        if (fs::exists(gameDir + "integrity.json")) {
-            outGameDir = gameDir;
-            return true;
-        }
-        return false;
-    };
-
-    if (buildAndCheck(components)) {
+static bool ResolvePathComponent(const fs::path& parentDir, const std::string& want, fs::path& resolved) {
+    std::error_code ec;
+    fs::path exact = parentDir / want;
+    if (fs::exists(exact, ec)) {
+        resolved = exact;
         return true;
     }
 
-    for (size_t i = 0; i < components.size(); ++i) {
-        std::string original = components[i].string();
-        std::string upper = original;
-        std::string lower = original;
-        std::transform(upper.begin(), upper.end(), upper.begin(), [](unsigned char c) { return std::toupper(c); });
-        std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char c) { return std::tolower(c); });
+    if (!fs::is_directory(parentDir, ec)) {
+        return false;
+    }
 
-        for (const auto& variant : { upper, lower }) {
-            if (variant == original) {
-                continue;
-            }
-            auto modified = components;
-            modified[i] = variant;
-            if (buildAndCheck(modified)) {
-                return true;
-            }
+    std::string wantLower = want;
+    std::transform(wantLower.begin(), wantLower.end(), wantLower.begin(), [](unsigned char c) { return std::tolower(c); });
+
+    for (const auto& entry : fs::directory_iterator(parentDir, ec)) {
+        std::string nameLower = entry.path().filename().string();
+        std::transform(nameLower.begin(), nameLower.end(), nameLower.begin(), [](unsigned char c) { return std::tolower(c); });
+        if (nameLower == wantLower) {
+            resolved = entry.path();
+            return true;
         }
+    }
+    return false;
+}
+
+bool TryResolveGameDir(const std::string& libraryPath, std::string& outGameDir) {
+    fs::path current;
+    bool first = true;
+    for (const auto& part : fs::path(libraryPath)) {
+        if (first) {
+            current = part;
+            first = false;
+            continue;
+        }
+        fs::path resolved;
+        if (!ResolvePathComponent(current, part.string(), resolved)) {
+            return false;
+        }
+        current = resolved;
+    }
+
+    for (const std::string& want : { std::string("steamapps"), std::string("common"), std::string("BeamNG.drive") }) {
+        fs::path resolved;
+        if (!ResolvePathComponent(current, want, resolved)) {
+            return false;
+        }
+        current = resolved;
+    }
+
+    std::error_code ec;
+    if (fs::exists(current / "integrity.json", ec)) {
+        outGameDir = current.string() + "/";
+        return true;
     }
     return false;
 }
@@ -321,7 +333,11 @@ void LegitimacyCheck() {
         if (!folderInfo.second) {
             continue;
         }
-        const std::string& libraryPath = folderInfo.second->attribs["path"];
+        auto pathAttrib = folderInfo.second->attribs.find("path");
+        if (pathAttrib == folderInfo.second->attribs.end()) {
+            continue;
+        }
+        const std::string& libraryPath = pathAttrib->second;
 
         auto appsChild = folderInfo.second->childs.find("apps");
         if (appsChild == folderInfo.second->childs.end() || !appsChild->second) {
@@ -333,6 +349,7 @@ void LegitimacyCheck() {
             continue;
         }
 
+        debug("Checking Steam library for BeamNG.drive: " + libraryPath);
         std::string resolvedGameDir;
         if (TryResolveGameDir(libraryPath, resolvedGameDir)) {
             GameDir = resolvedGameDir;
