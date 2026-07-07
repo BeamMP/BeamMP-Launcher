@@ -189,7 +189,11 @@ static bool ResolvePathComponent(const fs::path& parentDir, const std::string& w
     return false;
 }
 
-bool TryResolveGameDir(const std::string& libraryPath, std::string& outGameDir) {
+static bool TryResolveGameDir(const std::string& libraryPath, std::string& outGameDir) {
+    if (libraryPath.empty()) {
+        return false;
+    }
+
     fs::path current;
     bool first = true;
     for (const auto& part : fs::path(libraryPath)) {
