@@ -227,10 +227,10 @@ void Parse(std::string Data, SOCKET CSocket) {
             TCPTerminate = true;
             Data.clear();
             futures.push_back(std::async(std::launch::async, []() {
-                std::string resp = HTTP::Get("https://backend." + RegionHandler::RegionToTopLevelDomain() + "/servers-info");
+                std::string resp = HTTP::Get("https://backend.beammp.com/servers-info", true);
                 if (resp == "") {
                     RegionHandler::TopLevelDomainFailed();
-                    resp = HTTP::Get("https://backend." + RegionHandler::RegionToTopLevelDomain() + "/servers-info");
+                    resp = HTTP::Get("https://backend.beammp.com/servers-info", true);
                 }
                 CoreSend("B" + resp);
             }));

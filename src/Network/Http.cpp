@@ -31,9 +31,12 @@ static size_t CurlWriteCallback(void* contents, size_t size, size_t nmemb, void*
 }
 
 bool HTTP::isDownload = false;
-std::string HTTP::Get(const std::string& IP) {
+std::string HTTP::Get(std::string IP, const bool& redirect) {
     std::string Ret;
     static thread_local CURL* curl = curl_easy_init();
+    if (redirect) {
+        IP = RegionHandler::RedirectURL(IP);
+    }
     if (curl) {
         CURLcode res;
         char errbuf[CURL_ERROR_SIZE];
@@ -48,6 +51,7 @@ std::string HTTP::Get(const std::string& IP) {
         if (res != CURLE_OK) {
             error("GET to " + IP + " failed: " + std::string(curl_easy_strerror(res)));
             error("Curl error: " + std::string(errbuf));
+            RegionHandler::TopLevelDomainFailed();
             return "";
         }
     } else {
@@ -57,9 +61,12 @@ std::string HTTP::Get(const std::string& IP) {
     return Ret;
 }
 
-std::string HTTP::Post(const std::string& IP, const std::string& Fields) {
+std::string HTTP::Post(std::string IP, const std::string& Fields, const bool& redirect) {
     std::string Ret;
     static thread_local CURL* curl = curl_easy_init();
+    if (redirect) {
+        IP = RegionHandler::RedirectURL(IP);
+    }
     if (curl) {
         CURLcode res;
         char errbuf[CURL_ERROR_SIZE];
@@ -81,6 +88,7 @@ std::string HTTP::Post(const std::string& IP, const std::string& Fields) {
         if (res != CURLE_OK) {
             error("POST to " + IP + " failed: " + std::string(curl_easy_strerror(res)));
             error("Curl error: " + std::string(errbuf));
+            RegionHandler::TopLevelDomainFailed();
             return "";
         }
     } else {
@@ -90,12 +98,12 @@ std::string HTTP::Post(const std::string& IP, const std::string& Fields) {
     return Ret;
 }
 
-bool HTTP::Download(const std::string& IP, const beammp_fs_string& Path, const std::string& Hash) {
+bool HTTP::Download(const std::string& IP, const beammp_fs_string& Path, const std::string& Hash, const bool& redirect) {
     static std::mutex Lock;
     std::scoped_lock Guard(Lock);
 
     info("Downloading an update (this may take a while)");
-    std::string Ret = Get(IP);
+    std::string Ret = Get(IP, redirect);
 
     if (Ret.empty()) {
         error("Download failed");
@@ -218,7 +226,7 @@ void HTTP::StartProxy() {
                 }
 
                 if (error) {
-                    cli_res = forum.Get("/user_avatar/forum." + RegionHandler::RegionToTopLevelDomain() + "/user/0/0.png", headers);
+                    cli_res = forum.Get("/user_avatar/forum./user/0/0.png", headers);
                 }
 
             } else {
