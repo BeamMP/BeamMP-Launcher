@@ -146,8 +146,8 @@ void HTTP::StartProxy() {
             { "User-Agent", "BeamMP-Launcher/" + GetVer() + GetPatch() },
             { "Accept", "*/*" }
         };
-        httplib::Client backend("https://backend." + RegionHandler::RegionToTopLevelDomain());
-        httplib::Client forum("https://forum." + RegionHandler::RegionToTopLevelDomain());
+        httplib::Client backend("https://backend.beammp.com");
+        httplib::Client forum("https://forum.beammp.com");
 
         const std::string pattern = ".*";
 
