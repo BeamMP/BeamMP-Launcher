@@ -24,7 +24,7 @@
 #include <string>
 
 SOCKET UDPSock = -1;
-sockaddr_in* ToServer = nullptr;
+sockaddr_in6* ToServer = nullptr;
 
 void UDPSend(std::string Data) {
     if (ClientID == -1 || UDPSock == -1)
@@ -62,7 +62,7 @@ void UDPParser(std::string_view Packet) {
     }
 }
 void UDPRcv() {
-    sockaddr_in FromServer {};
+    sockaddr_in6 FromServer {};
 #if defined(_WIN32)
     int clientLength = sizeof(FromServer);
 #elif defined(__linux__)
@@ -88,11 +88,11 @@ void UDPClientMain(const std::string& IP, int Port) {
 #endif
 
     delete ToServer;
-    ToServer = new sockaddr_in;
-    ToServer->sin_family = AF_INET;
-    ToServer->sin_port = htons(Port);
-    inet_pton(AF_INET, IP.c_str(), &ToServer->sin_addr);
-    UDPSock = socket(AF_INET, SOCK_DGRAM, 0);
+    ToServer = new sockaddr_in6;
+    ToServer->sin6_family = AF_INET6;
+    ToServer->sin6_port = htons(Port);
+    inet_pton(AF_INET6, IP.c_str(), &ToServer->sin6_addr);
+    UDPSock = socket(AF_INET6, SOCK_DGRAM, 0);
     if (!magic.empty())
         for (int i = 0; i < 10; i++)
             UDPSend(magic);
