@@ -61,6 +61,10 @@ void GameSend(std::string_view Data) {
 }
 
 void ServerSend(std::string Data, bool Rel) {
+   if (Data.length() > 1 && Data[0] == 't') {
+    debug("hey");
+   }
+ 
     if (Terminate || Data.empty())
         return;
     if (Data.find("Zp") != std::string::npos && Data.size() > 500) {
