@@ -51,8 +51,18 @@ std::string HTTP::Get(std::string IP, const bool& redirect) {
         if (res != CURLE_OK) {
             error("GET to " + IP + " failed: " + std::string(curl_easy_strerror(res)));
             error("Curl error: " + std::string(errbuf));
+            if (!redirect) {
+                return "";
+            }
             RegionHandler::TopLevelDomainFailed();
-            return "";
+            IP = RegionHandler::RedirectURL(IP);
+            curl_easy_setopt(curl, CURLOPT_URL, IP.c_str());
+            res = curl_easy_perform(curl);
+            if (res != CURLE_OK) {
+                error("GET to " + IP + " failed: " + std::string(curl_easy_strerror(res)));
+                error("Curl error: " + std::string(errbuf));
+                return "";
+            }
         }
     } else {
         error("Curl easy init failed");
@@ -88,8 +98,18 @@ std::string HTTP::Post(std::string IP, const std::string& Fields, const bool& re
         if (res != CURLE_OK) {
             error("POST to " + IP + " failed: " + std::string(curl_easy_strerror(res)));
             error("Curl error: " + std::string(errbuf));
+            if (!redirect) {
+                return "";
+            }
             RegionHandler::TopLevelDomainFailed();
-            return "";
+            IP = RegionHandler::RedirectURL(IP);
+            curl_easy_setopt(curl, CURLOPT_URL, IP.c_str());
+            res = curl_easy_perform(curl);
+            if (res != CURLE_OK) {
+                error("GET to " + IP + " failed: " + std::string(curl_easy_strerror(res)));
+                error("Curl error: " + std::string(errbuf));
+                return "";
+            }
         }
     } else {
         error("Curl easy init failed");
@@ -226,7 +246,7 @@ void HTTP::StartProxy() {
                 }
 
                 if (error) {
-                    cli_res = forum.Get("/user_avatar/forum./user/0/0.png", headers);
+                    cli_res = forum.Get("/user_avatar/forum.beammp.com/user/0/0.png", headers);
                 }
 
             } else {

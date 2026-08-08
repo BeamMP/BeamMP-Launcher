@@ -333,15 +333,7 @@ bool VerifySignature(const std::filesystem::path& filePath)
 
 void CheckForUpdates(const std::string& CV) {
     std::string LatestHash = HTTP::Get("https://backend.beammp.com/sha/launcher?branch=" + Branch + "&pk=" + PublicKey);
-    if (LatestHash == "") {
-        RegionHandler::TopLevelDomainFailed();
-        LatestHash = HTTP::Get("https://backend.beammp.com/sha/launcher?branch=" + Branch + "&pk=" + PublicKey);
-    }
     std::string LatestVersion = HTTP::Get("https://backend.beammp.com/version/launcher?branch=" + Branch + "&pk=" + PublicKey);
-    if (LatestVersion == "") {
-        RegionHandler::TopLevelDomainFailed();
-        LatestVersion = HTTP::Get("https://backend.beammp.com/version/launcher?branch=" + Branch + "&pk=" + PublicKey);
-    }
 
     std::regex sha256_pattern(R"(^[a-fA-F0-9]{64}$)");
     std::smatch match;
@@ -371,14 +363,6 @@ void CheckForUpdates(const std::string& CV) {
                     "&pk="
                         + PublicKey + "&branch=" + Branch,
                 DownloadLocation, LatestHash);
-            if (!downloadSuccess) {
-                RegionHandler::TopLevelDomainFailed();
-                downloadSuccess = HTTP::Download(
-                    "https://backend.beammp.com/builds/launcher?download=true"
-                    "&pk="
-                    + PublicKey + "&branch=" + Branch,
-                DownloadLocation, LatestHash);
-            }
             if (downloadSuccess) {
                 if (!VerifySignature(DownloadLocation) || !CheckThumbprint(DownloadLocation)) {
                     std::error_code ec;
@@ -533,10 +517,6 @@ void PreGame(const beammp_fs_string& GamePath) {
 
     if (!options.no_download) {
         std::string LatestHash = HTTP::Get("https://backend.beammp.com/sha/mod?branch=" + Branch + "&pk=" + PublicKey);
-        if (LatestHash == "") {
-            RegionHandler::TopLevelDomainFailed();
-            LatestHash = HTTP::Get("https://backend.beammp.com/sha/mod?branch=" + Branch + "&pk=" + PublicKey);
-        }
         transform(LatestHash.begin(), LatestHash.end(), LatestHash.begin(), ::tolower);
         LatestHash.erase(std::remove_if(LatestHash.begin(), LatestHash.end(),
                              [](auto const& c) -> bool { return !std::isalnum(c); }),
@@ -570,16 +550,10 @@ void PreGame(const beammp_fs_string& GamePath) {
 
         if (FileHash != LatestHash) {
             info("Downloading BeamMP Update " + LatestHash);
-            if (!HTTP::Download("https://backend.beammp.com/builds/client?download=true"
+            HTTP::Download("https://backend.beammp.com/builds/client?download=true"
                            "&pk="
                     + PublicKey + "&branch=" + Branch,
-                    ZipPath, LatestHash)) {
-                RegionHandler::TopLevelDomainFailed();
-                HTTP::Download("https://backend.beammp.com/builds/client?download=true"
-                    "&pk="
-                    + PublicKey + "&branch=" + Branch,
-                    ZipPath, LatestHash);
-            }
+                ZipPath, LatestHash);
         }
 
         beammp_fs_string Target(GetGamePath() / beammp_wide("mods/unpacked/beammp"));
