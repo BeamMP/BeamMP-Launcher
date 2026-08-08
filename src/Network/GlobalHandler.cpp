@@ -198,6 +198,10 @@ void ParserAsync(std::string_view Data) {
     default:
         break;
     }
+    if (Data.length() > 1 && Data[0] == 't') {
+        debug("omg?");
+        debug(Data.data());
+    }
     GameSend(Data);
 }
 void ServerParser(std::string_view Data) {
