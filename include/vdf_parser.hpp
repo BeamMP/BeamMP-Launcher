@@ -33,12 +33,12 @@
 #include <algorithm>
 #include <iterator>
 #include <functional>
+#include <filesystem>
 
 #include <system_error>
 #include <exception>
 
 //for wstring support
-#include <locale>
 #include <string>
 
 // internal
@@ -108,20 +108,9 @@ namespace tyti
                 return w;
             }
 
-            // utility wrapper to adapt locale-bound facets for wstring/wbuffer convert
-            // from cppreference
-            template <class Facet>
-            struct deletable_facet : Facet
+            inline std::string string_converter(const std::wstring& w)
             {
-                template <class... Args>
-                deletable_facet(Args &&... args) : Facet(std::forward<Args>(args)...) {}
-                ~deletable_facet() {}
-            };
-
-            inline std::string string_converter(const std::wstring& w) //todo: use us-locale
-            {
-                std::wstring_convert<deletable_facet<std::codecvt<wchar_t, char, std::mbstate_t>>> conv1;
-                return conv1.to_bytes(w);
+                return std::filesystem::path(w).string();
             }
 
             ///////////////////////////////////////////////////////////////////////////
