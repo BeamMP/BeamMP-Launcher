@@ -101,7 +101,7 @@ void DVClientMain(const std::string& IP, int Port) {
     ToVehicle.sin_addr = DVListenAddr.sin_addr;
 
     DVSock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (DVSock == INVALID_SOCKET) {
+    if (DVSock == -1) {
         error("(Direct VE) Socket creation failed with error: " + std::to_string(WSAGetLastError()));
         KillSocket(DVSock);
         WSACleanup();
