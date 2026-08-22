@@ -9,10 +9,11 @@
 
 #if defined(_WIN32)
 #include <winsock2.h>
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 #include "linuxfixes.h"
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <cstring>
 #endif
 
 #include "Logger.h"
@@ -33,10 +34,14 @@ std::string GetAddr(const std::string& IP) {
     host = gethostbyname(IP.c_str());
     if (!host) {
         error("DNS lookup failed! on " + IP);
+#if defined(_WIN32)
         WSACleanup();
+#endif
         return "DNS";
     }
     std::string Ret = inet_ntoa(*((struct in_addr*)host->h_addr));
+#if defined(_WIN32)
     WSACleanup();
+#endif
     return Ret;
 }

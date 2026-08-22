@@ -5,6 +5,7 @@ cmake-build-release
 /*.sh
 /*.obj
 /*.exe
+.DS_Store/
 .cache/
 .https_debug/
 Launcher.cfg
@@ -13,3 +14,9 @@ bin/
 compile_commands.json
 key
 out/
+vcpkg_installed/
+
+build-linux/
+build-macos/
+build-windows/
+
