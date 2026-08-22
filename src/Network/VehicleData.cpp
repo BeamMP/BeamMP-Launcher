@@ -22,12 +22,17 @@
 
 #include "Logger.h"
 #include <array>
+#include <future>
+#include <mutex>
 #include <string>
 
 SOCKET UDPSock = -1;
 sockaddr_in* ToServer = nullptr;
 
+std::mutex UDPSendMutex;
+
 void UDPSend(std::string Data) {
+    std::scoped_lock lock(UDPSendMutex);
     if (ClientID == -1 || UDPSock == -1)
         return;
     if (Data.length() > 400) {
@@ -79,6 +84,7 @@ void UDPRcv() {
     Ret[Rcv] = 0;
     UDPParser(std::string_view(Ret.data(), Rcv));
 }
+
 void UDPClientMain(const std::string& IP, int Port) {
 #ifdef _WIN32
     WSADATA data;
@@ -94,11 +100,15 @@ void UDPClientMain(const std::string& IP, int Port) {
     ToServer->sin_port = htons(Port);
     inet_pton(AF_INET, IP.c_str(), &ToServer->sin_addr);
     UDPSock = socket(AF_INET, SOCK_DGRAM, 0);
+    std::future<void> magicSend;
+
     if (!magic.empty()) {
-        for (int i = 0; i < 10; i++) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-            UDPSend(magic);
-        }
+        magicSend = std::async(std::launch::async, ([](){
+            for (int i = 0; i < 10; i++) {
+                UDPSend(magic);
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            }
+        }));
     }
     GameSend("P" + std::to_string(ClientID));
     TCPSend("H", TCPSock);
@@ -108,6 +118,11 @@ void UDPClientMain(const std::string& IP, int Port) {
         UDPRcv();
     }
     debug("UDP receive loop done");
+
+    if (magicSend.valid()) {
+        magicSend.get();
+    }
+
     KillSocket(UDPSock);
     WSACleanup();
 }
