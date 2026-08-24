@@ -27,7 +27,6 @@
 #include <mutex>
 #include <string>
 #include <thread>
-#include "Options.h"
 #include <chrono>
 
 std::chrono::time_point<std::chrono::high_resolution_clock> PingStart, PingEnd;
@@ -218,17 +217,10 @@ void ParserAsync(std::string_view Data) {
         break;
     }
     if (tryDirectVehicleSocket) {
-        size_t first = Data.find(':');
-        if (first == std::string::npos) {
+        std::string serverVehicleID = Utils::getStringBetween(std::string(Data), ':');
+        if (serverVehicleID.empty()) {
             GameSend(Data);
-            return;
         }
-        first += 1;
-        size_t len = Data.find(':', first);
-        if (len != std::string::npos) {
-            len -= first;
-        }
-        std::string serverVehicleID = std::string(Data.substr(first, len));
         auto portIter = vehiclePortMap.find(serverVehicleID);
         if (portIter != vehiclePortMap.end()) {
             DVSend(Data, portIter->second);

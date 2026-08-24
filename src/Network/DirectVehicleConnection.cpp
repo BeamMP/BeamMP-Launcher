@@ -19,12 +19,12 @@
 #endif
 
 #include "Logger.h"
+#include "Utils.h"
 #include <array>
 #include <string>
 
 SOCKET DVSock = -1;
 sockaddr_in ToVehicle;
-std::unordered_set<std::string> activeVehicles;
 std::unordered_map<std::string, int> vehiclePortMap;
 
 void DVSend(std::string_view Data, int Port) {
@@ -49,34 +49,21 @@ void DVRcv() {
     Ret[Rcv] = 0;
 
     std::string Data = std::string(Ret.data(), Rcv);
-    size_t first = Data.find(':');
-    if (first == std::string::npos) {
+    std::string serverVehicleID = Utils::getStringBetween(Data, ':');
+    if (serverVehicleID.empty()) {
         debug("(Direct VE) Failed to parse serverVehicleID from data: " + Data);
         return;
     }
-    first += 1;
-    size_t len = Data.find(':', first);
-    if (len != std::string::npos) {
-        len -= first;
-    }
-    std::string serverVehicleID = Data.substr(first, len);
-    if (activeVehicles.contains(serverVehicleID)) {
-        int port = ntohs(FromVehicle.sin_port);
-        auto portIter = vehiclePortMap.find(serverVehicleID);
-        if (portIter != vehiclePortMap.end()) {
-            if (portIter->second == port) {
-                ServerSend(Data, false);
-            } else {
-                debug("(Direct VE) Received data for vehicle " + serverVehicleID + " from wrong port: " + std::to_string(port) + " != " + std::to_string(portIter->second));
-            }
-        } else {
-            debug("(Direct VE) Registering port for vehicle " + serverVehicleID + ": " + std::to_string(port));
-            vehiclePortMap.insert({ serverVehicleID, port });
-
+    int port = ntohs(FromVehicle.sin_port);
+    auto portIter = vehiclePortMap.find(serverVehicleID);
+    if (portIter != vehiclePortMap.end()) {
+        if (portIter->second == port) {
             ServerSend(Data, false);
+        } else {
+            debug("(Direct VE) Received data for vehicle " + serverVehicleID + " from wrong port: " + std::to_string(port) + " != " + std::to_string(portIter->second));
         }
     } else {
-        debug("(Direct VE) Received data from unregistered vehicle: " + serverVehicleID);
+        debug("(Direct VE) Received data for unregistered vehicle " + serverVehicleID + " from port " + std::to_string(port));
     }
 }
 
@@ -120,6 +107,5 @@ void DVClientMain(const std::string& IP, int Port) {
     debug("(Direct VE) Direct vehicle receive loop done");
     KillSocket(DVSock);
     WSACleanup();
-    activeVehicles.clear();
     vehiclePortMap.clear();
 }

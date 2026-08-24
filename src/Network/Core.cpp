@@ -346,25 +346,39 @@ void Parse(std::string Data, SOCKET CSocket) {
         break;
     }
     case 'V': //register active vehicles for direct vehicle sockets
-        if (Data.length() < 3) {
-            debug("(Core) Failed to parse serverVehicleID from data: " + Data);
-            Data.clear();
-            break;
-        }
-        
         if (SubCode == 'a') {
-            std::string serverVehicleID = Data.substr(3);
-            debug("(Core) Registering vehicle: " + serverVehicleID);
-            activeVehicles.insert(serverVehicleID);
+            size_t offset = 0;
+            std::string serverVehicleID = Utils::getStringBetween(Data, ':', offset);
+            if (serverVehicleID.empty()) {
+                debug("(Core) Failed to parse serverVehicleID from data: " + Data);
+                Data.clear();
+                break;
+            }
+            try {
+                int port = std::stoi(Utils::getStringBetween(Data, ':', offset));
+                debug("(Core) Assigning direct VE connection for vehicle " + serverVehicleID + " to port " + std::to_string(port));
+                vehiclePortMap.insert_or_assign(serverVehicleID, port);
+            } catch (const std::invalid_argument) {
+                debug("(Core) Failed to parse vehicle port from data: " + Data);
+                Data.clear();
+                break;
+            }
         } else if (SubCode == 'd') {
-            std::string serverVehicleID = Data.substr(3);
-            debug("(Core) Unregistering vehicle: " + serverVehicleID);
-            activeVehicles.erase(serverVehicleID);
+            std::string serverVehicleID = Utils::getStringBetween(Data, ':');
+            if (serverVehicleID.empty()) {
+                debug("(Core) Failed to parse serverVehicleID from data: " + Data);
+                Data.clear();
+                break;
+            }
+            debug("(Core) Removed direct VE port for vehicle " + serverVehicleID);
             vehiclePortMap.erase(serverVehicleID);
+        } else if (SubCode == 'r') {
+            debug("(Core) Resetting Direct VE data");
+            vehiclePortMap.clear();
         } else {
             debug("(Core) Invalid V packet SubCode: " + SubCode);
+            Data.clear();
         }
-        Data.clear();
         break;
     default:
         Data.clear();

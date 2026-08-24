@@ -336,4 +336,29 @@ namespace Utils {
             throw std::runtime_error("Game disconnected");
         }
     }
+
+    // Returns the substring after the first occurence of delim until the next occurence of delim or the end of the string
+    // Returns emtpy string if no delim was found
+    // End index is written back into offset
+    inline std::string getStringBetween(std::string str, char delim, size_t &offset) {
+        size_t first = str.find(delim, offset);
+        if (first == std::string::npos) {
+            return std::string();
+        }
+        first += 1;
+        size_t len = str.find(delim, first);
+        offset = len;
+        if (len != std::string::npos) {
+            len -= first;
+        }
+
+        return str.substr(first, len);
+    }
+
+    // Returns the substring after the first occurence of delim until the next occurence of delim or the end of the string
+    // Returns emtpy string if no delim was found
+    inline std::string getStringBetween(std::string str, char delim) {
+        size_t offset = 0;
+        return getStringBetween(str, delim, offset);
+    }
 };

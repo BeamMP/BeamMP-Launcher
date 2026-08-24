@@ -9,7 +9,6 @@
 #include <filesystem>
 #include <string>
 #include <unordered_map>
-#include <unordered_set>
 
 #ifdef __linux__
 #include "linuxfixes.h"
@@ -61,7 +60,6 @@ void CoreSend(std::string data);
 int RecvWaitAll(int sockfd, char *buf, int len);
 void ServerSend(std::string Data, bool Rel);
 extern uint64_t DVSock;
-extern std::unordered_set<std::string> activeVehicles; // set of active serverVehicleIDs for checking if direct vehicle sockets are valid
 extern std::unordered_map<std::string, int> vehiclePortMap; // maps a serverVehicleID to the port of its vehicle socket
 void DVSend(std::string_view Data, int Port);
 void DVClientMain(const std::string& IP, int Port);
