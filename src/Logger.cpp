@@ -13,6 +13,38 @@
 #include <sstream>
 #include <thread>
 #include "Options.h"
+#include <mutex>
+#include <queue>
+#include <condition_variable>
+
+std::mutex logMutex;
+std::condition_variable logCV;
+std::queue<std::string> logQueue;
+bool logThreadRunning = false;
+std::thread logThread;
+
+void logThreadFunc() {
+    std::ofstream LFS;
+    LFS.open(GetEP() + beammp_wide("Launcher.log"), std::ios_base::out);
+    if (!LFS.is_open()) return;
+
+    while (logThreadRunning || !logQueue.empty()) {
+        std::unique_lock<std::mutex> lock(logMutex);
+        logCV.wait(lock, [] { return !logQueue.empty() || !logThreadRunning; });
+
+        while (!logQueue.empty()) {
+            std::string line = logQueue.front();
+            logQueue.pop();
+            lock.unlock();
+
+            LFS << line;
+            LFS.flush();
+
+            lock.lock();
+        }
+    }
+    LFS.close();
+}
 
 std::string getDate() {
     time_t tt = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
@@ -36,24 +68,23 @@ std::string getDate() {
     return date.str();
 }
 void InitLog() {
-    std::ofstream LFS;
-    LFS.open(GetEP() + beammp_wide("Launcher.log"));
-    if (!LFS.is_open()) {
-        error("logger file init failed!");
-    } else
-        LFS.close();
+    logThreadRunning = true;
+    logThread = std::thread(logThreadFunc);
+    logThread.detach();
 }
 void addToLog(const std::string& Line) {
-    std::ofstream LFS;
-    LFS.open(GetEP() + beammp_wide("Launcher.log"), std::ios_base::app);
-    LFS << Line.c_str();
-    LFS.close();
+    {
+        std::lock_guard<std::mutex> lock(logMutex);
+        logQueue.push(Line);
+    }
+    logCV.notify_one();
 }
 void addToLog(const std::wstring& Line) {
-    std::wofstream LFS;
-    LFS.open(GetEP() + beammp_wide("Launcher.log"), std::ios_base::app);
-    LFS << Line.c_str();
-    LFS.close();
+#ifdef _WIN32
+    addToLog(Utils::ToString(Line));
+#else
+    addToLog(std::string(Line.begin(), Line.end()));
+#endif
 }
 void info(const std::string& toPrint) {
     std::string Print = getDate() + "[INFO] " + toPrint + "\n";
