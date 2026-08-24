@@ -13,7 +13,6 @@
 #include <sstream>
 #include <thread>
 #include <iostream>
-#include <cstring>
 #include "Options.h"
 #include <mutex>
 #include <queue>
