@@ -10,6 +10,7 @@
 #include <chrono>
 #include <iostream>
 #include <vector>
+#include <mutex>
 
 #if defined(_WIN32)
 #include <ws2tcpip.h>
@@ -50,7 +51,11 @@ void UUl(const std::string& R) {
     UlStatus = "UlDisconnected: " + R;
 }
 
+std::mutex TCPSendMutex;
+
 void TCPSend(const std::string& Data, uint64_t Sock) {
+    std::scoped_lock lock(TCPSendMutex);
+
     if (Sock == -1) {
         Terminate = true;
         UUl("Invalid Socket");
