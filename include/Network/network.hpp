@@ -8,6 +8,7 @@
 #pragma once
 #include <filesystem>
 #include <string>
+#include <unordered_map>
 
 #ifdef __linux__
 #include "linuxfixes.h"
@@ -57,3 +58,8 @@ void TCPGameServer(const std::string& IP, int Port);
 bool SecurityWarning();
 void CoreSend(std::string data);
 int RecvWaitAll(int sockfd, char *buf, int len);
+void ServerSend(std::string Data, bool Rel);
+extern uint64_t DVSock;
+extern std::unordered_map<std::string, int> vehiclePortMap; // maps a serverVehicleID to the port of its vehicle socket
+void DVSend(std::string_view Data, int Port);
+void DVClientMain(const std::string& IP, int Port);

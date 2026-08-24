@@ -27,7 +27,6 @@
 #include <mutex>
 #include <string>
 #include <thread>
-#include "Options.h"
 #include <chrono>
 
 std::chrono::time_point<std::chrono::high_resolution_clock> PingStart, PingEnd;
@@ -119,6 +118,11 @@ void NetReset() {
         KillSocket(GSocket);
     }
     GSocket = -1;
+    if (DVSock != (SOCKET)(-1)) {
+        debug("Terminating direct vehicle Socket: " + std::to_string(DVSock));
+        KillSocket(DVSock);
+    }
+    DVSock = -1;
 }
 
 SOCKET SetupListener() {
@@ -182,6 +186,7 @@ int ClientID = -1;
 void ParserAsync(std::string_view Data) {
     if (Data.empty())
         return;
+    bool tryDirectVehicleSocket = false;
     char Code = Data.at(0), SubCode = 0;
     if (Data.length() > 1)
         SubCode = Data.at(1);
@@ -200,10 +205,33 @@ void ParserAsync(std::string_view Data) {
     case 'U':
         magic = Data.substr(1);
         return;
+    case 'R': //controller sync
+    case 'W': //electrics
+    case 'V': //inputs
+    case 'Y': //powertrain
+    case 'X': //nodes
+    case 'Z': //position
+        tryDirectVehicleSocket = true;
+        break;
     default:
         break;
     }
-    GameSend(Data);
+    if (tryDirectVehicleSocket) {
+        std::string serverVehicleID = Utils::getStringBetween(std::string(Data), ':');
+        if (serverVehicleID.empty()) {
+            GameSend(Data);
+        }
+        auto portIter = vehiclePortMap.find(serverVehicleID);
+        if (portIter != vehiclePortMap.end()) {
+            DVSend(Data, portIter->second);
+        }
+        else {
+            GameSend(Data);
+        }
+    }
+    else {
+        GameSend(Data);
+    }
 }
 void ServerParser(std::string_view Data) {
     ParserAsync(Data);
@@ -220,6 +248,7 @@ void TCPGameServer(const std::string& IP, int Port) {
     GSocket = SetupListener();
     std::unique_ptr<std::thread> ClientThread {};
     std::unique_ptr<std::thread> NetMainThread {};
+    std::unique_ptr<std::thread> DirectVehicleThread {};
     while (!TCPTerminate && GSocket != -1) {
         debug("MAIN LOOP OF GAME SERVER");
         GConnected = false;
@@ -242,6 +271,7 @@ void TCPGameServer(const std::string& IP, int Port) {
         GConnected = true;
         if (CServer) {
             NetMainThread = std::make_unique<std::thread>(NetMain, IP, Port);
+            DirectVehicleThread = std::make_unique<std::thread>(DVClientMain, "127.0.0.1", options.port + 2);
             CServer = false;
         }
         int32_t Size, Rcv;
@@ -273,6 +303,11 @@ void TCPGameServer(const std::string& IP, int Port) {
         debug("Waiting for net main thread");
         NetMainThread->join();
         debug("Net main thread done");
+    }
+    if (DirectVehicleThread) {
+        debug("Waiting for direct vehicle thread");
+        DirectVehicleThread->join();
+        debug("Direct vehicle thread done");
     }
     if (CSocket != SOCKET_ERROR)
         KillSocket(CSocket);
