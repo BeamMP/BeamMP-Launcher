@@ -75,7 +75,15 @@ std::string getDate() {
 void InitLog() {
     logThreadRunning = true;
     logThread = std::thread(logThreadFunc);
-    logThread.detach();
+}
+void CloseLog() {
+    if (logThreadRunning) {
+        logThreadRunning = false;
+        logCV.notify_one();
+        if (logThread.joinable()) {
+            logThread.join();
+        }
+    }
 }
 void addToLog(const std::string& Line) {
     {
