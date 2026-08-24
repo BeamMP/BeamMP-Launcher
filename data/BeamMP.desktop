@@ -1,0 +1,23 @@
+[Desktop Entry]
+Categories=Game;
+PrefersNonDefaultGPU=false
+Comment[en_US]=Multiplayer for BeamNG.Drive
+Comment=Multiplayer for BeamNG.Drive
+Exec=SETUPINSTALLLOCATION/BeamMP-Launcher
+GenericName[en_US]=
+GenericName=
+Icon=SETUPINSTALLLOCATION/BeamMP.ico
+MimeType=
+Name[en_US]=BeamMP
+Name=BeamMP
+Path=SETUPINSTALLLOCATION
+Path=
+StartupNotify=true
+Terminal=true
+TerminalOptions=
+Type=Application
+X-KDE-SubstituteUID=false
+X-KDE-Username=
+X-KDE-StartupNotify=false
+X-GNOME-AutoRestart=false
+X-GNOME-Autostart-enabled=false
