@@ -12,6 +12,8 @@
 #include <fstream>
 #include <sstream>
 #include <thread>
+#include <iostream>
+#include <cstring>
 #include "Options.h"
 #include <mutex>
 #include <queue>
@@ -26,7 +28,10 @@ std::thread logThread;
 void logThreadFunc() {
     std::ofstream LFS;
     LFS.open(GetEP() + beammp_wide("Launcher.log"), std::ios_base::out);
-    if (!LFS.is_open()) return;
+    if (!LFS.is_open()) {
+        std::cerr << "Failed to open Launcher.log: " << std::strerror(errno) << std::endl;
+        return;
+    }
 
     while (logThreadRunning || !logQueue.empty()) {
         std::unique_lock<std::mutex> lock(logMutex);
