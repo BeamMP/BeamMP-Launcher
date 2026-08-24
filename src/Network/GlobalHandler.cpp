@@ -61,6 +61,15 @@ void GameSend(std::string_view Data) {
     auto Result = send(CSocket, ToSend.data(), ToSend.size(), 0);
     if (Result < 0) {
         error("(Game) send failed with error: " + std::to_string(WSAGetLastError()));
+    } else {
+        char C = Data.empty() ? 0 : Data.at(0);
+        if (C == 'E') {
+            std::string header = std::string(Data.substr(0, std::min<size_t>(Data.length(), 120)));
+            auto payloadStart = header.find_first_of("{[");
+            if (payloadStart != std::string::npos) header = header.substr(0, payloadStart);
+            if (!header.empty() && header.back() == ':') header.pop_back();
+            debug("(Server->Launcher) Custom Event: Size: " + std::to_string(Data.length()) + " bytes, Event: " + header);
+        }
     }
 }
 
@@ -89,8 +98,14 @@ void ServerSend(std::string Data, bool Rel) {
     } else
         UDPSend(Data);
 
-    if (DLen > 1000) {
-        debug("(Launcher->Server) Bytes sent: " + std::to_string(Data.length()) + " : "
+   if (C == 'E') {
+        std::string header = std::string(Data.substr(0, std::min<size_t>(Data.length(), 120)));
+        auto payloadStart = header.find_first_of("{[");
+        if (payloadStart != std::string::npos) header = header.substr(0, payloadStart);
+        if (!header.empty() && header.back() == ':') header.pop_back();
+        debug("(Launcher->Server) Custom Event: Size: " + std::to_string(Data.length()) + " bytes, Event: " + header);
+    } else if (DLen > 1000) {
+        debug("(Launcher->Server) Large packet sent: " + std::to_string(Data.length()) + " : "
             + Data.substr(0, 10)
             + Data.substr(Data.length() - 10));
     } else if (C == 'Z') {
