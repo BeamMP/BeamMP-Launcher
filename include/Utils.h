@@ -191,20 +191,6 @@ namespace Utils {
 
         return result;
     }
-    inline std::string ToString(const std::wstring& s) {
-        if (s.empty()) return std::string();
-
-        int size_needed = WideCharToMultiByte(CP_UTF8, 0, s.c_str(), (int)s.size(), nullptr, 0, nullptr, nullptr);
-        if (size_needed <= 0) {
-            return "";
-        }
-
-        std::string result(size_needed, 0);
-
-        WideCharToMultiByte(CP_UTF8, 0, s.c_str(), (int)s.size(), &result[0], size_needed, nullptr, nullptr);
-
-        return result;
-    }
 #else
     inline std::string ToWString(const std::string& s) {
         return s;
