@@ -20,12 +20,16 @@
 
 std::mutex logMutex;
 std::condition_variable logCV;
-std::queue<std::string> logQueue;
+std::queue<beammp_fs_string> logQueue;
 bool logThreadRunning = false;
 std::thread logThread;
 
 void logThreadFunc() {
+#ifdef _WIN32
+    std::wofstream LFS;
+#else
     std::ofstream LFS;
+#endif
     LFS.open(GetEP() + beammp_wide("Launcher.log"), std::ios_base::out);
     if (!LFS.is_open()) {
         std::cerr << "Failed to open Launcher.log: " << std::strerror(errno) << std::endl;
@@ -37,7 +41,7 @@ void logThreadFunc() {
         logCV.wait(lock, [] { return !logQueue.empty() || !logThreadRunning; });
 
         while (!logQueue.empty()) {
-            std::string line = logQueue.front();
+            beammp_fs_string line = logQueue.front();
             logQueue.pop();
             lock.unlock();
 
@@ -87,16 +91,24 @@ void CloseLog() {
 void addToLog(const std::string& Line) {
     {
         std::lock_guard<std::mutex> lock(logMutex);
+#ifdef _WIN32
+        logQueue.push(Utils::ToWString(Line));
+#else
         logQueue.push(Line);
+#endif
     }
     logCV.notify_one();
 }
 void addToLog(const std::wstring& Line) {
+    {
+        std::lock_guard<std::mutex> lock(logMutex);
 #ifdef _WIN32
-    addToLog(Utils::ToString(Line));
+        logQueue.push(Line);
 #else
-    addToLog(std::string(Line.begin(), Line.end()));
+        logQueue.push(std::string(Line.begin(), Line.end()));
 #endif
+    }
+    logCV.notify_one();
 }
 void info(const std::string& toPrint) {
     std::string Print = getDate() + "[INFO] " + toPrint + "\n";
