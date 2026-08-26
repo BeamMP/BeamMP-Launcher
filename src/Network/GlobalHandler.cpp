@@ -67,7 +67,7 @@ void GameSend(std::string_view Data) {
 void ServerSend(std::string Data, bool Rel) {
     if (Terminate || Data.empty())
         return;
-    if (Data.find("Zp") != std::string::npos && Data.size() > 500) {
+    if (Data.starts_with("Zp") && Data.size() > 500) {
         abort();
     }
     char C = 0;
@@ -79,7 +79,7 @@ void ServerSend(std::string Data, bool Rel) {
         Ack = true;
     if (C == 'N' || C == 'W' || C == 'Y' || C == 'V' || C == 'E' || C == 'C' || C == 't')
         Rel = true;
-    if (compressBound(Data.size()) > 1024)
+    if (C != 'e' && compressBound(Data.size()) > 1024)
         Rel = true;
     if (Ack || Rel) {
         if (Ack || DLen > 1000)
