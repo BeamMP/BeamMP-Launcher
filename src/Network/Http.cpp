@@ -6,6 +6,8 @@
 
 
 #include "Http.h"
+#include "RegionHandler.h"
+#include "Options.h"
 #include <Logger.h>
 #include <Network/network.hpp>
 #include <Startup.h>
@@ -29,9 +31,12 @@ static size_t CurlWriteCallback(void* contents, size_t size, size_t nmemb, void*
 }
 
 bool HTTP::isDownload = false;
-std::string HTTP::Get(const std::string& IP) {
+std::string HTTP::Get(std::string IP, const bool& redirect) {
     std::string Ret;
     static thread_local CURL* curl = curl_easy_init();
+    if (redirect) {
+        IP = RegionHandler::RedirectURL(IP);
+    }
     if (curl) {
         CURLcode res;
         char errbuf[CURL_ERROR_SIZE];
@@ -46,7 +51,18 @@ std::string HTTP::Get(const std::string& IP) {
         if (res != CURLE_OK) {
             error("GET to " + IP + " failed: " + std::string(curl_easy_strerror(res)));
             error("Curl error: " + std::string(errbuf));
-            return "";
+            if (!redirect) {
+                return "";
+            }
+            RegionHandler::TopLevelDomainFailed();
+            IP = RegionHandler::RedirectURL(IP);
+            curl_easy_setopt(curl, CURLOPT_URL, IP.c_str());
+            res = curl_easy_perform(curl);
+            if (res != CURLE_OK) {
+                error("GET to " + IP + " failed: " + std::string(curl_easy_strerror(res)));
+                error("Curl error: " + std::string(errbuf));
+                return "";
+            }
         }
     } else {
         error("Curl easy init failed");
@@ -55,9 +71,12 @@ std::string HTTP::Get(const std::string& IP) {
     return Ret;
 }
 
-std::string HTTP::Post(const std::string& IP, const std::string& Fields) {
+std::string HTTP::Post(std::string IP, const std::string& Fields, const bool& redirect) {
     std::string Ret;
     static thread_local CURL* curl = curl_easy_init();
+    if (redirect) {
+        IP = RegionHandler::RedirectURL(IP);
+    }
     if (curl) {
         CURLcode res;
         char errbuf[CURL_ERROR_SIZE];
@@ -79,7 +98,18 @@ std::string HTTP::Post(const std::string& IP, const std::string& Fields) {
         if (res != CURLE_OK) {
             error("POST to " + IP + " failed: " + std::string(curl_easy_strerror(res)));
             error("Curl error: " + std::string(errbuf));
-            return "";
+            if (!redirect) {
+                return "";
+            }
+            RegionHandler::TopLevelDomainFailed();
+            IP = RegionHandler::RedirectURL(IP);
+            curl_easy_setopt(curl, CURLOPT_URL, IP.c_str());
+            res = curl_easy_perform(curl);
+            if (res != CURLE_OK) {
+                error("GET to " + IP + " failed: " + std::string(curl_easy_strerror(res)));
+                error("Curl error: " + std::string(errbuf));
+                return "";
+            }
         }
     } else {
         error("Curl easy init failed");
@@ -88,12 +118,12 @@ std::string HTTP::Post(const std::string& IP, const std::string& Fields) {
     return Ret;
 }
 
-bool HTTP::Download(const std::string& IP, const beammp_fs_string& Path, const std::string& Hash) {
+bool HTTP::Download(const std::string& IP, const beammp_fs_string& Path, const std::string& Hash, const bool& redirect) {
     static std::mutex Lock;
     std::scoped_lock Guard(Lock);
 
     info("Downloading an update (this may take a while)");
-    std::string Ret = Get(IP);
+    std::string Ret = Get(IP, redirect);
 
     if (Ret.empty()) {
         error("Download failed");
