@@ -12,7 +12,47 @@
 #include <fstream>
 #include <sstream>
 #include <thread>
+#include <iostream>
 #include "Options.h"
+#include <mutex>
+#include <queue>
+#include <condition_variable>
+
+std::mutex logMutex;
+std::condition_variable logCV;
+std::queue<beammp_fs_string> logQueue;
+bool logThreadRunning = false;
+std::thread logThread;
+
+void logThreadFunc() {
+#ifdef _WIN32
+    std::wofstream LFS;
+#else
+    std::ofstream LFS;
+#endif
+    LFS.open(GetEP() + beammp_wide("Launcher.log"), std::ios_base::out);
+    if (!LFS.is_open()) {
+        std::cerr << "Failed to open Launcher.log: " << std::strerror(errno) << std::endl;
+        return;
+    }
+
+    while (logThreadRunning || !logQueue.empty()) {
+        std::unique_lock<std::mutex> lock(logMutex);
+        logCV.wait(lock, [] { return !logQueue.empty() || !logThreadRunning; });
+
+        while (!logQueue.empty()) {
+            beammp_fs_string line = logQueue.front();
+            logQueue.pop();
+            lock.unlock();
+
+            LFS << line;
+            LFS.flush();
+
+            lock.lock();
+        }
+    }
+    LFS.close();
+}
 
 std::string getDate() {
     time_t tt = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
@@ -36,24 +76,39 @@ std::string getDate() {
     return date.str();
 }
 void InitLog() {
-    std::ofstream LFS;
-    LFS.open(GetEP() + beammp_wide("Launcher.log"));
-    if (!LFS.is_open()) {
-        error("logger file init failed!");
-    } else
-        LFS.close();
+    logThreadRunning = true;
+    logThread = std::thread(logThreadFunc);
+}
+void CloseLog() {
+    if (logThreadRunning) {
+        logThreadRunning = false;
+        logCV.notify_one();
+        if (logThread.joinable()) {
+            logThread.join();
+        }
+    }
 }
 void addToLog(const std::string& Line) {
-    std::ofstream LFS;
-    LFS.open(GetEP() + beammp_wide("Launcher.log"), std::ios_base::app);
-    LFS << Line.c_str();
-    LFS.close();
+    {
+        std::lock_guard<std::mutex> lock(logMutex);
+#ifdef _WIN32
+        logQueue.push(Utils::ToWString(Line));
+#else
+        logQueue.push(Line);
+#endif
+    }
+    logCV.notify_one();
 }
 void addToLog(const std::wstring& Line) {
-    std::wofstream LFS;
-    LFS.open(GetEP() + beammp_wide("Launcher.log"), std::ios_base::app);
-    LFS << Line.c_str();
-    LFS.close();
+    {
+        std::lock_guard<std::mutex> lock(logMutex);
+#ifdef _WIN32
+        logQueue.push(Line);
+#else
+        logQueue.push(std::string(Line.begin(), Line.end()));
+#endif
+    }
+    logCV.notify_one();
 }
 void info(const std::string& toPrint) {
     std::string Print = getDate() + "[INFO] " + toPrint + "\n";

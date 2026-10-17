@@ -8,6 +8,7 @@
 #include <iostream>
 #include <string>
 void InitLog();
+void CloseLog();
 void except(const std::string& toPrint);
 void fatal(const std::string& toPrint);
 void debug(const std::string& toPrint);
