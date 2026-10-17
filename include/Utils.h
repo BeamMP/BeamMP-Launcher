@@ -314,14 +314,26 @@ namespace Utils {
         return buffer;
     }
 
+    /// Throws!!!
+    inline void RecvExactly(SOCKET socket, char* buffer, size_t size) {
+        size_t received = 0;
+        while (received < size) {
+            auto n = recv(socket, buffer + received, static_cast<int>(size - received), MSG_WAITALL);
+            if (n < 0) {
+                if (errno == EINTR) {
+                    continue;
+                }
+                throw std::runtime_error(std::string("recv() failed: ") + std::strerror(errno));
+            } else if (n == 0) {
+                throw std::runtime_error("Game disconnected");
+            }
+            received += static_cast<size_t>(n);
+        }
+    }
+
     inline uint32_t RecvHeader(SOCKET socket) {
         std::array<uint8_t, sizeof(uint32_t)> header_buffer {};
-        auto n = recv(socket, reinterpret_cast<char*>(header_buffer.data()), header_buffer.size(), MSG_WAITALL);
-        if (n < 0) {
-            throw std::runtime_error(std::string("recv() of header failed: ") + std::strerror(errno));
-        } else if (n == 0) {
-            throw std::runtime_error("Game disconnected");
-        }
+        RecvExactly(socket, reinterpret_cast<char*>(header_buffer.data()), header_buffer.size());
         return *reinterpret_cast<uint32_t*>(header_buffer.data());
     }
 
@@ -329,11 +341,6 @@ namespace Utils {
     inline void ReceiveFromGame(SOCKET socket, std::vector<char>& out_data) {
         auto header = RecvHeader(socket);
         out_data.resize(header);
-        auto n = recv(socket, reinterpret_cast<char*>(out_data.data()), out_data.size(), MSG_WAITALL);
-        if (n < 0) {
-            throw std::runtime_error(std::string("recv() of data failed: ") + std::strerror(errno));
-        } else if (n == 0) {
-            throw std::runtime_error("Game disconnected");
-        }
+        RecvExactly(socket, out_data.data(), out_data.size());
     }
 };
