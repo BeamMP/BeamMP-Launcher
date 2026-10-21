@@ -9,7 +9,7 @@
 #include "Utils.h"
 #if defined(_WIN32)
 #include <shlobj_core.h>
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 #include "vdf_parser.hpp"
 #include <pwd.h>
 #include <unistd.h>
@@ -17,6 +17,7 @@
 #endif
 #include "Logger.h"
 #include <fstream>
+#include <iostream>
 #include <string>
 #include <thread>
 
@@ -37,7 +38,7 @@ void lowExit(int code) {
 beammp_fs_string GetGameDir() {
 #if defined(_WIN32)
     return GameDir.substr(0, GameDir.find_last_of('\\'));
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
     return GameDir.substr(0, GameDir.find_last_of('/'));
 #endif
 }
@@ -277,6 +278,38 @@ void LegitimacyCheck() {
         error("The game directory was not found.");
         return;
     }
+#elif defined(__APPLE__)
+    // On macOS, ask the user to provide the game directory path
+    info("Please enter the path to your BeamNG.drive installation directory:");
+    info("Example: /Users/YourName/Library/Application Support/Steam/steamapps/common/BeamNG.drive");
+    std::cout << "Game directory path: ";
+    
+    std::string userPath;
+    std::getline(std::cin, userPath);
+    
+    // Remove trailing slash if present
+    if (!userPath.empty() && (userPath.back() == '/' || userPath.back() == '\\')) {
+        userPath.pop_back();
+    }
+    
+    std::filesystem::path gamePath(userPath);
+    
+    // Check if the path exists and contains integrity.json
+    if (!std::filesystem::exists(gamePath)) {
+        error("The specified path does not exist: " + userPath);
+        lowExit(8);
+        return;
+    }
+    
+    std::filesystem::path integrityPath = gamePath / "integrity.json";
+    if (!std::filesystem::exists(integrityPath)) {
+        error("The specified path does not appear to be a valid BeamNG.drive installation (integrity.json not found).");
+        lowExit(9);
+        return;
+    }
+    
+    GameDir = gamePath.string() + "/";
+    info("Game directory set to: " + GameDir);
 #endif
 }
 std::string CheckVer(const std::filesystem::path& dir) {
