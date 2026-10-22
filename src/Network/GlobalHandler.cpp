@@ -67,8 +67,13 @@ void GameSend(std::string_view Data) {
 void ServerSend(std::string Data, bool Rel) {
     if (Terminate || Data.empty())
         return;
-    if (Data.find("Zp") != std::string::npos && Data.size() > 500) {
-        abort();
+    if (Data.size() > 500 && Data[0] == 'Z' && Data[1] == 'p') {
+        // Was abort() -- a process-killing crash reachable by ordinary runtime data (an
+        // oversized position packet). It also matched "Zp" ANYWHERE in the payload, so an
+        // unrelated packet that merely contained those two bytes could kill the launcher.
+        // Check the actual packet code and drop the oversized packet instead.
+        debug("Dropping oversized 'Zp' packet (" + std::to_string(Data.size()) + " bytes)");
+        return;
     }
     char C = 0;
     bool Ack = false;
