@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=BeamMP Launcher
+Icon=@ICON_FILENAME_NOEXT@
+TryExec=@NAME@
+Exec=@NAME@
+Categories=Game
+Terminal=true
