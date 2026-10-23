@@ -5,6 +5,7 @@
 */
 
 #include "Http.h"
+#include "RegionHandler.h"
 #include "Network/network.hpp"
 #include "Security/Init.h"
 #include "Utils.h"
@@ -226,7 +227,8 @@ void Parse(std::string Data, SOCKET CSocket) {
             TCPTerminate = true;
             Data.clear();
             futures.push_back(std::async(std::launch::async, []() {
-                CoreSend("B" + HTTP::Get("https://backend.beammp.com/servers-info"));
+                std::string resp = HTTP::Get("https://backend.beammp.com/servers-info", true);
+                CoreSend("B" + resp);
             }));
         }
         break;

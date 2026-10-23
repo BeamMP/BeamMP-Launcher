@@ -24,6 +24,7 @@
 #include "Security/Init.h"
 #include "Startup.h"
 #include "Utils.h"
+#include "RegionHandler.h"
 #include "hashpp.h"
 #include <filesystem>
 #include <fstream>
@@ -332,8 +333,7 @@ bool VerifySignature(const std::filesystem::path& filePath)
 
 void CheckForUpdates(const std::string& CV) {
     std::string LatestHash = HTTP::Get("https://backend.beammp.com/sha/launcher?branch=" + Branch + "&pk=" + PublicKey);
-    std::string LatestVersion = HTTP::Get(
-        "https://backend.beammp.com/version/launcher?branch=" + Branch + "&pk=" + PublicKey);
+    std::string LatestVersion = HTTP::Get("https://backend.beammp.com/version/launcher?branch=" + Branch + "&pk=" + PublicKey);
 
     std::regex sha256_pattern(R"(^[a-fA-F0-9]{64}$)");
     std::smatch match;
@@ -357,11 +357,13 @@ void CheckForUpdates(const std::string& CV) {
 #else
             info("Downloading Launcher update " + LatestHash);
             std::wstring DownloadLocation = GetBP() / (beammp_wide("new_") + GetEN());
-            if (HTTP::Download(
+            bool downloadSuccess = false;
+            downloadSuccess = HTTP::Download(
                     "https://backend.beammp.com/builds/launcher?download=true"
                     "&pk="
                         + PublicKey + "&branch=" + Branch,
-                    DownloadLocation, LatestHash)) {
+                DownloadLocation, LatestHash);
+            if (downloadSuccess) {
                 if (!VerifySignature(DownloadLocation) || !CheckThumbprint(DownloadLocation)) {
                     std::error_code ec;
                     fs::remove(DownloadLocation, ec);

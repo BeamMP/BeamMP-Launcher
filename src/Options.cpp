@@ -92,6 +92,13 @@ void InitOptions(int argc, const char *argv[], Options &options) {
             }
             options.user_path = argv[i + 1];
             i++;
+        } else if (argument == "--region") {
+            if (i + 1 >= argc) {
+                error("You must specify a region after the `--region` argument");
+            }
+            options.region = argv[i + 1];
+            info("Set the region to: " + options.region);
+            i++;
         } else if (argument == "--" || argument == "--game") {
             options.game_arguments = &argv[i + 1];
             options.game_arguments_length = argc - i - 1;

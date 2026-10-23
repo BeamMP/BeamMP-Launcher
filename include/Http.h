@@ -11,9 +11,9 @@
 #include <string>
 class HTTP {
 public:
-    static bool Download(const std::string& IP, const beammp_fs_string& Path, const std::string& Hash);
-    static std::string Post(const std::string& IP, const std::string& Fields);
-    static std::string Get(const std::string& IP);
+    static bool Download(const std::string& IP, const beammp_fs_string& Path, const std::string& Hash, const bool& redirect = true);
+    static std::string Post(std::string IP, const std::string& Fields, const bool& redirect = true);
+    static std::string Get(std::string IP, const bool& redirect = true);
     static bool ProgressBar(size_t c, size_t t);
     static void StartProxy();
 public:

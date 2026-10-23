@@ -49,6 +49,9 @@ void ParseConfig(const nlohmann::json& d) {
         deleteDuplicateMods = d["DeleteDuplicateMods"].get<bool>();
     }
 
+    if (d.contains("Region") && d["Region"].is_string()) {
+        options.region = d["Region"].get<std::string>();
+    }
 }
 
 void ConfigInit() {
