@@ -202,18 +202,8 @@ void MultiKill(SOCKET Sock, SOCKET Sock1) {
     Terminate = true;
 }
 SOCKET InitDSock() {
-    SOCKET DSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    SOCKADDR_IN ServerAddr;
-    if (DSock < 1) {
-        KillSocket(DSock);
-        Terminate = true;
-        return 0;
-    }
-    ServerAddr.sin_family = AF_INET;
-    ServerAddr.sin_port = htons(LastPort);
-    inet_pton(AF_INET, LastIP.c_str(), &ServerAddr.sin_addr);
-    if (connect(DSock, (SOCKADDR*)&ServerAddr, sizeof(ServerAddr)) != 0) {
-        KillSocket(DSock);
+    SOCKET DSock = ConnectTCP(LastIP, LastPort);
+    if (DSock == -1) {
         Terminate = true;
         return 0;
     }

@@ -27,7 +27,8 @@
 #include <string>
 
 SOCKET UDPSock = -1;
-sockaddr_in* ToServer = nullptr;
+sockaddr_storage* ToServer = nullptr;
+socklen_t ToServerLen = 0;
 
 std::mutex UDPSendMutex;
 
@@ -40,7 +41,7 @@ void UDPSend(std::string Data) {
         Data = "ABG:" + std::string(res.data(), res.size());
     }
     std::string Packet = char(ClientID + 1) + std::string(":") + Data;
-    int sendOk = sendto(UDPSock, Packet.c_str(), int(Packet.size()), 0, (sockaddr*)ToServer, sizeof(*ToServer));
+    int sendOk = sendto(UDPSock, Packet.c_str(), int(Packet.size()), 0, (sockaddr*)ToServer, ToServerLen);
     if (sendOk == SOCKET_ERROR)
         error("Error Code : " + std::to_string(WSAGetLastError()));
 }
@@ -68,7 +69,7 @@ void UDPParser(std::string_view Packet) {
     }
 }
 void UDPRcv() {
-    sockaddr_in FromServer {};
+    sockaddr_storage FromServer {};
 #if defined(_WIN32)
     int clientLength = sizeof(FromServer);
 #elif defined(__linux__)
@@ -95,11 +96,31 @@ void UDPClientMain(const std::string& IP, int Port) {
 #endif
 
     delete ToServer;
-    ToServer = new sockaddr_in;
-    ToServer->sin_family = AF_INET;
-    ToServer->sin_port = htons(Port);
-    inet_pton(AF_INET, IP.c_str(), &ToServer->sin_addr);
-    UDPSock = socket(AF_INET, SOCK_DGRAM, 0);
+    ToServer = nullptr;
+    ToServerLen = 0;
+
+    struct addrinfo Hints {};
+    Hints.ai_family = AF_UNSPEC;
+    Hints.ai_socktype = SOCK_DGRAM;
+    struct addrinfo* Result = nullptr;
+    int Res = getaddrinfo(IP.c_str(), std::to_string(Port).c_str(), &Hints, &Result);
+    if (Res != 0 || !Result) {
+        error("UDP: failed to resolve " + IP + " (" + std::to_string(Res) + ")");
+        if (Result)
+            freeaddrinfo(Result);
+        WSACleanup();
+        return;
+    }
+    ToServer = new sockaddr_storage {};
+    memcpy(ToServer, Result->ai_addr, Result->ai_addrlen);
+    ToServerLen = socklen_t(Result->ai_addrlen);
+    UDPSock = socket(Result->ai_family, Result->ai_socktype, Result->ai_protocol);
+    freeaddrinfo(Result);
+    if (UDPSock == -1) {
+        error("UDP: socket failed! Error code: " + std::to_string(WSAGetLastError()));
+        WSACleanup();
+        return;
+    }
     std::future<void> magicSend;
 
     if (!magic.empty()) {

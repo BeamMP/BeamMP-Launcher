@@ -70,8 +70,16 @@ bool SecurityWarning() {
 }
 
 void StartSync(const std::string& Data) {
-    std::string IP = GetAddr(Data.substr(1, Data.find(':') - 1));
-    if (IP.find('.') == -1) {
+    std::string Host;
+    int Port = -1;
+    if (!SplitHostPort(Data.substr(1), Host, Port)) {
+        UlStatus = "UlConnection Failed! (Invalid address)";
+        Terminate = true;
+        CoreSend("L");
+        return;
+    }
+    std::string IP = GetAddr(Host);
+    if (IP.empty() || IP == "DNS") {
         if (IP == "DNS")
             UlStatus = "UlConnection Failed! (DNS Lookup Failed)";
         else
@@ -86,7 +94,7 @@ void StartSync(const std::string& Data) {
     Terminate = false;
     ConfList->clear();
     ping = -1;
-    std::thread GS(TCPGameServer, IP, std::stoi(Data.substr(Data.find(':') + 1)));
+    std::thread GS(TCPGameServer, IP, Port);
     GS.detach();
     info("Connecting to server");
 }
@@ -94,8 +102,16 @@ void StartSync(const std::string& Data) {
 void GetServerInfo(std::string Data) {
     debug("Fetching server info of " + Data.substr(1));
 
-    std::string IP = GetAddr(Data.substr(1, Data.find(':') - 1));
-    if (IP.find('.') == -1) {
+    std::string Host;
+    int port = -1;
+    if (!SplitHostPort(Data.substr(1), Host, port)) {
+        warn("Connection Failed! (Invalid address) for " + Data);
+        CoreSend("I" + Data + ";");
+        return;
+    }
+
+    std::string IP = GetAddr(Host);
+    if (IP.empty() || IP == "DNS") {
         if (IP == "DNS")
             warn("Connection Failed! (DNS Lookup Failed) for " + Data);
         else
@@ -104,30 +120,9 @@ void GetServerInfo(std::string Data) {
         return;
     }
 
-    SOCKET ISock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    SOCKADDR_IN ServerAddr;
-    if (ISock < 1) {
-        debug("Socket creation failed with error: " + std::to_string(WSAGetLastError()));
-        KillSocket(ISock);
-        CoreSend("I" + Data + ";");
-        return;
-    }
-    ServerAddr.sin_family = AF_INET;
-
-    int port = std::stoi(Data.substr(Data.find(':') + 1));
-
-    if (port < 1 || port > 65535) {
-        debug("Invalid port number: " + std::to_string(port));
-        KillSocket(ISock);
-        CoreSend("I" + Data + ";");
-        return;
-    }
-
-    ServerAddr.sin_port = htons(port);
-    inet_pton(AF_INET, IP.c_str(), &ServerAddr.sin_addr);
-    if (connect(ISock, (SOCKADDR*)&ServerAddr, sizeof(ServerAddr)) != 0) {
+    SOCKET ISock = ConnectTCP(IP, port);
+    if (ISock == -1) {
         debug("Connection to server failed with error: " + std::to_string(WSAGetLastError()));
-        KillSocket(ISock);
         CoreSend("I" + Data + ";");
         return;
     }
