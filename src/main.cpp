@@ -14,6 +14,7 @@
 #include <iostream>
 #include <thread>
 #include "Options.h"
+#include "Jobs/Jobs.h"
 
 Options options;
 
@@ -43,6 +44,8 @@ int main(int argc, const char** argv) try {
     InitLog();
     ConfigInit();
     InitOptions(argc, argv, options);
+    if (options.run_job)
+        return Jobs::RunCli(options.run_job);
     InitLauncher();
 
     info("IMPORTANT: You MUST keep this window open to play BeamMP!");

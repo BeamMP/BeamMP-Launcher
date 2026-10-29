@@ -92,6 +92,13 @@ void InitOptions(int argc, const char *argv[], Options &options) {
             }
             options.user_path = argv[i + 1];
             i++;
+        } else if (argument == "--run-job") {
+            if (i + 1 >= argc) {
+                error("You must specify a job file after the `--run-job` argument");
+            } else {
+                options.run_job = argv[i + 1];
+            }
+            i++;
         } else if (argument == "--" || argument == "--game") {
             options.game_arguments = &argv[i + 1];
             options.game_arguments_length = argc - i - 1;
@@ -108,6 +115,7 @@ void InitOptions(int argc, const char *argv[], Options &options) {
                 "\t--no-launch          Skip launching the game (you must launch the game manually)\n"
                 "\t--dev                Developer mode, same as --verbose --no-download --no-launch --no-update\n"
                 "\t--user-path <path>   Path to BeamNG's User Path\n"
+                "\t--run-job <file>     Runs one client job (JSON, see include/Jobs/Jobs.h) and prints the reply, for testing\n"
                 "\t--game <args...>     Passes ALL following arguments to the game, see also `--`\n"
                 << std::flush;
             exit(0);

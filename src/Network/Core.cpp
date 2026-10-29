@@ -33,6 +33,7 @@
 #include <thread>
 #include <mutex>
 #include "Options.h"
+#include "Jobs/Jobs.h"
 
 #include <future>
 
@@ -339,6 +340,10 @@ void Parse(std::string Data, SOCKET CSocket) {
 
         Data.clear();
         break;
+    case 'J': // background job for the client mod, answered later with 'J' packets (see Jobs.h)
+        Jobs::Handle(Data.substr(1));
+        Data.clear();
+        break;
     case 'I': {
         auto future = std::async(std::launch::async, [data = std::move(Data)]() {
             GetServerInfo(data);
@@ -359,6 +364,7 @@ void Parse(std::string Data, SOCKET CSocket) {
 }
 void GameHandler(SOCKET Client) {
     CoreSocket = Client;
+    Jobs::OnGameConnected();
     std::vector<char> data{};
     int Temp;
     char Header[10] = { 0 };
