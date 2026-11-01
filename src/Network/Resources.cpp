@@ -163,7 +163,12 @@ std::vector<char> TCPRcvRaw(SOCKET Sock, uint64_t& GRcv, uint64_t Size) {
     int i = 0;
     do {
         // receive at most some MB at a time
-        int Len = std::min(int(Size - Rcv), 1 * 1024 * 1024);
+        uint64_t Len = std::min<uint64_t>((Size - Rcv), 1 * 1024 * 1024);
+        if (Len == 0) {
+            error("Download size miscalculation");
+            break;
+        }
+
         int Temp = RecvWaitAll(Sock, &File[Rcv], Len);
         if (Temp == -1 || Temp == 0) {
             debug("Recv returned: " + std::to_string(Temp));
@@ -302,7 +307,7 @@ void InvalidResource(const std::string& File) {
 }
 
 struct ModInfo {
-    static std::pair<bool, std::vector<ModInfo>> ParseModInfosFromPacket(const std::string& packet) {
+    static std::optional<std::pair<bool, std::vector<ModInfo>>> ParseModInfosFromPacket(const std::string& packet) {
         bool success = false;
         std::vector<ModInfo> modInfos;
         try {
@@ -321,6 +326,12 @@ struct ModInfo {
 
                 if (entry.contains("protected")) {
                     modInfo.Protected = entry["protected"];
+                }
+
+                if (auto fsFile = std::filesystem::path(modInfo.FileName);
+                    !fsFile.has_filename() || fsFile.filename().string() != modInfo.FileName ||
+                    !fsFile.filename().has_extension() || fsFile.filename().extension() != ".zip"){
+                    return std::nullopt;
                 }
 
                 modInfos.push_back(modInfo);
@@ -578,8 +589,17 @@ void NewSyncResources(SOCKET Sock, const std::string& Mods, const std::vector<Mo
                 c = ::tolower(c);
             }
 #endif
+            auto name = std::filesystem::path(GetGamePath()) / "mods/multiplayer" / FName;
+            auto tmp_name = name;
+            tmp_name += ".tmp";
 
-            fs::copy_file(PathToSaveTo, std::filesystem::path(GetGamePath()) / "mods/multiplayer" / FName, fs::copy_options::overwrite_existing);
+            std::error_code ec;
+            fs::copy_file(PathToSaveTo, tmp_name, fs::copy_options::overwrite_existing, ec);
+            if (ec) {
+                error(beammp_wide("Error in copy_file during download of ") + beammp_fs_string(PathToSaveTo) + beammp_wide(": ") + Utils::ToWString(ec.message()));
+                break;
+            }
+            fs::rename(tmp_name, name);
             UpdateModUsage(FName);
         }
         WaitForConfirm();
@@ -602,7 +622,13 @@ void SyncResources(SOCKET Sock) {
     if (Ret.starts_with("R")) {
         debug("This server is likely outdated, not trying to parse new mod info format");
     } else {
-        auto [success, modInfo] = ModInfo::ParseModInfosFromPacket(Ret);
+        auto ParsedInfo = ModInfo::ParseModInfosFromPacket(Ret);
+        if (!ParsedInfo.has_value()) {
+            error("Invalid mod info");
+            Terminate = true;
+            return;
+        }
+        auto [success, modInfo] = ParsedInfo.value();
 
         if (success) {
             NewSyncResources(Sock, Ret, modInfo);
@@ -738,7 +764,12 @@ void SyncResources(SOCKET Sock) {
             }
 #endif
 
-            fs::copy_file(PathToSaveTo, GetGamePath() / beammp_wide("mods/multiplayer") / Utils::ToWString(FName), fs::copy_options::overwrite_existing);
+            auto name = GetGamePath() / beammp_wide("mods/multiplayer") / Utils::ToWString(FName);
+            auto tmp_name = name;
+            tmp_name += L".tmp";
+
+            fs::copy_file(PathToSaveTo, tmp_name, fs::copy_options::overwrite_existing);
+            fs::rename(tmp_name, name);
             UpdateModUsage(FN->substr(pos));
         }
         WaitForConfirm();
