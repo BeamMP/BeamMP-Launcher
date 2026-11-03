@@ -9,11 +9,13 @@
 #include <filesystem>
 #include <string>
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
 #include "linuxfixes.h"
+#if defined(__linux__)
 #include <bits/types/siginfo_t.h>
-#include <cstdint>
 #include <sys/ucontext.h>
+#endif
+#include <cstdint>
 #include <arpa/inet.h>
 #endif
 
