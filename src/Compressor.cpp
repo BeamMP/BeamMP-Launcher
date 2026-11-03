@@ -33,6 +33,12 @@ std::vector<char> Comp(std::span<const char> input) {
 }
 
 std::vector<char> DeComp(std::span<const char> input) {
+    // An empty body (e.g. a bare 4-byte "ABG:" frame) sizes output_buffer to 0; zlib then
+    // returns Z_BUF_ERROR forever because the buffer never grows (0 * 2 stays 0 and the size
+    // cap never trips) -> the receive loop spins at 100% CPU for the rest of the session.
+    if (input.empty()) {
+        return {};
+    }
     std::vector<char> output_buffer(std::min<size_t>(input.size() * 5, 15 * 1024 * 1024));
 
     uLongf output_size = output_buffer.size();
@@ -44,11 +50,13 @@ std::vector<char> DeComp(std::span<const char> input) {
             reinterpret_cast<const Bytef*>(input.data()),
             static_cast<uLongf>(input.size()));
         if (res == Z_BUF_ERROR) {
-            if (output_buffer.size() > 30 * 1024 * 1024) {
+            if (output_buffer.size() >= 30 * 1024 * 1024) {
                 throw std::runtime_error("decompressed packet size of 30 MB exceeded");
             }
-            debug("zlib uncompress() failed, trying with 2x buffer size of " + std::to_string(output_buffer.size() * 2));
-            output_buffer.resize(output_buffer.size() * 2);
+            // Grow capped at the 30 MB limit so the >= check above is actually reachable and a
+            // large payload doesn't over-allocate 15 -> 30 -> 60 MB before being rejected.
+            output_buffer.resize(std::min<size_t>(output_buffer.size() * 2, 30u * 1024 * 1024));
+            debug("zlib uncompress() failed, trying with a larger buffer size of " + std::to_string(output_buffer.size()));
             output_size = output_buffer.size();
         } else if (res != Z_OK) {
             error("zlib uncompress() failed (code: " + std::to_string(res) + ", message: " + zError(res) + ")");
