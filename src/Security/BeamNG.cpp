@@ -11,6 +11,7 @@
 #include <shlobj_core.h>
 #elif defined(__linux__)
 #include "vdf_parser.hpp"
+#include <stdexcept>
 #include <pwd.h>
 #include <unistd.h>
 #include <vector>
@@ -230,52 +231,84 @@ void LegitimacyCheck() {
     struct passwd* pw = getpwuid(getuid());
     std::filesystem::path homeDir = pw->pw_dir;
 
-    // Right now only steam is supported
-    std::vector<std::filesystem::path> steamappsCommonPaths = {
+    // Right now only steam is supported. A machine can legitimately have more than one of these at
+    // once (a native install alongside a Flatpak one, say) and the game may be registered in any of
+    // them, so every one that exists is searched rather than only the first that happens to have a
+    // libraryfolders.vdf.
+    const std::vector<std::filesystem::path> steamLibraryRoots = {
         ".steam/root/steamapps", // default
         ".steam/steam/steamapps", // Legacy Steam installations
+        ".local/share/Steam/steamapps", // native install without the ~/.steam symlinks
         ".var/app/com.valvesoftware.Steam/.steam/root/steamapps", // flatpak
+        ".var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps", // flatpak, direct
         "snap/steam/common/.local/share/Steam/steamapps" // snap
     };
 
-    std::filesystem::path steamappsPath;
-    std::filesystem::path libraryFoldersPath;
     bool steamappsFolderFound = false;
     bool libraryFoldersFound = false;
 
-    for (const auto& path : steamappsCommonPaths) {
-        steamappsPath = homeDir / path;
-        if (std::filesystem::exists(steamappsPath)) {
-            steamappsFolderFound = true;
-            libraryFoldersPath = steamappsPath / "libraryfolders.vdf";
-            if (std::filesystem::exists(libraryFoldersPath)) {
-                libraryFoldersPath = libraryFoldersPath;
-                libraryFoldersFound = true;
+    for (const auto& relative : steamLibraryRoots) {
+        std::error_code ec;
+        const std::filesystem::path steamappsPath = homeDir / relative;
+        if (!std::filesystem::exists(steamappsPath, ec)) {
+            continue;
+        }
+        steamappsFolderFound = true;
+
+        const std::filesystem::path libraryFoldersPath = steamappsPath / "libraryfolders.vdf";
+        if (!std::filesystem::exists(libraryFoldersPath, ec)) {
+            continue;
+        }
+        libraryFoldersFound = true;
+        debug("Searching Steam libraries listed in " + libraryFoldersPath.string());
+
+        std::ifstream libraryFolders(libraryFoldersPath);
+        auto root = tyti::vdf::read(libraryFolders);
+        for (const auto& folderInfo : root.childs) {
+            if (!folderInfo.second) {
+                continue;
+            }
+            // `childs` maps to shared_ptr, so operator[] would INSERT a null one for a library that
+            // has no "apps" block, and dereferencing that is undefined. Look the key up instead.
+            const auto apps = folderInfo.second->childs.find("apps");
+            if (apps == folderInfo.second->childs.end() || !apps->second) {
+                continue;
+            }
+            if (!apps->second->attribs.contains("284160")) {
+                continue;
+            }
+            const auto libraryPath = folderInfo.second->attribs.find("path");
+            if (libraryPath == folderInfo.second->attribs.end()) {
+                continue;
+            }
+            const std::string candidate = libraryPath->second + "/steamapps/common/BeamNG.drive/";
+            if (std::filesystem::exists(candidate + "integrity.json", ec)) {
+                GameDir = candidate;
                 break;
             }
+            debug("Steam library " + libraryPath->second + " lists app 284160, but " + candidate + "integrity.json is missing");
         }
-    }
-
-    if (!steamappsFolderFound) {
-        error("Unsupported Steam installation.");
-        return;
-    }
-    if (!libraryFoldersFound) {
-        error("libraryfolders.vdf is missing.");
-        return;
-    }
-
-    std::ifstream libraryFolders(libraryFoldersPath);
-    auto root = tyti::vdf::read(libraryFolders);
-    for (auto folderInfo : root.childs) {
-        if ((folderInfo.second->childs["apps"]->attribs).contains("284160") && std::filesystem::exists(folderInfo.second->attribs["path"] + "/steamapps/common/BeamNG.drive/integrity.json")){
-            GameDir = folderInfo.second->attribs["path"] + "/steamapps/common/BeamNG.drive/";
+        if (!GameDir.empty()) {
             break;
         }
     }
+
+    // Reported by throwing rather than returning. LegitimacyCheck() is already called inside a
+    // try/catch in main(), so this reaches the user as one clear line. Returning left GameDir
+    // empty and the very next call -- PreGame(GetGameDir()) -> CheckVer() ->
+    // std::filesystem::file_size() -- threw "cannot get file size: No such file or directory
+    // [integrity.json]", which is the error users actually reported instead of the real cause.
+    if (!steamappsFolderFound) {
+        throw std::runtime_error("No Steam installation found: no steamapps folder under "
+            + homeDir.string() + " in .steam/root, .steam/steam, .local/share/Steam, or the Flatpak/Snap locations.");
+    }
+    if (!libraryFoldersFound) {
+        throw std::runtime_error("Found Steam, but none of its steamapps folders contain a libraryfolders.vdf.");
+    }
     if (GameDir.empty()) {
-        error("The game directory was not found.");
-        return;
+        throw std::runtime_error("BeamNG.drive (Steam app 284160) was not found in any Steam library. If it is "
+            "installed, check that its library is mounted and that the path recorded in libraryfolders.vdf "
+            "matches the directory on disk.");
     }
 #endif
 }
