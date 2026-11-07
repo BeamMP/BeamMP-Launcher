@@ -70,8 +70,8 @@ bool SecurityWarning() {
 }
 
 void StartSync(const std::string& Data) {
-    std::string IP = GetAddr(Data.substr(1, Data.find(':') - 1));
-    if (IP.find('.') == -1) {
+    std::string IP = GetAddr(Data.substr(1, Data.find_last_of(':') - 1));
+    if (IP.find(':') == -1) {
         if (IP == "DNS")
             UlStatus = "UlConnection Failed! (DNS Lookup Failed)";
         else
@@ -86,7 +86,7 @@ void StartSync(const std::string& Data) {
     Terminate = false;
     ConfList->clear();
     ping = -1;
-    std::thread GS(TCPGameServer, IP, std::stoi(Data.substr(Data.find(':') + 1)));
+    std::thread GS(TCPGameServer, IP, std::stoi(Data.substr(Data.find_last_of(':') + 1)));
     GS.detach();
     info("Connecting to server");
 }
@@ -94,8 +94,8 @@ void StartSync(const std::string& Data) {
 void GetServerInfo(std::string Data) {
     debug("Fetching server info of " + Data.substr(1));
 
-    std::string IP = GetAddr(Data.substr(1, Data.find(':') - 1));
-    if (IP.find('.') == -1) {
+    std::string IP = GetAddr(Data.substr(1, Data.find_last_of(':') - 1));
+    if (IP.find(':') == -1) {
         if (IP == "DNS")
             warn("Connection Failed! (DNS Lookup Failed) for " + Data);
         else
@@ -104,15 +104,15 @@ void GetServerInfo(std::string Data) {
         return;
     }
 
-    SOCKET ISock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    SOCKADDR_IN ServerAddr;
+    SOCKET ISock = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
+    SOCKADDR_IN6 ServerAddr;
     if (ISock < 1) {
         debug("Socket creation failed with error: " + std::to_string(WSAGetLastError()));
         KillSocket(ISock);
         CoreSend("I" + Data + ";");
         return;
     }
-    ServerAddr.sin_family = AF_INET;
+    ServerAddr.sin6_family = AF_INET6;
 
     int port = std::stoi(Data.substr(Data.find(':') + 1));
 
@@ -123,8 +123,8 @@ void GetServerInfo(std::string Data) {
         return;
     }
 
-    ServerAddr.sin_port = htons(port);
-    inet_pton(AF_INET, IP.c_str(), &ServerAddr.sin_addr);
+    ServerAddr.sin6_port = htons(port);
+    inet_pton(AF_INET6, IP.c_str(), &ServerAddr.sin6_addr);
     if (connect(ISock, (SOCKADDR*)&ServerAddr, sizeof(ServerAddr)) != 0) {
         debug("Connection to server failed with error: " + std::to_string(WSAGetLastError()));
         KillSocket(ISock);

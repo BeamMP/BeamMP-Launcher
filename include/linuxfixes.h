@@ -13,6 +13,7 @@
 #define SOCKET uint64_t
 #define SOCKADDR sockaddr
 #define SOCKADDR_IN sockaddr_in
+#define SOCKADDR_IN6 sockaddr_in6
 #define WSAGetLastError() errno
 #define closesocket close
 #define SD_BOTH SHUT_RDWR
